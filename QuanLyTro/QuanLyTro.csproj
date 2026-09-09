@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- Do not compile nested sub-projects -->
+  <ItemGroup>
+    <Compile Remove="QuanLyTro.Shared\**" />
+    <Compile Remove="QuanLyTro.Server\**" />
+    <Compile Remove="QuanLyTro.Tests\**" />
+    <EmbeddedResource Remove="QuanLyTro.Shared\**" />
+    <EmbeddedResource Remove="QuanLyTro.Server\**" />
+    <EmbeddedResource Remove="QuanLyTro.Tests\**" />
+    <None Remove="QuanLyTro.Shared\**" />
+    <None Remove="QuanLyTro.Server\**" />
+    <None Remove="QuanLyTro.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="QuanLyTro.Shared\QuanLyTro.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

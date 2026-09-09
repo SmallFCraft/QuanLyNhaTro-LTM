@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="QuanLyTro.csproj" />
+  <Project Path="QuanLyTro.Shared/QuanLyTro.Shared.csproj" />
+  <Project Path="QuanLyTro.Server/QuanLyTro.Server.csproj" />
+  <Project Path="QuanLyTro.Tests/QuanLyTro.Tests.csproj" />
+</Solution>
