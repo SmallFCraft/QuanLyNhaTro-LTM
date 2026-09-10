@@ -10,6 +10,75 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md`
 
+---
+
+## Trạng thái thực thi
+
+**Cập nhật lần cuối:** 2026-09-10 · **Nhánh:** `feat/multi-actor-implementation` · **MySQL:** đã verify trên 8.0.30 (Laragon, cổng 3306)
+
+| Task | Nội dung | Trạng thái | Commit |
+|---|---|---|---|
+| 1 | Nâng WinForms + solution 3 project | ✅ Xong | (trước) |
+| 2 | DTO + giao thức dùng chung | ✅ Xong | (trước) |
+| 3 | Schema MySQL + cấu hình Server | ✅ Xong, verify MySQL thật | `c8dc8d3`, `ca949ea` |
+| 4 | Password, đăng nhập, session | ✅ Xong | `6942145` |
+| 5 | Phân vai người thuê | ✅ Xong | `b6a37cc` |
+
+**Đã verify trên MySQL sống:** 6 bảng (`users`, `rooms`, `tenants`, `contracts`, `utility_readings`, `invoices`), 5 CHECK constraint (`chk_rooms_price`, `chk_rooms_max_occupants`, `chk_contracts_dates`, `chk_utility_electricity`, `chk_utility_water`), 4 index (`idx_contracts_room_status`, `idx_invoices_status_month`, `uq_room_month`, `uq_invoice_room_month`), cột `tenants.password_hash`; chạy `--initialize-only` hai lần liên tiếp đều thành công (idempotent); CHECK constraint chặn đúng dữ liệu sai.
+
+**Còn lại:** Task 6–12, chia thành 7 sub-plan trong thư mục `docs/superpowers/plans/subplans/`.
+
+---
+
+## Điều phối Sub-Plan (Leader Agent)
+
+Các task 6–12 quá dài để chạy tuần tự một mạch, nên tách thành 7 file plan con. **Leader** đọc mục này, dispatch worker theo từng wave, mỗi worker nhận ĐÚNG MỘT file sub-plan.
+
+### Bảng phân công
+
+| Sub-plan | Task | File | Phụ thuộc | Chạy song song với |
+|---|---|---|---|---|
+| A | 6 | [task-6-rooms-tenants.md](subplans/task-6-rooms-tenants.md) | Task 5 | B |
+| B | 7 | [task-7-contracts-utilities.md](subplans/task-7-contracts-utilities.md) | Task 5 | A |
+| C | 8 | [task-8-invoices-reports.md](subplans/task-8-invoices-reports.md) | A, B | — |
+| D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | C | E |
+| E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | Task 2 (Shared) | D |
+| F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | D, E | — |
+| G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | F | — |
+
+### Wave triển khai
+
+1. **Wave 1 — nghiệp vụ nền (2 agent song song):** A (phòng + người thuê) và B (hợp đồng + điện nước). Hai sub-plan này chỉ chạm file khác nhau (`RoomRepository`/`TenantRepository`/`RoomService`/`TenantService` so với `ContractRepository`/`UtilityRepository`/`ContractService`/`UtilityService`), KHÔNG cùng sửa một file.
+2. **Wave 2 — nghiệp vụ phụ thuộc (1 agent):** C (hóa đơn + báo cáo). Phải chờ A và B vì cần truy vấn phòng, hợp đồng Active và chỉ số điện nước.
+3. **Wave 3 — tầng mạng (2 agent song song):** D (TCP Server + router) và E (TCP Client service + shell). E chỉ phụ thuộc `QuanLyTro.Shared` nên chạy được song song với D.
+4. **Wave 4 — giao diện (1 agent):** F (8 màn hình). Chờ D và E.
+5. **Wave 5 — chốt sổ (1 agent):** G (test acceptance + README + đánh dấu plan).
+
+### Quy tắc an toàn cho worker
+
+- **Ranh giới file:** mỗi worker chỉ sửa file trong mục **Files** của sub-plan mình. Thấy cần sửa file ngoài danh sách → dừng, báo Leader, không tự mở rộng.
+- **Xung đột:** file dùng chung `BusinessRuleTests.cs` (Sub-plan A, B, C đều ghi). Chạy tuần tự trong cùng wave hoặc chỉ agent đầu tiên tạo file, các agent sau chỉ append test của mình.
+- **Verify trước khi báo xong:** mỗi worker phải chạy `dotnet test` và dán output thật; không báo "PASS" mà không có log.
+- **Commit riêng:** mỗi worker tự commit với message ghi rõ số Task, không gộp nhiều task vào một commit.
+- **Không vượt quyền:** worker không sửa `DESIGN.md`, `PRODUCT.md`, spec, hay master plan — trừ Sub-plan G được phép đánh dấu checkbox trong master plan.
+
+### Trạng thái sub-plan
+
+- [ ] A — Task 6 (đang làm dở: `RoomRepository`/`RoomService`/`BusinessRuleException` đã tạo, `TenantRepository`/`TenantService` chưa)
+- [ ] B — Task 7
+- [ ] C — Task 8
+- [ ] D — Task 9
+- [ ] E — Task 10
+- [ ] F — Task 11
+- [ ] G — Task 12
+- [ ] C — Task 8
+- [ ] D — Task 9
+- [ ] E — Task 10
+- [ ] F — Task 11
+- [ ] G — Task 12
+
+---
+
 ## Global Constraints
 - Target `net8.0` cho Shared/Server/Tests; target `net8.0-windows` cho WinForms Client.
 - Client không được tham chiếu `MySqlConnector` hoặc mở kết nối DB.
@@ -19,6 +88,8 @@
 - Tiền dùng `decimal`; tháng hóa đơn dùng chuỗi chuẩn `yyyy-MM`; ngày dùng `DateOnly` trong DTO.
 - Mật khẩu dùng PBKDF2 (`Rfc2898DeriveBytes.Pbkdf2`) với salt riêng; token phiên sinh bằng `RandomNumberGenerator`.
 - Không thêm abstraction ngoài interfaces tại biên Repository/Network cần cho kiểm thử.
+- **Giao diện:** mọi màu, cỡ chữ, bán kính bo góc lấy từ `DESIGN.md` ở gốc repo — không hardcode màu mới trong code C#. Bản mẫu trực quan: `docs/superpowers/mockups/wireframe-quanly-phongtro.html`.
+- **Ánh xạ WinForms:** dùng `ColorTranslator.FromHtml("<hex trong DESIGN.md>")`; font `Segoe UI 9pt` cho chữ thường, `Consolas 9.5pt` cho số liệu/tiền tệ. Không dùng pill bo tròn.
 
 ---
 
@@ -110,7 +181,6 @@ QuanLyTro/
 - [x] **Step 5: Khai báo đủ 18 Action và các payload nhỏ**
 - [x] **Step 6: Chạy test và toàn solution**
 - [x] **Step 7: Commit**
-```
 
 ### Task 3: Tạo schema MySQL và cấu hình Server
 
@@ -125,7 +195,7 @@ QuanLyTro/
 **Interfaces:**
 - Produces: `ServerOptions.Load(string path)`, `Database.OpenAsync(CancellationToken)`, `SchemaInitializer.InitializeAsync()`.
 
-- [ ] **Step 1: Viết test cấu hình thất bại**
+- [x] **Step 1: Viết test cấu hình thất bại**
 
 ```csharp
 [TestMethod]
@@ -136,7 +206,7 @@ public void ServerOptions_RejectsInvalidPort()
 }
 ```
 
-- [ ] **Step 2: Chạy test xác nhận fail**
+- [x] **Step 2: Chạy test xác nhận fail**
 
 ```bash
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter ServerOptions_RejectsInvalidPort
@@ -144,7 +214,7 @@ dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter ServerOp
 
 Expected: FAIL vì `ServerOptions` chưa tồn tại.
 
-- [ ] **Step 3: Tạo cấu hình JSON và copy khi build**
+- [x] **Step 3: Tạo cấu hình JSON và copy khi build**
 
 ```json
 {
@@ -159,11 +229,11 @@ Expected: FAIL vì `ServerOptions` chưa tồn tại.
 </ItemGroup>
 ```
 
-- [ ] **Step 4: Tạo schema đúng BR-01, BR-03, BR-08 và FK**
+- [x] **Step 4: Tạo schema đúng BR-01, BR-03, BR-08 và FK**
 
 Dùng SQL trong mục 3 của SRS; thêm `CHECK (price > 0)`, `CHECK (max_occupants > 0)`, `CHECK (end_date > start_date)`, `CHECK (new_electricity >= old_electricity)`, `CHECK (new_water >= old_water)`, index `(room_id,status)` cho hợp đồng và index `(status,billing_month)` cho hóa đơn. `SchemaInitializer` đọc embedded `schema.sql`, tách bằng marker `-- statement`, chạy tuần tự.
 
-- [ ] **Step 5: Tạo connection factory**
+- [x] **Step 5: Tạo connection factory**
 
 ```csharp
 public sealed class Database(string connectionString)
@@ -177,7 +247,7 @@ public sealed class Database(string connectionString)
 }
 ```
 
-- [ ] **Step 6: Chạy test và build Server**
+- [x] **Step 6: Chạy test và build Server**
 
 ```bash
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter ServerOptions_RejectsInvalidPort
@@ -189,7 +259,7 @@ dotnet build "QuanLyTro/QuanLyTro.Server/QuanLyTro.Server.csproj"
 
 Expected: PASS; build 0 errors.
 
-- [ ] **Step 7: Smoke-test schema với Laragon đang chạy**
+- [x] **Step 7: Smoke-test schema với Laragon đang chạy**
 
 ```bash
 dotnet run --project "QuanLyTro/QuanLyTro.Server" -- --initialize-only
@@ -197,7 +267,7 @@ dotnet run --project "QuanLyTro/QuanLyTro.Server" -- --initialize-only
 
 Expected: `Database initialized.`; chạy lần hai vẫn thành công.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add QuanLyTro/database QuanLyTro/QuanLyTro.Server QuanLyTro/QuanLyTro.Tests
@@ -219,7 +289,7 @@ git commit -m "feat: add MySQL schema and server configuration"
 **Interfaces:**
 - Produces: `PasswordHasher.Hash(string)`, `Verify(string,string)`, `SessionStore.Create(int)`, `TryGetUser(string,out int)`, `AuthService.LoginAsync(LoginRequest,CancellationToken)`.
 
-- [ ] **Step 1: Viết test hash thất bại**
+- [x] **Step 1: Viết test hash thất bại**
 
 ```csharp
 [TestMethod]
@@ -232,13 +302,13 @@ public void PasswordHash_VerifiesCorrectPasswordOnly()
 }
 ```
 
-- [ ] **Step 2: Chạy test xác nhận fail**
+- [x] **Step 2: Chạy test xác nhận fail**
 
 ```bash
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter PasswordHash_VerifiesCorrectPasswordOnly
 ```
 
-- [ ] **Step 3: Implement PBKDF2 và so sánh constant-time**
+- [x] **Step 3: Implement PBKDF2 và so sánh constant-time**
 
 ```csharp
 private const int Iterations = 210_000;
@@ -253,7 +323,7 @@ public static string Hash(string password)
 
 `Verify` parse bốn phần, giới hạn iteration hợp lệ, derive lại 32 byte, dùng `CryptographicOperations.FixedTimeEquals`.
 
-- [ ] **Step 4: Tạo session in-memory hết hạn sau 8 giờ**
+- [x] **Step 4: Tạo session in-memory hết hạn sau 8 giờ**
 
 ```csharp
 public string Create(int userId)
@@ -266,11 +336,11 @@ public string Create(int userId)
 
 Dùng `ConcurrentDictionary`; xóa token hết hạn khi truy cập.
 
-- [ ] **Step 5: Tạo UserRepository và AuthService**
+- [x] **Step 5: Tạo UserRepository và AuthService**
 
 SQL: `SELECT id, password_hash, full_name FROM users WHERE username=@username LIMIT 1`. Nếu sai thông tin, trả cùng thông báo `Tên đăng nhập hoặc mật khẩu không đúng.`; không tiết lộ tài khoản tồn tại.
 
-- [ ] **Step 6: Chạy test**
+- [x] **Step 6: Chạy test**
 
 ```bash
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter PasswordHash
@@ -278,7 +348,7 @@ dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Password
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add QuanLyTro/QuanLyTro.Server/Security QuanLyTro/QuanLyTro.Server/Repositories/UserRepository.cs QuanLyTro/QuanLyTro.Server/Services/AuthService.cs QuanLyTro/QuanLyTro.Tests/PasswordHasherTests.cs
@@ -288,7 +358,80 @@ git add QuanLyTro/QuanLyTro.Server/Security QuanLyTro/QuanLyTro.Server/Repositor
 git commit -m "feat: add secure server authentication"
 ```
 
-### Task 5: Quản lý phòng và người thuê
+### Task 5: Phân vai người thuê (delta 2 tác nhân)
+
+**Spec:** `docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md`
+
+**Files:**
+- Modify: `QuanLyTro/database/schema.sql`
+- Modify: `QuanLyTro/QuanLyTro.Shared/Protocol/ActionNames.cs`
+- Modify: `QuanLyTro/QuanLyTro.Shared/Models/AuthAndReportDtos.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Security/SessionStore.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/AuthService.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Network/PermissionMatrix.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/AuthTests.cs`
+
+**Interfaces:**
+- Consumes: `PasswordHasher.Verify`, `UserRepository`.
+- Produces: `AuthService.LoginAsync(username, password)` → `LoginResultDto(Token, FullName, Role)`; `SessionStore.Get(token)` → `(int UserId, UserRole Role)?`; `PermissionMatrix.IsAllowed(string action, UserRole role)`.
+
+- [x] **Step 1: Viết test đăng nhập 2 bảng thất bại**
+
+```csharp
+[TestMethod]
+public async Task AuthService_LogsInTenantByCccd()
+{
+    var auth = new AuthService(new StubUserRepo(landlord: null), new StubTenantRepo("048203012345", "hash"));
+    var r = await auth.LoginAsync("048203012345", "123456");
+    Assert.AreEqual(UserRole.Tenant, r.Role);
+}
+```
+
+- [x] **Step 2: Chạy test xác nhận fail**
+
+```bash
+dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter AuthService_LogsInTenantByCccd
+```
+
+- [x] **Step 3: Thêm cột `password_hash` vào `schema.sql`**
+
+```sql
+ALTER TABLE tenants ADD COLUMN password_hash VARCHAR(255) NULL AFTER id_card;
+```
+
+- [x] **Step 4: Khai báo 4 action mới và `Role` trong DTO**
+
+Thêm vào `ActionNames`: `TenantDelete`, `ContractRenew`, `ContractGetAll`, `InvoiceGetMine`. Thêm `enum UserRole { Landlord, Tenant }` và trường `Role` vào `LoginResultDto`.
+
+- [x] **Step 5: Cài `SessionStore` lưu `(UserId, Role)`**
+
+Token sinh bằng `RandomNumberGenerator`. `SessionStore` là `ConcurrentDictionary<string, (int, UserRole)>` với `TryAdd`/`TryRemove`.
+
+- [x] **Step 6: Cài `AuthService` 2 bảng + lockout 5 lần/1 phút**
+
+Thử `users` trước, không khớp thì thử `tenants` theo `username = id_card`. Sai thông tin trả **cùng một thông báo** cho cả 2 bảng. Đếm sai **theo username** trong `ConcurrentDictionary`, reset khi thành công; quá 5 lần → từ chối 1 phút, thông báo thời gian còn lại. Đồng hồ injectable để test không phải chờ thật. Tenant có `password_hash IS NULL` → không đăng nhập được.
+
+- [x] **Step 7: Cài `PermissionMatrix` (server-enforced, BR-14)**
+
+Bảng tĩnh `Action → AllowedRoles`. Mọi action trừ `AUTH_LOGIN` kiểm tra token **và** role trước khi gọi service. Tenant gọi action khác → `Success=false`, `"Không có quyền."`. Client chỉ ẩn/hiện menu theo `Role` cho UX, không tự quyết định quyền.
+
+- [x] **Step 8: Chạy tests**
+
+```bash
+dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"
+```
+
+- [x] **Step 9: Commit**
+
+```bash
+git add QuanLyTro/database/schema.sql QuanLyTro/QuanLyTro.Shared QuanLyTro/QuanLyTro.Server/Security QuanLyTro/QuanLyTro.Server/Services QuanLyTro/QuanLyTro.Server/Network QuanLyTro/QuanLyTro.Tests/AuthTests.cs
+```
+
+```bash
+git commit -m "feat: add tenant role, auth service and permission matrix"
+```
+
+### Task 6: Quản lý phòng và người thuê
 
 **Files:**
 - Create: `QuanLyTro/QuanLyTro.Server/Repositories/RoomRepository.cs`
@@ -350,7 +493,7 @@ git add QuanLyTro/QuanLyTro.Server/Repositories QuanLyTro/QuanLyTro.Server/Servi
 git commit -m "feat: add room and tenant business logic"
 ```
 
-### Task 6: Hợp đồng và điện nước
+### Task 7: Hợp đồng và điện nước
 
 **Files:**
 - Create: `QuanLyTro/QuanLyTro.Server/Repositories/ContractRepository.cs`
@@ -411,7 +554,7 @@ git add QuanLyTro/QuanLyTro.Server/Repositories/ContractRepository.cs QuanLyTro/
 git commit -m "feat: add contracts and utility readings"
 ```
 
-### Task 7: Hóa đơn, thanh toán và báo cáo
+### Task 8: Hóa đơn, thanh toán và báo cáo
 
 **Files:**
 - Create: `QuanLyTro/QuanLyTro.Server/Repositories/InvoiceRepository.cs`
@@ -470,7 +613,7 @@ git add QuanLyTro/QuanLyTro.Server/Repositories/InvoiceRepository.cs QuanLyTro/Q
 git commit -m "feat: add invoices payments and reports"
 ```
 
-### Task 8: TCP Server, router và xử lý nhiều Client
+### Task 9: TCP Server, router và xử lý nhiều Client
 
 **Files:**
 - Create: `QuanLyTro/QuanLyTro.Server/Network/TcpServer.cs`
@@ -548,7 +691,7 @@ git add QuanLyTro/QuanLyTro.Server/Network QuanLyTro/QuanLyTro.Server/Program.cs
 git commit -m "feat: add concurrent TCP server and request routing"
 ```
 
-### Task 9: TCP Client service và kết nối UI
+### Task 10: TCP Client service và kết nối UI
 
 **Files:**
 - Create: `QuanLyTro/Network/TcpClientService.cs`
@@ -585,9 +728,16 @@ dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter TcpClien
 
 Dùng một connection lâu dài, `SemaphoreSlim(1,1)` quanh write/read pair để response không lệch request; timeout 10 giây bằng linked `CancellationTokenSource`; EOF phát `Disconnected`; `Success=false` ném `ClientRequestException(Message)`.
 
-- [ ] **Step 4: Biến Form1 thành connection shell**
+- [ ] **Step 4: Biến Form1 thành shell chính**
 
-Thêm input IP mặc định `127.0.0.1`, port `8888`, nút `Kết nối`, label trạng thái, `TabControl` bị disable khi chưa kết nối. Event handler async, bắt exception, không block UI thread.
+Đọc địa chỉ Server từ `App.config` (`127.0.0.1:8888`), **không có ô nhập IP/Port trên giao diện** — người dùng cuối không cấu hình hạ tầng. `Form1` gồm:
+- Title bar 32px nền `#0B0F12`, icon Terracotta `#D95D39`.
+- Menu strip 36px: Hệ thống · Quản lý · Báo cáo · Trợ giúp.
+- Vùng đăng nhập: segmented 2 vai (Chủ trọ / Khách thuê), ô tài khoản + mật khẩu, nút `Đăng nhập`.
+- Sau khi đăng nhập: `TabControl` dựng tab theo `Role` trả về (Landlord 7 tab, Tenant 1 tab).
+- Status strip đáy 22px: vai hiện tại + `.NET 8.0 CLR` (không hiển thị IP/latency ra UI).
+
+Event handler async, bắt exception bằng `MessageBox`, không block UI thread. Token màu/chữ lấy từ `DESIGN.md`.
 
 - [ ] **Step 5: Chạy tests và mở Designer**
 
@@ -595,7 +745,7 @@ Thêm input IP mặc định `127.0.0.1`, port `8888`, nút `Kết nối`, label
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"
 ```
 
-Mở `Form1.cs [Design]` trong Visual Studio; Expected: designer tải không lỗi. Chạy Server + Client; Expected: trạng thái đổi `Đã kết nối`.
+Mở `Form1.cs [Design]` trong Visual Studio; Expected: designer tải không lỗi. Chạy Server + Client rồi đăng nhập; Expected: `TabControl` hiện đúng số tab theo vai (chủ trọ 7, người thuê 1).
 
 - [ ] **Step 6: Commit**
 
@@ -607,7 +757,7 @@ git add QuanLyTro/Network QuanLyTro/Protocol QuanLyTro/Form1.cs QuanLyTro/Form1.
 git commit -m "feat: connect WinForms client over TCP"
 ```
 
-### Task 10: Các màn hình nghiệp vụ WinForms
+### Task 11: Các màn hình nghiệp vụ WinForms
 
 **Files:**
 - Create: `QuanLyTro/Forms/RoomsForm.cs` and `.Designer.cs`
@@ -622,6 +772,14 @@ git commit -m "feat: connect WinForms client over TCP"
 **Interfaces:**
 - Consumes: singleton `TcpClientService` từ Form1.
 - Produces: UI cho US-01 đến US-22; không chứa business-rule decisions.
+
+- [ ] **Step 0: Tạo tab `Tổng quan` (Dashboard)**
+
+Tab đầu tiên của `Landlord`, gọi song song `REPORT_SUMMARY` + `CONTRACT_GET_ALL` + `INVOICE_GET_ALL` một lần khi mở tab.
+- 4 thẻ KPI: Tổng số phòng · Phòng trống (kèm tỷ lệ lấp đầy) · Người đang ở · Còn nợ tháng hiện tại.
+- Bảng "Còn nợ — đôn đốc" (US-17): phòng, kỳ, số còn nợ tô `#D95D39`, đại diện.
+- Bảng "HĐ sắp hết hạn" (US-11): phòng, đại diện, ngày hết hạn, số ngày còn lại.
+- Không có nút ghi; click dòng điều hướng sang tab tương ứng.
 
 - [ ] **Step 1: Tạo `RoomsForm`**
 
@@ -647,9 +805,11 @@ Chọn tháng, list invoices và detail breakdown; nút Create và Pay; paid row
 
 Gọi `REPORT_SUMMARY`; hiển thị KPI và bảng tháng. Gọi `EXPORT_RESIDENCE`; dùng `StreamWriter` UTF-8 BOM, escape CSV bằng cách bọc dấu `"` và nhân đôi dấu `"` bên trong. Không thêm Excel package.
 
-- [ ] **Step 7: Gắn forms vào tab shell, kiểm tra accessibility cơ bản**
+- [ ] **Step 7: Gắn forms vào tab shell, áp design system, kiểm tra accessibility cơ bản**
 
-Đặt `AccessibleName`, tab order hợp lý, labels liên kết controls, font Segoe UI 9+, button có text rõ; keyboard navigation hoạt động; lỗi hiển thị bằng MessageBox và giữ input.
+Áp token từ `DESIGN.md` cho mọi form: nền `#101417`, card `#181C1F`, DataGridView header `#1A2025` chữ `#767E88` in hoa, dòng đang chọn nền `#21262B` + dải trái 3px `#D95D39`, cột số canh phải + `tabular-nums`, tag trạng thái sage/terracotta/amber theo bảng ngữ nghĩa, nút chính `#D95D39` chữ trắng, góc bo 4px/8px. Không dùng pill.
+
+Đặt `AccessibleName`, tab order hợp lý, labels liên kết controls, font `Segoe UI 9pt` (số liệu `Consolas 9.5pt`), button có text rõ; keyboard navigation hoạt động; lỗi hiển thị bằng MessageBox và giữ input.
 
 - [ ] **Step 8: Build và manual flow**
 
@@ -669,7 +829,7 @@ git add QuanLyTro/Forms QuanLyTro/Form1.cs QuanLyTro/Form1.Designer.cs
 git commit -m "feat: add WinForms management screens"
 ```
 
-### Task 11: Hoàn thiện kiểm thử SRS và tài liệu chạy
+### Task 12: Hoàn thiện kiểm thử SRS và tài liệu chạy
 
 **Files:**
 - Create: `QuanLyTro/README.md`
