@@ -240,32 +240,27 @@ public sealed class TenantRepository(Database database)
         return value is null or DBNull ? null : Convert.ToInt32(value);
     }
 
-    /// <summary>Phòng về Available khi không còn người thuê và không còn hợp đồng Active.</summary>
+    /// <summary>
+    /// Phòng về Available khi không còn người thuê và không còn hợp đồng Active.
+    /// Một UPDATE dùng current read thay vì snapshot REPEATABLE READ của SELECT thường;
+    /// NOT EXISTS chờ transaction đang thêm người thuê/hợp đồng nên không bỏ sót dữ liệu vừa commit.
+    /// </summary>
     private static async Task FreeRoomIfEmptyAsync(
         MySqlConnection connection, MySqlTransaction transaction, int roomId, CancellationToken ct)
     {
         const string sql = """
-            SELECT
-                (SELECT COUNT(*) FROM tenants t WHERE t.room_id = @id) AS tenant_count,
-                (SELECT COUNT(*) FROM contracts c WHERE c.room_id = @id AND c.status = 'Active') AS active_contracts
+            UPDATE rooms
+            SET status = @status
+            WHERE id = @id
+              AND status <> 'Maintenance'
+              AND NOT EXISTS (SELECT 1 FROM tenants WHERE room_id = @id)
+              AND NOT EXISTS (SELECT 1 FROM contracts WHERE room_id = @id AND status = 'Active')
             """;
 
         await using var command = new MySqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("@status", RoomStatus.Available.ToString());
         command.Parameters.AddWithValue("@id", roomId);
-
-        await using var reader = await command.ExecuteReaderAsync(ct);
-        if (!await reader.ReadAsync(ct))
-        {
-            return;
-        }
-
-        var empty = reader.GetInt64("tenant_count") == 0 && reader.GetInt64("active_contracts") == 0;
-        await reader.CloseAsync();
-
-        if (empty)
-        {
-            await SetRoomStatusAsync(connection, transaction, roomId, RoomStatus.Available, ct);
-        }
+        await command.ExecuteNonQueryAsync(ct);
     }
 
     /// <summary>Không ghi đè phòng đang bảo trì.</summary>
