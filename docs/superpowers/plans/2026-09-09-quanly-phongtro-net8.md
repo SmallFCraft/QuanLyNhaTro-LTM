@@ -30,7 +30,8 @@
 | 3 | Schema MySQL + cấu hình Server | `c8dc8d3`, `ca949ea` |
 | 4 | Password, đăng nhập, session | `6942145` |
 | 5 | Phân vai người thuê | `b6a37cc` |
-| 6 (một phần) | `RoomRepository` + `RoomService` + BR-01/BR-12 | `7af650a` |
+| 6 | `RoomRepository/Service` + `TenantRepository/Service` | `7af650a`, `740db46` |
+| 7 | `ContractRepository/Service` + `UtilityRepository/Service` | `d67fd24` |
 
 ### 1.2. Đã verify thật trên MySQL sống
 
@@ -45,15 +46,15 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 
 | Sub-plan | Task | File | Trạng thái |
 |---|---|---|---|
-| A | 6 | [task-6-rooms-tenants.md](subplans/task-6-rooms-tenants.md) | 🔶 dở — phần phòng xong, phần người thuê chưa |
-| B | 7 | [task-7-contracts-utilities.md](subplans/task-7-contracts-utilities.md) | ⬜ chưa |
+| A | 6 | [task-6-rooms-tenants.md](subplans/task-6-rooms-tenants.md) | ✅ XONG (`7af650a`, `740db46`) |
+| B | 7 | [task-7-contracts-utilities.md](subplans/task-7-contracts-utilities.md) | ✅ XONG (`d67fd24`) |
 | C | 8 | [task-8-invoices-reports.md](subplans/task-8-invoices-reports.md) | ⬜ chưa |
 | D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ⬜ chưa |
 | E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ⬜ chưa |
 | F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ⬜ chưa |
 | G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ⬜ chưa |
 
-**Tổng test hiện tại:** 30 PASS, 0 FAIL.
+**Tổng test hiện tại:** 62 PASS, 0 FAIL.
 
 ---
 
