@@ -29,6 +29,7 @@ public partial class UtilitiesForm : UserControl
     private void WireEvents()
     {
         cboRoom.SelectedIndexChanged += async (_, _) => await LoadPreviousReadingAsync();
+        dtpMonth.ValueChanged += async (_, _) => await LoadPreviousReadingAsync();
         numElecOld.ValueChanged += (_, _) => UpdatePreview();
         numElecNew.ValueChanged += (_, _) => UpdatePreview();
         numElecRate.ValueChanged += (_, _) => UpdatePreview();
@@ -75,9 +76,9 @@ public partial class UtilitiesForm : UserControl
 
         try
         {
-            var prev = await Form1.Client.SendAsync<RoomQuery, PreviousReading>(
+            var prev = await Form1.Client.SendAsync<object, PreviousReading>(
                 ActionNames.UtilityGetPrevious,
-                new RoomQuery(selectedRoom.Id),
+                new { RoomId = selectedRoom.Id, BillingMonth = BillingMonthOf(dtpMonth) },
                 CancellationToken.None);
 
             numElecOld.Value = prev?.OldElectricity ?? 0;

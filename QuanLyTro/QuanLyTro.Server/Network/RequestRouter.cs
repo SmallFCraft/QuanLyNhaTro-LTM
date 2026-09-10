@@ -72,8 +72,17 @@ public sealed class RequestRouter
                 ct)),
             [ActionNames.ContractGetAll] = (_, _, ct) => Ok(_contracts.GetAllAsync(ct)),
 
+            // billingMonth tuỳ chọn: có thì lấy chỉ số kỳ TRƯỚC tháng đó (US-13), không thì giữ
+            // hành vi cũ (bản ghi mới nhất) để client cũ không vỡ.
             [ActionNames.UtilityGetPrevious] = (r, _, ct) =>
-                Ok(_utilities.GetPreviousReadingAsync(ReadId(r.Data, "roomId", "id"), ct)),
+            {
+                var roomId = ReadId(r.Data, "roomId", "id");
+                var billingMonth = ReadString(r.Data, "billingMonth");
+
+                return Ok(string.IsNullOrWhiteSpace(billingMonth)
+                    ? _utilities.GetPreviousReadingAsync(roomId, ct)
+                    : _utilities.GetPreviousReadingAsync(roomId, billingMonth, ct));
+            },
             [ActionNames.UtilityRecord] = (r, _, ct) => Ok(_utilities.RecordAsync(r.GetData<UtilityReadingDto>(), ct)),
 
             [ActionNames.InvoiceCreate] = (r, _, ct) => Ok(_invoices.CreateAsync(r.GetData<CreateInvoiceRequest>(), ct)),
