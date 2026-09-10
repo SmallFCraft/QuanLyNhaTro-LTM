@@ -33,6 +33,8 @@
 | 6 | `RoomRepository/Service` + `TenantRepository/Service` | `7af650a`, `740db46` |
 | 7 | `ContractRepository/Service` + `UtilityRepository/Service` | `d67fd24` |
 | 8 | `InvoiceRepository/Service` + `ReportRepository/Service` | `38d44c4` |
+| 9 | `RequestRouter` + `TcpListenerServer` + `ClientHandler` + 22 action | `f9f6e8b` |
+| 10 | `TcpClientService` + shell `Form1` + `App.config` | `70d9f88` |
 
 ### 1.2. Đã verify thật trên MySQL sống
 
@@ -50,12 +52,12 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 | A | 6 | [task-6-rooms-tenants.md](subplans/task-6-rooms-tenants.md) | ✅ XONG (`7af650a`, `740db46`) |
 | B | 7 | [task-7-contracts-utilities.md](subplans/task-7-contracts-utilities.md) | ✅ XONG (`d67fd24`) |
 | C | 8 | [task-8-invoices-reports.md](subplans/task-8-invoices-reports.md) | ✅ XONG (`38d44c4`) |
-| D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ⬜ chưa |
-| E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ⬜ chưa |
-| F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ⬜ chưa |
+| D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ✅ XONG (`f9f6e8b`) |
+| E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ✅ XONG (`70d9f88`) |
+| F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | 🔶 2/8 màn xong (`234fd1c`), 3 nhóm đang chạy |
 | G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ⬜ chưa |
 
-**Tổng test hiện tại:** 80 PASS, 0 FAIL.
+**Tổng test hiện tại:** 94 PASS, 0 FAIL.
 
 ---
 
