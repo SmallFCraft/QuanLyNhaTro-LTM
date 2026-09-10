@@ -36,6 +36,7 @@
 | 9 | `RequestRouter` + `TcpListenerServer` + `ClientHandler` + 22 action | `f9f6e8b` |
 | 10 | `TcpClientService` + shell `Form1` + `App.config` | `70d9f88` |
 | 11 | 8 màn WinForms + gắn tab, design system | `234fd1c`, `da6738e`, `47df77e` |
+| 12 | Test acceptance SRS + README demo | `pending` |
 | — | Sửa lỗi audit: race BR-04/05/12, gia hạn lùi, khóa đăng nhập, chỉ số cũ, UI token | `01ffba5`, `051f3b2`, `a7b79c9`, `b059af1`, `fa7251a`, `5a2dff1`, `dabd0d6`, `910e102`, `b116470` |
 
 ### 1.2. Đã verify thật trên MySQL sống
@@ -57,9 +58,15 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 | D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ✅ XONG (`f9f6e8b`) |
 | E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ✅ XONG (`70d9f88`) |
 | F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ✅ XONG 8/8 màn (`234fd1c`, `da6738e`, `47df77e`) |
-| G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ⬜ chưa |
+| G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ✅ XONG (commit hash ghi trong báo cáo Sub-plan G) |
 
-**Tổng test hiện tại:** 117 PASS, 0 FAIL. Build 0 warning / 0 error.
+**Tổng test hiện tại:** 127 PASS, 0 FAIL (117 trước Task 12 + 10 acceptance `AcceptanceTests.cs`). Build 0 warning / 0 error.
+
+**Coverage Task 12 (2026-09-11):** 27.3% dòng (5.522/20.221) đo bằng collector `Code Coverage` (Visual Studio, Windows). `XPlat Code Coverage` không khả dụng vì test project không tham chiếu `coverlet.collector` — không thêm dependency chỉ để đo. Con số tính cả mã WinForms UI khó test tự động; tầng Server (Router/Service/Repository) có test MySQL thật phủ trực tiếp. Artifact: `QuanLyTro/QuanLyTro.Tests/TestResults/<guid>/*.coverage` (gitignored).
+
+**Task 12 bổ sung (2026-09-11):** `QuanLyTro/README.md` tiếng Việt (kiến trúc, lệnh chạy, 22 action + ma trận quyền, bằng chứng).acceptance: luồng tháng SRS §7 đủ 8 bước trên MySQL thật; ma trận quyền qua `RequestRouter` thật; BR-14 room-isolation; US-23 lockout clock injectable; BR-04/05/06/09/10/11.
+
+**Sự thật seed admin (Task 12 ghi rõ trong README):** `schema.sql` chỉ tạo cấu trúc, **không** seed user. `admin/admin-pass` trên DB Laragon là do đặt tay khi E2E. Repo hiện chưa có lệnh chính thức tạo admin; README ghi thủ tục an toàn: sinh hash bằng `PasswordHasher.Hash` rồi `INSERT ... ON DUPLICATE KEY UPDATE` vào `users` (đã kiểm chứng đăng nhập được).
 
 **E2E thật (2026-09-11):** Server console + MySQL Laragon 3306 + TCP 8888 thật. `AUTH_LOGIN` admin → token; `ROOM_GET_ALL`/`REPORT_SUMMARY`/`CONTRACT_GET_ALL` trả JSON đúng; `UTILITY_GET_PREVIOUS` có `billingMonth` lấy đúng kỳ trước (bỏ qua kỳ sau); token sai → `"Phiên đăng nhập không hợp lệ hoặc đã hết hạn."`; sai mật khẩu 5 lần → khóa, biến thể `ADMIN` vẫn bị khóa.
 
@@ -425,12 +432,12 @@ Worker kết thúc phải trả về đúng mẫu này:
 
 Một sub-plan chỉ được coi là XONG khi:
 
-- [ ] Mọi bước trong file sub-plan đã đánh dấu `[x]`.
-- [ ] `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"` chạy 0 failed — có log dán kèm.
-- [ ] `dotnet build "QuanLyTro/QuanLyTro.slnx"` 0 error (client `net8.0-windows` build được).
-- [ ] Đã commit, message ghi rõ số Task, không lẫn file ngoài danh sách.
-- [ ] Nếu sub-plan yêu cầu verify trên MySQL thật → có log truy vấn thật.
-- [ ] Không có TODO/TBD/hàm rỗng bỏ lại trong code.
+- [x] Mọi bước trong file sub-plan đã đánh dấu `[x]` — Sub-plan G (Task 12): 8/8 bước.
+- [x] `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"` chạy 0 failed — có log dán kèm. **127 PASS, 0 FAIL, 16s** (2026-09-11), log trong báo cáo Sub-plan G.
+- [x] `dotnet build "QuanLyTro/QuanLyTro.slnx"` 0 error (client `net8.0-windows` build được). **0 Warning(s), 0 Error(s)**.
+- [x] Đã commit, message ghi rõ số Task, không lẫn file ngoài danh sách. — commit Task 12 gồm đúng 4 file sở hữu (AcceptanceTests, README, 2 file plan); hash đầy đủ: xem `git log --grep "Task 12"`.
+- [x] Nếu sub-plan yêu cầu verify trên MySQL thật → có log truy vấn thật. Acceptance test chạy MySQL 3306; smoke TCP 8888 thật (login admin, ROOM_GET_ALL, REPORT_SUMMARY, UTILITY_GET_PREVIOUS month-bounded, CONTRACT_GET_ALL, bad token).
+- [x] Không có TODO/TBD/hàm rỗng bỏ lại trong code.
 
 ---
 
