@@ -124,13 +124,16 @@ public sealed class ContractRepository(Database database) : IContractRepository
         return await command.ExecuteNonQueryAsync(ct) > 0;
     }
 
-    /// <summary>US-10: gia hạn — chỉ hợp đồng `Active`, mới chạm được dòng.</summary>
+    /// <summary>
+    /// US-10: gia hạn — chỉ hợp đồng `Active` và ngày mới phải sau end_date hiện tại (điều kiện
+    /// ngay trong UPDATE để chặn race: A gia hạn 2027-12-31, B gia hạn 2027-06-30 sau đó → 0 dòng).
+    /// </summary>
     public async Task<bool> UpdateEndDateAsync(int contractId, DateOnly newEndDate, CancellationToken ct = default)
     {
         const string sql = """
             UPDATE contracts
             SET end_date = @endDate
-            WHERE id = @id AND status = 'Active'
+            WHERE id = @id AND status = 'Active' AND end_date < @endDate
             """;
 
         await using var connection = await database.OpenAsync(ct);

@@ -69,7 +69,14 @@ public sealed class ContractService(IContractRepository contracts)
             throw new BusinessRuleException("Ngày gia hạn phải sau ngày kết thúc hiện tại.");
         }
 
-        return await contracts.UpdateEndDateAsync(contractId, newEndDate, ct);
+        if (!await contracts.UpdateEndDateAsync(contractId, newEndDate, ct))
+        {
+            // UPDATE có điều kiện end_date < @endDate trả 0 dòng: dữ liệu đã đổi giữa chừng
+            // (race) hoặc hợp đồng không còn Active/tồn tại. Báo lỗi nghiệp vụ thay vì "thành công".
+            throw new BusinessRuleException("Ngày gia hạn phải sau ngày kết thúc hiện tại.");
+        }
+
+        return true;
     }
 
     /// <summary>US-11: kèm số phòng + tên đại diện, xếp theo end_date tăng dần.</summary>
