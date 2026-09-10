@@ -1,14 +1,21 @@
 namespace QuanLyTro.Shared.Models;
 
+/// <summary>Vai trò phiên đăng nhập.</summary>
+public enum UserRole
+{
+    Landlord,
+    Tenant,
+}
+
 /// <summary>
 /// Payload đăng nhập: { Username, Password }
 /// </summary>
 public sealed record LoginRequest(string Username, string Password);
 
 /// <summary>
-/// Kết quả đăng nhập: { Token, FullName }
+/// Kết quả đăng nhập: { Token, FullName, Role }
 /// </summary>
-public sealed record LoginResult(string Token, string FullName);
+public sealed record LoginResult(string Token, string FullName, UserRole Role);
 
 /// <summary>
 /// Payload lấy chỉ số kỳ trước: { RoomId } -> { OldElectricity, OldWater }

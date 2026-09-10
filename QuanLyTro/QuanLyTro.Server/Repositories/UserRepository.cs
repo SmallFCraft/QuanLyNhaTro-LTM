@@ -4,7 +4,7 @@ using QuanLyTro.Server.Data;
 namespace QuanLyTro.Server.Repositories;
 
 /// <summary>Truy vấn tài khoản quản trị (chủ trọ) trong bảng `users`.</summary>
-public sealed class UserRepository(Database database)
+public sealed class UserRepository(Database database) : IUserRepository
 {
     public async Task<UserRecord?> FindByUsernameAsync(string username, CancellationToken ct = default)
     {
@@ -31,6 +31,3 @@ public sealed class UserRepository(Database database)
             reader.GetString("full_name"));
     }
 }
-
-/// <summary>Bản ghi tài khoản chủ trọ đọc từ DB.</summary>
-public sealed record UserRecord(int Id, string PasswordHash, string FullName);

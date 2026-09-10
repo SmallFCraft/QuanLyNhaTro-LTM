@@ -1,25 +1,26 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
+using QuanLyTro.Shared.Models;
 
 namespace QuanLyTro.Server.Security;
 
-/// <summary>Phiên đăng nhập in-memory, hết hạn sau 8 giờ.</summary>
+/// <summary>Phiên đăng nhập in-memory giữ `(UserId, Role)`, hết hạn sau 8 giờ.</summary>
 public sealed class SessionStore
 {
     private const int SessionLifetimeHours = 8;
 
-    private readonly ConcurrentDictionary<string, (int UserId, DateTimeOffset ExpiresAt)> _sessions = new();
+    private readonly ConcurrentDictionary<string, (int UserId, UserRole Role, DateTimeOffset ExpiresAt)> _sessions = new();
 
-    public string Create(int userId)
+    public string Create(int userId, UserRole role)
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        _sessions[token] = (userId, DateTimeOffset.UtcNow.AddHours(SessionLifetimeHours));
+        _sessions[token] = (userId, role, DateTimeOffset.UtcNow.AddHours(SessionLifetimeHours));
         return token;
     }
 
-    public bool TryGetUser(string token, out int userId)
+    public bool TryGet(string token, out (int UserId, UserRole Role) session)
     {
-        userId = 0;
+        session = default;
         if (string.IsNullOrWhiteSpace(token) || !_sessions.TryGetValue(token, out var entry))
         {
             return false;
@@ -31,7 +32,7 @@ public sealed class SessionStore
             return false;
         }
 
-        userId = entry.UserId;
+        session = (entry.UserId, entry.Role);
         return true;
     }
 
