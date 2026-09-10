@@ -569,7 +569,7 @@ public sealed class AcceptanceTests
             "DELETE u FROM utility_readings u JOIN rooms r ON r.id = u.room_id WHERE r.room_number LIKE 'T12-%' OR r.id BETWEEN 9204 AND 9215",
             "DELETE c FROM contracts c JOIN rooms r ON r.id = c.room_id WHERE r.room_number LIKE 'T12-%' OR r.id BETWEEN 9204 AND 9215",
             // Chỉ CCCD của Task 12 — KHÔNG dùng LIKE để khỏi quét trúng dải của test khác.
-            "DELETE FROM tenants WHERE id_card IN ('999999999204','999999999205','999999999206','999999999210')",
+            $"DELETE FROM tenants WHERE id_card IN ('{MainCccd}', '{ExtraCccd}', '{LandlordCccd}', '{FlowCccd}')",
             "DELETE FROM rooms WHERE room_number LIKE 'T12-%' OR id BETWEEN 9204 AND 9215",
         })
         {

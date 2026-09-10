@@ -408,6 +408,7 @@ namespace QuanLyTro.Forms
             this.numOtherFees.Size = new System.Drawing.Size(160, 23);
             this.numOtherFees.TabIndex = 7;
             this.numOtherFees.Increment = 10000;
+            this.numOtherFees.Minimum = 0;
             this.numOtherFees.Maximum = 1000000000;
             this.numOtherFees.Font = ScreenTheme.Mono;
             this.numOtherFees.AccessibleName = "Nhập phí khác";
