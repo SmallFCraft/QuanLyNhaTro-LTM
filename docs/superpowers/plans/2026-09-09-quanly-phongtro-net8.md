@@ -36,7 +36,7 @@
 | 9 | `RequestRouter` + `TcpListenerServer` + `ClientHandler` + 22 action | `f9f6e8b` |
 | 10 | `TcpClientService` + shell `Form1` + `App.config` | `70d9f88` |
 | 11 | 8 màn WinForms + gắn tab, design system | `234fd1c`, `da6738e`, `47df77e` |
-| 12 | Test acceptance SRS + README demo | `pending` |
+| 12 | Test acceptance SRS + README demo | `52ec274` |
 | — | Sửa lỗi audit: race BR-04/05/12, gia hạn lùi, khóa đăng nhập, chỉ số cũ, UI token | `01ffba5`, `051f3b2`, `a7b79c9`, `b059af1`, `fa7251a`, `5a2dff1`, `dabd0d6`, `910e102`, `b116470` |
 
 ### 1.2. Đã verify thật trên MySQL sống
@@ -48,7 +48,7 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 
 `dotnet run --project "QuanLyTro/QuanLyTro.Server" -- --initialize-only` chạy **hai lần liên tiếp** đều in `Database initialized.` (idempotent). CHECK constraint đã test chặn đúng: giá âm bị `chk_rooms_price` từ chối, chỉ số điện giảm bị `chk_utility_electricity` từ chối.
 
-### 1.3. Còn lại — 7 sub-plan
+### 1.3. Trạng thái 7 sub-plan — TẤT CẢ ĐÃ XONG
 
 | Sub-plan | Task | File | Trạng thái |
 |---|---|---|---|
@@ -58,7 +58,7 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 | D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ✅ XONG (`f9f6e8b`) |
 | E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ✅ XONG (`70d9f88`) |
 | F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ✅ XONG 8/8 màn (`234fd1c`, `da6738e`, `47df77e`) |
-| G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ✅ XONG (commit hash ghi trong báo cáo Sub-plan G) |
+| G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ✅ XONG (`52ec274`) |
 
 **Tổng test hiện tại:** 127 PASS, 0 FAIL (117 trước Task 12 + 10 acceptance `AcceptanceTests.cs`). Build 0 warning / 0 error.
 
