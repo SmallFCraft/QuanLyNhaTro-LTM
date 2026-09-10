@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+
+<html class="h-full dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Quản Lý Nhà Trọ .NET 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#ffb5a0",
+          "tertiary-container": "#56a070",
+          "on-primary-fixed-variant": "#862201",
+          "on-primary-fixed": "#3b0900",
+          "on-secondary-container": "#bcb8b3",
+          "primary-fixed-dim": "#ffb5a0",
+          "on-secondary-fixed-variant": "#484643",
+          "secondary-fixed-dim": "#cac6c1",
+          "inverse-primary": "#a73918",
+          "tertiary": "#8bd7a3",
+          "on-tertiary-container": "#003119",
+          "primary-container": "#ea6944",
+          "secondary-fixed": "#e6e2dd",
+          "primary-fixed": "#ffdbd1",
+          "on-error": "#690005",
+          "surface-container-high": "#262a2e",
+          "secondary-container": "#4b4945",
+          "surface-container-highest": "#313539",
+          "on-primary-container": "#541100",
+          "background": "#101417",
+          "on-tertiary-fixed-variant": "#00522d",
+          "tertiary-fixed": "#a6f4be",
+          "surface-container": "#1c2023",
+          "surface-container-lowest": "#0b0f12",
+          "on-surface-variant": "#dfc0b7",
+          "on-tertiary-fixed": "#00210f",
+          "surface-dim": "#101417",
+          "error-container": "#93000a",
+          "outline-variant": "#58423c",
+          "on-secondary-fixed": "#1d1b19",
+          "surface-container-low": "#181c1f",
+          "error": "#ffb4ab",
+          "surface": "#101417",
+          "on-error-container": "#ffdad6",
+          "tertiary-fixed-dim": "#8bd7a3",
+          "surface-variant": "#313539",
+          "surface-tint": "#ffb5a0",
+          "on-primary": "#601500",
+          "on-secondary": "#32302d",
+          "on-background": "#e0e3e7",
+          "surface-bright": "#363a3d",
+          "secondary": "#cac6c1",
+          "on-tertiary": "#00391d",
+          "on-surface": "#e0e3e7",
+          "inverse-surface": "#e0e3e7",
+          "outline": "#a78b83",
+          "inverse-on-surface": "#2d3134",
+          /* Bespoke Editorial Palette */
+          terracotta: {
+            DEFAULT: '#D95D39',
+            light: '#EA6944',
+            dark: '#B84524',
+            glow: 'rgba(217, 93, 57, 0.15)'
+          },
+          sand: {
+            50: '#FAF8F5',
+            100: '#F4EFEA',
+            200: '#EAE2D9',
+            300: '#D5C7B8',
+            400: '#A89988',
+            500: '#7F7263'
+          }
+        },
+        fontFamily: {
+          sans: ["Plus Jakarta Sans", "Inter", "sans-serif"],
+          mono: ["SF Mono", "Fira Code", "monospace"]
+        }
+      }
+    }
+  };
+</script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        overscroll-behavior: none;
+        background-color: #101417;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    .selected-row-active {
+      background-color: #21262B;
+      border-left: 3px solid #D95D39 !important;
+    }
+  </style>
+</head>
+<body class="bg-[#101417] font-sans text-sand-200 select-none min-h-screen flex flex-col antialiased relative overflow-x-hidden">
+<!-- Editorial Structured Header -->
+<header class="fixed top-0 w-full z-50 pt-safe bg-[#101417]/95 border-b border-[#293036] backdrop-blur-md">
+<div class="flex flex-col w-full">
+<!-- WinForms Title Bar with bespoke tactile styling -->
+<div class="h-8 px-3 flex items-center justify-between border-b border-[#21272C] bg-[#0B0F12]">
+<div class="flex items-center gap-2 min-w-0 overflow-hidden">
+<span class="material-symbols-outlined text-[15px] text-terracotta">apartment</span>
+<span class="font-medium text-[11px] text-sand-200 tracking-tight flex items-center gap-1.5">
+  Quản Lý Nhà Trọ .NET 8
+  <span class="text-sand-400 font-mono text-[9px] px-1 py-0.2 bg-[#181C1F] border border-[#262B30] rounded">TcpClient: Async</span>
+</span>
+</div>
+<div class="flex items-center gap-0.5 shrink-0">
+<button aria-label="Minimize" class="w-6 h-6 rounded flex items-center justify-center text-sand-400 hover:text-sand-100 hover:bg-[#1C2023] transition-colors">
+<span class="material-symbols-outlined text-[12px]">minimize</span>
+</button>
+<button aria-label="Maximize" class="w-6 h-6 rounded flex items-center justify-center text-sand-400 hover:text-sand-100 hover:bg-[#1C2023] transition-colors">
+<span class="material-symbols-outlined text-[11px]">crop_square</span>
+</button>
+<button aria-label="Close" class="w-6 h-6 rounded flex items-center justify-center text-[#ffb4ab] hover:bg-[#D95D39]/20 transition-colors">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+</div>
+<!-- Menu Strip -->
+<div class="h-10 px-3 flex items-center justify-between border-b border-[#21272C] bg-[#14191D]">
+<div class="flex items-center gap-1 overflow-x-auto py-1">
+<button class="h-7 px-2.5 rounded bg-[#1C2126] border border-[#2B3239] text-sand-300 text-[11px] font-medium flex items-center gap-1.5 hover:border-terracotta/60 hover:text-sand-50 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-terracotta">tune</span>
+<span>Hệ thống</span>
+</button>
+<button class="h-7 px-2.5 rounded bg-[#242A30] border border-terracotta/40 text-sand-50 text-[11px] font-semibold flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-terracotta">grid_view</span>
+<span>Quản lý</span>
+</button>
+<button class="h-7 px-2.5 rounded bg-[#1C2126] border border-[#2B3239] text-sand-300 text-[11px] font-medium flex items-center gap-1.5 hover:border-terracotta/60 hover:text-sand-50 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-sand-400">query_stats</span>
+<span>Báo cáo</span>
+</button>
+<button class="h-7 px-2.5 rounded bg-[#1C2126] border border-[#2B3239] text-sand-300 text-[11px] font-medium flex items-center gap-1.5 hover:border-terracotta/60 hover:text-sand-50 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-sand-400">help_outline</span>
+<span>Trợ giúp</span>
+</button>
+</div>
+<div class="flex items-center pl-2 shrink-0">
+<div class="w-6 h-6 rounded bg-[#242B31] border border-[#37414B] flex items-center justify-center text-sand-300">
+<span class="material-symbols-outlined text-[14px]">person</span>
+</div>
+</div>
+</div>
+<!-- Screen Headline with Precise Typographic Hierarchy -->
+<div class="h-11 px-3.5 flex items-center justify-between bg-[#101417]">
+<div class="flex items-center gap-2 min-w-0">
+<span class="text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-terracotta/15 text-terracotta border border-terracotta/30">MODULE</span>
+<h1 class="text-[15px] font-bold text-sand-50 truncate tracking-tight">Danh Sách Phòng Trọ</h1>
+</div>
+<span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-[#181C1F] border border-[#282F36] text-sand-400">v8.0.4-rtm</span>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex flex-col relative w-full pt-32 pb-32 px-3 space-y-3 z-10 min-h-screen">
+<!-- Functional Segmented Tabs (Tactile, Crisp) -->
+<div class="w-full bg-[#181C20] p-1 rounded-lg border border-[#262D33] flex items-center gap-1 overflow-x-auto select-none">
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Tổng quan
+</div>
+<div class="px-3 py-1 rounded bg-[#252C33] border border-terracotta/40 text-sand-50 font-semibold text-[11.5px] flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-terracotta">door_front</span>
+<span>Phòng Trọ</span>
+<span class="text-[10px] font-bold font-mono bg-terracotta/20 text-primary border border-terracotta/40 px-1 rounded">24</span>
+</div>
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Khách thuê
+</div>
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Hợp đồng
+</div>
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Dịch vụ
+</div>
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Hóa đơn
+</div>
+<div class="px-3 py-1 rounded text-sand-400 text-[11.5px] font-medium whitespace-nowrap cursor-pointer hover:text-sand-200 hover:bg-[#1E2429] transition-colors">
+  Thống kê
+</div>
+</div>
+<!-- Crisp Operations KPI Grid -->
+<div class="bg-[#161B1F] border border-[#262D33] rounded-lg p-3 space-y-2.5">
+<div class="flex items-center justify-between pb-1 border-b border-[#21272C]">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-terracotta">dashboard</span>
+<span class="text-[10px] font-bold text-sand-400 uppercase tracking-widest">Trạng thái vận hành cơ sở</span>
+</div>
+<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#121619] border border-[#2A3239] text-[9.5px] font-mono text-[#8bd7a3]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#56a070]"></span>
+<span>TCP: ONLINE</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Room Inventory Overview -->
+<div class="bg-[#1C2227] border border-[#293138] rounded-md p-2.5 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[9.5px] font-semibold tracking-wider text-sand-400 uppercase">TỔNG SỐ PHÒNG</span>
+<span class="text-[22px] font-mono font-bold text-sand-50">24</span>
+</div>
+<div class="my-2">
+<div class="w-full bg-[#121619] rounded h-1.5 flex overflow-hidden border border-[#2A3239]">
+<div class="bg-[#56a070] h-full" style="width: 75%;" title="Đang thuê (18)"></div>
+<div class="bg-[#484643] h-full" style="width: 17%;" title="Trống (4)"></div>
+<div class="bg-terracotta h-full" style="width: 8%;" title="Bảo trì / Cọc (2)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10.5px] font-mono pt-0.5 text-sand-300">
+<span class="text-[#8bd7a3]">Thuê: 18</span>
+<span class="text-sand-400">Trống: 4</span>
+<span class="text-terracotta">Sửa: 2</span>
+</div>
+</div>
+<!-- Revenue Metric Card -->
+<div class="bg-[#1C2227] border border-[#293138] rounded-md p-2.5 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[9.5px] font-semibold tracking-wider text-sand-400 uppercase">DOANH THU THÁNG</span>
+<span class="material-symbols-outlined text-[15px] text-terracotta">payments</span>
+</div>
+<div class="text-[18px] font-mono font-bold text-sand-50 pt-0.5 truncate">
+  48,500,000 <span class="text-[11px] font-sans font-normal text-sand-400">đ</span>
+</div>
+<div class="flex items-center gap-1 text-[9.5px] font-semibold text-[#8bd7a3] bg-[#121619] border border-[#243529] px-2 py-0.5 rounded w-fit mt-1.5">
+<span class="material-symbols-outlined text-[11px]">north_east</span>
+<span>Đã thu 82%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ToolStrip Command Bar -->
+<div class="bg-[#161B1F] border border-[#262D33] p-1.5 rounded-lg flex items-center gap-1.5 overflow-x-auto">
+<button class="h-7 px-2.5 rounded bg-[#1F252A] hover:bg-[#272F36] border border-[#2E373F] text-sand-200 flex items-center gap-1.5 shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-terracotta">add</span>
+<span class="text-[11.5px] font-medium">Thêm (F1)</span>
+</button>
+<button class="h-7 px-2.5 rounded bg-[#1F252A] hover:bg-[#272F36] border border-[#2E373F] text-sand-200 flex items-center gap-1.5 shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-sand-300">edit</span>
+<span class="text-[11.5px] font-medium">Sửa (F2)</span>
+</button>
+<button class="h-7 px-2.5 rounded bg-[#1F252A] hover:bg-[#2B1B18] border border-[#3E2925] text-[#ffb4ab] flex items-center gap-1.5 shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[14px]">delete</span>
+<span class="text-[11.5px] font-medium">Xóa</span>
+</button>
+<div class="h-4 w-[1px] bg-[#2A3138] mx-0.5"></div>
+<!-- Dropdown Filter -->
+<div class="relative flex items-center h-7 px-2 rounded bg-[#1C2126] border border-[#2C343B] text-sand-300 shrink-0 cursor-pointer hover:border-sand-400 transition-colors">
+<span class="material-symbols-outlined text-[13px] text-sand-400 mr-1">filter_list</span>
+<span class="text-[11.5px] font-medium">Tất cả trạng thái</span>
+<span class="material-symbols-outlined text-[14px] text-sand-400 ml-1">expand_more</span>
+</div>
+<!-- Async Refresh Button -->
+<button class="h-7 px-2.5 rounded bg-[#1F252A] hover:bg-[#272F36] border border-[#2E373F] text-sand-200 flex items-center gap-1.5 shrink-0 ml-auto transition-colors" id="btn-refresh">
+<span class="material-symbols-outlined text-[14px] text-terracotta" id="refresh-icon">refresh</span>
+<span class="text-[11.5px] font-medium">F5</span>
+</button>
+</div>
+<!-- Authoritative Room Inventory Table -->
+<div class="bg-[#14181C] border border-[#262D33] rounded-lg overflow-hidden flex flex-col shadow-sm">
+<!-- Grid Header -->
+<div class="bg-[#1A2025] px-3 py-2 border-b border-[#262D33] grid grid-cols-12 gap-1 items-center select-none text-[9.5px] font-bold text-sand-400 uppercase tracking-wider">
+<div class="col-span-3 flex items-center gap-1 text-sand-200">
+<span>Phòng</span>
+<span class="material-symbols-outlined text-[12px] text-terracotta">south</span>
+</div>
+<div class="col-span-4">Giá thuê / Loại</div>
+<div class="col-span-5 text-right">Khách &amp; Trạng thái</div>
+</div>
+<!-- Data Rows with Pure Semantic Contrast -->
+<div class="divide-y divide-[#1F252B]" id="room-grid">
+<!-- Row 1: P.101 (Occupied - Earthy Forest Green) -->
+<div class="room-row p-2.5 grid grid-cols-12 gap-1 items-center hover:bg-[#1A2026] cursor-pointer transition-colors border-l-2 border-transparent" data-room="P.101">
+<div class="col-span-3">
+<div class="font-bold font-mono text-[12.5px] text-sand-50 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-sand-400">meeting_room</span>
+<span>P.101</span>
+</div>
+<span class="text-[9.5px] text-sand-400 font-medium">Tầng 1</span>
+</div>
+<div class="col-span-4 min-w-0">
+<div class="font-mono font-semibold text-[12px] text-sand-100 truncate">3,500,000 đ</div>
+<div class="text-[10px] text-sand-400 truncate">VIP (Gác lửng, ML)</div>
+</div>
+<div class="col-span-5 flex flex-col items-end gap-1">
+<div class="font-medium text-[11.5px] text-sand-100 truncate max-w-full">Nguyễn Văn An</div>
+<span class="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#16261B] text-[#8bd7a3] border border-[#2E4A35] uppercase tracking-wide">
+  Đang thuê
+</span>
+</div>
+</div>
+<!-- Row 2: P.102 (Vacant - Neutral Slate) -->
+<div class="room-row p-2.5 grid grid-cols-12 gap-1 items-center hover:bg-[#1A2026] cursor-pointer transition-colors border-l-2 border-transparent" data-room="P.102">
+<div class="col-span-3">
+<div class="font-bold font-mono text-[12.5px] text-sand-300 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-sand-500">meeting_room</span>
+<span>P.102</span>
+</div>
+<span class="text-[9.5px] text-sand-500 font-medium">Tầng 1</span>
+</div>
+<div class="col-span-4 min-w-0">
+<div class="font-mono font-semibold text-[12px] text-sand-300 truncate">2,800,000 đ</div>
+<div class="text-[10px] text-sand-500 truncate">Tiêu chuẩn</div>
+</div>
+<div class="col-span-5 flex flex-col items-end gap-1">
+<div class="text-[11px] text-sand-500 italic">-- Trống --</div>
+<span class="text-[9.5px] font-medium px-1.5 py-0.5 rounded bg-[#1C2227] text-sand-400 border border-[#313A42] uppercase tracking-wide">
+  Phòng trống
+</span>
+</div>
+</div>
+<!-- Row 3: P.103 (Selected Row Highlight - Warm Slate & Terracotta Badge) -->
+<div class="room-row p-2.5 grid grid-cols-12 gap-1 items-center selected-row-active cursor-pointer" data-room="P.103" id="active-selected-row">
+<div class="col-span-3">
+<div class="font-bold font-mono text-[12.5px] text-terracotta flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_right</span>
+<span>P.103</span>
+</div>
+<span class="text-[9.5px] text-sand-400 font-medium">Tầng 1</span>
+</div>
+<div class="col-span-4 min-w-0">
+<div class="font-mono font-bold text-[12px] text-sand-50 truncate">2,800,000 đ</div>
+<div class="text-[10px] text-sand-300 truncate">Tiêu chuẩn</div>
+</div>
+<div class="col-span-5 flex flex-col items-end gap-1">
+<div class="font-semibold text-[11.5px] text-sand-100 truncate max-w-full">Trần Thị Mai</div>
+<span class="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#2D1A16] text-[#ffb5a0] border border-terracotta/50 uppercase tracking-wide">
+  Nợ tiền phòng
+</span>
+</div>
+</div>
+<!-- Row 4: P.104 (Expiring - Warm Ochre) -->
+<div class="room-row p-2.5 grid grid-cols-12 gap-1 items-center hover:bg-[#1A2026] cursor-pointer transition-colors border-l-2 border-transparent" data-room="P.104">
+<div class="col-span-3">
+<div class="font-bold font-mono text-[12.5px] text-sand-200 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-sand-400">meeting_room</span>
+<span>P.104</span>
+</div>
+<span class="text-[9.5px] text-sand-400 font-medium">Tầng 1</span>
+</div>
+<div class="col-span-4 min-w-0">
+<div class="font-mono font-semibold text-[12px] text-sand-200 truncate">2,200,000 đ</div>
+<div class="text-[10px] text-sand-400 truncate">Mini</div>
+</div>
+<div class="col-span-5 flex flex-col items-end gap-1">
+<div class="font-medium text-[11.5px] text-sand-200 truncate max-w-full">Lê Hoàng Nam</div>
+<span class="text-[9.5px] font-medium px-1.5 py-0.5 rounded bg-[#2E2413] text-[#F3C973] border border-[#524121] uppercase tracking-wide">
+  Hết hạn (10N)
+</span>
+</div>
+</div>
+<!-- Row 5: P.201 (Maintenance - Warm Ochre / Neutral Muted) -->
+<div class="room-row p-2.5 grid grid-cols-12 gap-1 items-center hover:bg-[#1A2026] cursor-pointer transition-colors border-l-2 border-transparent" data-room="P.201">
+<div class="col-span-3">
+<div class="font-bold font-mono text-[12.5px] text-sand-200 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-sand-400">meeting_room</span>
+<span>P.201</span>
+</div>
+<span class="text-[9.5px] text-sand-400 font-medium">Tầng 2</span>
+</div>
+<div class="col-span-4 min-w-0">
+<div class="font-mono font-semibold text-[12px] text-sand-200 truncate">3,600,000 đ</div>
+<div class="text-[10px] text-sand-400 truncate">VIP Ban công</div>
+</div>
+<div class="col-span-5 flex flex-col items-end gap-1">
+<div class="text-[11px] text-sand-400 italic">Thay máy lạnh</div>
+<span class="text-[9.5px] font-medium px-1.5 py-0.5 rounded bg-[#2A2319] text-[#E0AF68] border border-[#483A24] uppercase tracking-wide">
+  Bảo trì
+</span>
+</div>
+</div>
+</div>
+<!-- Crisp Footer Status Bar -->
+<div class="bg-[#12161A] px-3 py-1.5 border-t border-[#262D33] flex items-center justify-between text-sand-400 text-[10.5px]">
+<div class="flex items-center gap-1.5 font-mono">
+<span>Tổng: 5 bản ghi</span>
+<span class="text-[#2C353D]">|</span>
+<span class="text-terracotta font-medium">Chọn: P.103</span>
+</div>
+<span class="text-sand-400 font-mono text-[9.5px]">Async Socket: 0 ms</span>
+</div>
+</div>
+<!-- Tactical Detail Drawer (Selected Room P.103) -->
+<div class="bg-[#161B1F] border border-[#2A323A] p-3 rounded-lg space-y-2.5 shadow-md" id="detail-panel">
+<div class="flex items-center justify-between pb-1.5 border-b border-[#242A30]">
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded bg-terracotta/20 border border-terracotta/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-[13px] text-terracotta">info</span>
+</div>
+<span class="text-[11.5px] font-bold text-sand-50 uppercase tracking-wide" id="detail-title">
+    Chi tiết phòng: P.103 (Trần Thị Mai)
+  </span>
+</div>
+<span class="text-[9.5px] font-bold bg-[#2C1814] text-terracotta border border-terracotta/40 px-2 py-0.5 rounded uppercase tracking-wider">
+  CẢNH BÁO NỢ
+</span>
+</div>
+<!-- Readings & Ledger Grid -->
+<div class="grid grid-cols-2 gap-2">
+<!-- Utility Readings Card -->
+<div class="bg-[#1C2126] border border-[#2B343D] p-2.5 rounded space-y-1.5">
+<div class="text-[9.5px] font-bold text-sand-400 flex items-center gap-1 uppercase tracking-wider">
+<span class="material-symbols-outlined text-[13px] text-terracotta">electric_meter</span>
+<span>CHỈ SỐ ĐIỆN / NƯỚC</span>
+</div>
+<div class="text-[10.5px] font-mono flex justify-between py-0.5 border-b border-[#252C33]">
+<span class="text-sand-400">Điện (kWh):</span>
+<span class="text-sand-100 font-medium">1,420 → 1,510 (<span class="text-terracotta font-bold">+90</span>)</span>
+</div>
+<div class="text-[10.5px] font-mono flex justify-between py-0.5">
+<span class="text-sand-400">Nước (m³):</span>
+<span class="text-sand-100 font-medium">45 → 52 (<span class="text-[#8bd7a3] font-bold">+7</span>)</span>
+</div>
+</div>
+<!-- Contract & Debt Card -->
+<div class="bg-[#1C2126] border border-[#2B343D] p-2.5 rounded space-y-1.5">
+<div class="text-[9.5px] font-bold text-sand-400 flex items-center gap-1 uppercase tracking-wider">
+<span class="material-symbols-outlined text-[13px] text-terracotta">receipt</span>
+<span>CÔNG NỢ &amp; HỢP ĐỒNG</span>
+</div>
+<div class="text-[10.5px] font-mono flex justify-between py-0.5 border-b border-[#252C33]">
+<span class="text-sand-400">Nợ tích lũy:</span>
+<span class="font-bold text-terracotta">3,200,000 đ</span>
+</div>
+<div class="text-[10.5px] font-mono flex justify-between py-0.5">
+<span class="text-sand-400">Ngày HĐ:</span>
+<span class="font-medium text-sand-200">15/03/2025</span>
+</div>
+</div>
+</div>
+<!-- Tactical Action Buttons -->
+<div class="grid grid-cols-3 gap-2 pt-0.5">
+<button class="h-8 px-2 rounded bg-[#20262C] hover:bg-[#283038] border border-[#303A43] text-sand-200 flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-sand-400">description</span>
+<span class="text-[11.5px] font-medium truncate">Hợp đồng</span>
+</button>
+<button class="h-8 px-2 rounded bg-terracotta hover:bg-terracotta-dark text-white flex items-center justify-center gap-1.5 font-semibold transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[14px]">post_add</span>
+<span class="text-[11.5px] font-semibold truncate">Lập H.Đơn</span>
+</button>
+<button class="h-8 px-2 rounded bg-[#20262C] hover:bg-[#283038] border border-[#303A43] text-sand-200 flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-sand-400">phone</span>
+<span class="text-[11.5px] font-medium truncate">Gọi khách</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Deep Slate & Structured) -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-[#101417] border-t border-[#242A30]">
+<div class="grid grid-cols-5 h-14 px-1">
+<!-- Active Tab -->
+<a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 text-terracotta relative" data-path="danh-sach-phong" href="#">
+<div class="w-8 h-6 rounded bg-[#251A17] border border-terracotta/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-[17px] text-terracotta">door_front</span>
+</div>
+<span class="text-[9.5px] font-bold tracking-tight truncate w-full text-center">DS Phòng</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 text-sand-400 hover:text-sand-200 transition-colors" data-path="khach-thue" href="#">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span class="text-[9.5px] font-medium tracking-tight text-center truncate w-full">Khách Thuê</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 text-sand-400 hover:text-sand-200 transition-colors" data-path="hop-dong" href="#">
+<span class="material-symbols-outlined text-[18px]">assignment</span>
+<span class="text-[9.5px] font-medium tracking-tight text-center truncate w-full">Hợp Đồng</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 text-sand-400 hover:text-sand-200 transition-colors" data-path="hoa-don" href="#">
+<span class="material-symbols-outlined text-[18px]">receipt</span>
+<span class="text-[9.5px] font-medium tracking-tight text-center truncate w-full">Hóa Đơn</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 text-sand-400 hover:text-sand-200 transition-colors" data-path="hoa-don-cua-toi" href="#">
+<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+<span class="text-[9.5px] font-medium tracking-tight text-center truncate w-full">Của Tôi</span>
+</a>
+</div>
+<!-- Desktop System Status Strip -->
+<div class="h-5 px-3 bg-[#0B0E11] border-t border-[#1C2227] flex items-center justify-between text-sand-400 text-[9px] font-mono">
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-[#56a070]"></span>
+<span class="text-sand-300">127.0.0.1:8888</span>
+<span class="text-[#252C33]">|</span>
+<span class="text-[#8bd7a3]">12ms</span>
+</div>
+<div class="flex items-center gap-1 shrink-0 ml-2">
+<span class="material-symbols-outlined text-[11px] text-terracotta">verified_user</span>
+<span>Admin</span>
+<span class="text-[#252C33]">|</span>
+<span>.NET 8.0 CLR</span>
+</div>
+</div>
+</nav>
+<!-- Functional Interaction Script -->
+<script>
+    (function() {
+      const rows = document.querySelectorAll('.room-row');
+      const detailTitle = document.getElementById('detail-title');
+
+      const roomDetails = {
+        'P.101': {
+          name: 'P.101 (Nguyễn Văn An)',
+          debt: '0 đ',
+          oldElec: '2,100',
+          newElec: '2,185',
+          diffElec: '+85',
+          oldWater: '60',
+          newWater: '66',
+          diffWater: '+6',
+          contractDate: '01/01/2024'
+        },
+        'P.102': {
+          name: 'P.102 (Đang Trống)',
+          debt: '0 đ',
+          oldElec: '890',
+          newElec: '890',
+          diffElec: '0',
+          oldWater: '30',
+          newWater: '30',
+          diffWater: '0',
+          contractDate: '--'
+        },
+        'P.103': {
+          name: 'P.103 (Trần Thị Mai)',
+          debt: '3,200,000 đ',
+          oldElec: '1,420',
+          newElec: '1,510',
+          diffElec: '+90',
+          oldWater: '45',
+          newWater: '52',
+          diffWater: '+7',
+          contractDate: '15/03/2025'
+        },
+        'P.104': {
+          name: 'P.104 (Lê Hoàng Nam)',
+          debt: '0 đ',
+          oldElec: '3,110',
+          newElec: '3,202',
+          diffElec: '+92',
+          oldWater: '80',
+          newWater: '85',
+          diffWater: '+5',
+          contractDate: '12/04/2024'
+        },
+        'P.201': {
+          name: 'P.201 (Bảo trì thay ML)',
+          debt: '0 đ',
+          oldElec: '540',
+          newElec: '540',
+          diffElec: '0',
+          oldWater: '15',
+          newWater: '15',
+          diffWater: '0',
+          contractDate: '--'
+        }
+      };
+
+      rows.forEach(row => {
+        row.addEventListener('click', function() {
+          rows.forEach(r => {
+            r.classList.remove('selected-row-active');
+            r.classList.add('border-transparent');
+          });
+
+          this.classList.remove('border-transparent');
+          this.classList.add('selected-row-active');
+
+          const roomCode = this.getAttribute('data-room');
+          const data = roomDetails[roomCode];
+          if (data && detailTitle) {
+            detailTitle.textContent = 'Chi tiết phòng: ' + data.name;
+          }
+        });
+      });
+
+      // Refresh Simulation
+      const btnRefresh = document.getElementById('btn-refresh');
+      const refreshIcon = document.getElementById('refresh-icon');
+
+      if (btnRefresh && refreshIcon) {
+        btnRefresh.addEventListener('click', function() {
+          refreshIcon.classList.add('animate-spin');
+          setTimeout(() => {
+            refreshIcon.classList.remove('animate-spin');
+          }, 600);
+        });
+      }
+    })();
+  </script>
+</body></html>

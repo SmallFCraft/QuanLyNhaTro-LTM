@@ -6,3 +6,10 @@ obj/
 .vs/
 .superpowers/
 TestResults/
+
+# AGENTS
+.claude/
+
+
+# SKILLS/MCP/...
+.impeccable/

@@ -170,7 +170,10 @@ Client và Server sử dụng `StreamReader.ReadLineAsync()` và `StreamWriter.W
 ```
 
 ### 4.4. Danh mục Action & Payload
-1. `AUTH_LOGIN` -> In: `{ Username, Password }` | Out: `{ Token, FullName }`
+
+> **Cập nhật 2026-09-10:** danh mục đầy đủ là **22 action** (18 gốc + 4 bổ sung cho phân vai người thuê). Xem delta tại `2026-09-10-quanly-phongtro-multi-actor-design.md` §4. Bảng dưới liệt kê 18 action gốc; `AUTH_LOGIN` đã đổi payload `Out`.
+
+1. `AUTH_LOGIN` -> In: `{ Username, Password }` | Out: `LoginResultDto { Token, FullName, Role }` (`Role` = `Landlord` \| `Tenant`)
 2. `ROOM_GET_ALL` -> In: `{}` | Out: `List<RoomDto>`
 3. `ROOM_ADD` -> In: `RoomDto` | Out: `RoomDto`
 4. `ROOM_UPDATE` -> In: `RoomDto` | Out: `bool`
@@ -184,10 +187,13 @@ Client và Server sử dụng `StreamReader.ReadLineAsync()` và `StreamWriter.W
 12. `UTILITY_GET_PREVIOUS` -> In: `{ RoomId }` | Out: `{ OldElectricity, OldWater }`
 13. `UTILITY_RECORD` -> In: `UtilityReadingDto` | Out: `UtilityReadingDto`
 14. `INVOICE_CREATE` -> In: `CreateInvoiceDto` | Out: `InvoiceDto`
-15. `INVOICE_GET_ALL` -> In: `{ BillingMonth }` | Out: `List<InvoiceDto>`
+15. `INVOICE_GET_ALL` -> In: `{ BillingMonth, RoomId? }` | Out: `List<InvoiceDto>`
 16. `INVOICE_PAY` -> In: `{ InvoiceId }` | Out: `bool`
 17. `REPORT_SUMMARY` -> In: `{ BillingMonth }` | Out: `SummaryReportDto`
 18. `EXPORT_RESIDENCE` -> In: `{}` | Out: `List<ResidenceExportDto>`
+
+**4 action bổ sung (delta 2 tác nhân):** `TENANT_DELETE`, `CONTRACT_RENEW`, `CONTRACT_GET_ALL`, `INVOICE_GET_MINE`.
+
 
 ---
 
@@ -210,16 +216,29 @@ QuanLyTro/
 │   ├── Network/                    (TcpListenerServer, ClientHandler multi-threaded)
 │   └── Program.cs
 │
-└── QuanLyTro.Client/               [WinForms App .NET 8-windows]
-    ├── Network/                    (TcpClientService: Connect, SendRequestAsync, OnDisconnected)
-    ├── Forms/
-    │   ├── FrmLogin.cs             (Màn hình đăng nhập tài khoản chủ trọ)
-    │   ├── FrmMain.cs              (Dashboard tổng quan + điều hướng các tab)
-    │   ├── FrmRooms.cs             (Quản lý danh sách, thêm, sửa, xóa phòng)
-    │   ├── FrmTenants.cs           (Hồ sơ người thuê, gán phòng, trả phòng)
-    │   ├── FrmContracts.cs         (Lập hợp đồng, thanh lý, gia hạn)
-    │   ├── FrmUtilities.cs         (Ghi chỉ số điện nước hàng tháng)
-    │   ├── FrmInvoices.cs          (Lập hóa đơn, xác nhận thanh toán, in/xem)
-    │   └── FrmReports.cs           (Thống kê doanh thu, công nợ, xuất DS tạm trú CSV)
+└── QuanLyTro/                      [WinForms App .NET 8-windows]
+    ├── Network/                    (TcpClientService: ConnectAsync, SendAsync, Disconnected)
+    ├── Protocol/                   (ClientRequestException)
+    ├── Forms/                      (mỗi màn hình là một UserControl nhúng vào TabControl)
+    │   ├── RoomsForm.cs            (Danh sách, thêm, sửa, xóa phòng)
+    │   ├── TenantsForm.cs          (Hồ sơ người thuê, gán phòng, trả phòng, mật khẩu tenant)
+    │   ├── ContractsForm.cs        (Lập hợp đồng, thanh lý, gia hạn, lọc sắp hết hạn)
+    │   ├── UtilitiesForm.cs        (Chốt chỉ số điện nước hàng tháng)
+    │   ├── InvoicesForm.cs         (Lập hóa đơn, xác nhận thanh toán)
+    │   └── ReportsForm.cs          (Thống kê doanh thu, công nợ, xuất DS tạm trú CSV)
+    ├── Form1.cs                    (shell chính: menu strip, đăng nhập, TabControl theo Role)
+    ├── Form1.Designer.cs
     └── Program.cs
 ```
+
+> **Cập nhật 2026-09-10:** tên lớp đổi từ `FrmXxx` sang `XxxForm` (chỉ `Form1` giữ nguyên tên để không hỏng designer). Màn hình người thuê dùng chung `Form1` với `TabControl` chỉ chứa 1 tab "Hóa đơn của tôi".
+
+### 5.1. Hệ thống thiết kế giao diện (UI Design System)
+
+Mọi màn hình WinForms phải lấy token từ **[DESIGN.md](../../../DESIGN.md)** — nguồn chân lý duy nhất về màu, chữ, component. Không tự đặt màu mới trong code.
+
+- **Bản mẫu trực quan:** `docs/superpowers/mockups/wireframe-quanly-phongtro.html` — 3 màn (đăng nhập, chủ trọ 7 tab, người thuê 1 tab).
+- **Phong cách:** Terracotta & Slate Institutional — nền tối nhiều tầng, viền hairline 1px, phẳng không đổ bóng, góc bo 4px (component) / 8px (card), **không dùng pill**.
+- **Ánh xạ C#:** dùng `ColorTranslator.FromHtml` với đúng mã hex trong DESIGN.md; font `Segoe UI 9pt` cho chữ thường và `Consolas 9.5pt` cho số liệu/tiền tệ (thay cho Inter/JetBrains Mono của bản web).
+- **Trạng thái dòng đang chọn:** nền `#21262B` + dải trái 3px `#D95D39` (đặc trưng của hệ thống, không phải lỗi thẩm mỹ).
+

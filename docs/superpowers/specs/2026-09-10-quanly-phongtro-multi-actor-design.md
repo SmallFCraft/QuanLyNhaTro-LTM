@@ -91,11 +91,17 @@ Packet đầy đủ luôn 1 dòng, kết thúc `\n` (giữ nguyên framing).
 
 ## 5. UI CLIENT (WinForms)
 
-- `FrmLogin` (shell `Form1`): đăng nhập chung cho cả 2 vai; sau login, `Role` quyết định menu.
-  - **Landlord:** tab đầy đủ như SRS §5 (Rooms, Tenants, Contracts, Utilities, Invoices, Reports).
-  - **Tenant:** 1 tab duy nhất "Hóa đơn của tôi" — grid hóa đơn phòng đang ở, breakdown từng khoản, trạng thái đã/chưa trả. Không thấy nút thao tác ghi.
-- Thêm/sửa người thuê (tab Tenants của chủ trọ): thêm 1 ô nhập mật khẩu (để trống = 6 số cuối CCCD).
-- Hợp đồng: nút "Gia hạn" (prompt ngày kết thúc mới) bên cạnh "Chấm dứt"; thêm cột hiển thị số ngày còn lại, tô đậm < 30 ngày.
+**Token giao diện:** toàn bộ lấy từ [`DESIGN.md`](../../../DESIGN.md). Bản mẫu trực quan: `docs/superpowers/mockups/wireframe-quanly-phongtro.html`. Xem SRS §5.1 để biết quy tắc ánh xạ sang C#.
+
+- `Form1` (shell): đăng nhập chung cho cả 2 vai, rồi `Role` quyết định `TabControl`.
+  - **Landlord — 7 tab:** Tổng quan · Phòng · Người thuê · Hợp đồng · Điện nước · Hóa đơn · Thống kê.
+    - Tab **Tổng quan** đứng đầu: 4 thẻ KPI (tổng phòng, phòng trống, người đang ở, còn nợ tháng) + 2 bảng "Còn nợ — đôn đốc" và "HĐ sắp hết hạn".
+  - **Tenant — 1 tab duy nhất "Hóa đơn của tôi":** thẻ hồ sơ (tên, phòng, hạn HĐ, nhãn `ReadOnly`), banner quá hạn, bảng quyết toán có dòng phụ chỉ số điện/nước, khối tổng tiền, bảng lịch sử thanh toán. **Không có nút thao tác ghi.**
+- Thêm/sửa người thuê (tab Người thuê): thêm 1 ô nhập mật khẩu kèm ghi chú "để trống = 6 số cuối CCCD".
+- Hợp đồng: nút "Gia hạn" (prompt ngày kết thúc mới) cạnh "Chấm dứt"; cột "Còn" hiển thị số ngày còn lại, tô `#D95D39` khi < 30 ngày.
+- Hóa đơn: cột trạng thái dùng tag Đã thu (sage) / Chưa thu (terracotta); nút "Thu" bị disable trên hóa đơn đã thu (BR-11).
+- Dòng đang chọn trong mọi `DataGridView`: nền `#21262B` + dải trái 3px `#D95D39`.
+
 
 ---
 
@@ -116,17 +122,18 @@ Packet đầy đủ luôn 1 dòng, kết thúc `\n` (giữ nguyên framing).
 1. §3.3: thêm cột `password_hash` vào bảng `tenants`.
 2. §2: thêm BR-14.
 3. §4.2/§4.3: sửa ví dụ `Data` thành JSON thật (mục 4.3 ở trên).
-4. §4.4: cập nhật danh sách 22 action + payload `INVOICE_GET_ALL` mới.
-5. §5: bổ sung vai tenant vào cây Form (`FrmLogin` dùng chung, tab "Hóa đơn của tôi").
+4. §4.4: cập nhật danh sách 22 action + payload `INVOICE_GET_ALL` mới. ✅ **đã xong**
+5. §5: bổ sung vai tenant vào cây Form (`Form1` dùng chung, tab "Hóa đơn của tôi"), đổi tên `FrmXxx` → `XxxForm`. ✅ **đã xong**
+6. **§5.1 (mới):** thêm mục "Hệ thống thiết kế giao diện" trỏ về `DESIGN.md` + wireframe, kèm quy tắc ánh xạ sang C#. ✅ **đã xong**
 
 ### 6.3. Plan `2026-09-09-quanly-phongtro-net8.md`
 
 1. Renumber: Task 3–9 cũ → 4–10; chèn task mới **"Task 5: Phân vai người thuê"** (schema `password_hash`, `AuthService` 2 bảng + lockout, permission matrix router, `INVOICE_GET_MINE`, UI tenant, tests); Task 10–11 cũ → 11–12.
 2. Task cũ về password/login (Task 4 mới): thêm lockout 5 lần/1 phút.
 3. Task schema (Task 3 mới): thêm cột `password_hash` vào `schema.sql`.
-4. Task UI (Task 11 mới): thêm nút Gia hạn, TENANT_DELETE, ô mật khẩu tenant, tab hóa đơn tenant.
-5. Task test cuối (Task 12 mới): thêm test matrix BR-14, US-24, lockout; bỏ câu "Không thêm US-23" — US-23 giờ Must.
-6. Sửa Task 9 cũ (connection shell): Form1 hiện danh sách tab theo Role.
+4. Task UI (Task 11 mới): thêm nút Gia hạn, TENANT_DELETE, ô mật khẩu tenant, tab hóa đơn tenant; áp token từ `DESIGN.md`.
+5. Task cuối (Task 12 mới): thêm test matrix BR-14, US-24, lockout; bỏ câu "Không thêm US-23" — US-23 giờ Must.
+6. Sửa Task 9 cũ (connection shell): `Form1` dựng menu strip + `TabControl` theo `Role`, không còn ô nhập IP/Port (server cố định trong `App.config`).
 
 ---
 
