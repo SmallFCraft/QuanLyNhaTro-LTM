@@ -64,13 +64,459 @@ Các task 6–12 quá dài để chạy tuần tự một mạch, nên tách th�
 
 ### Trạng thái sub-plan
 
-- [ ] A — Task 6 (đang làm dở: `RoomRepository`/`RoomService`/`BusinessRuleException` đã tạo, `TenantRepository`/`TenantService` chưa)
+- [x] A — Task 6 phần phòng: `RoomRepository` + `RoomService` + `BusinessRuleException` + test (commit `7af650a`). **Còn lại:** `TenantRepository`, `TenantService`, test BR-02/03.
 - [ ] B — Task 7
 - [ ] C — Task 8
 - [ ] D — Task 9
 - [ ] E — Task 10
 - [ ] F — Task 11
 - [ ] G — Task 12
+
+---
+
+## Sub-Plan A — Chi tiết mở rộng (Task 6)
+
+Phần phòng đã xong. Phần người thuê còn lại tách tiếp thành 2 file nhỏ để 2 worker chạy song song được.
+
+| Sub-plan | Nội dung | File | Phụ thuộc | Song song với |
+|---|---|---|---|---|
+| A1 | `TenantRepository` + `TenantService` (thêm/sửa/trả phòng/xóa) | [task-6a-tenant-repo-service.md](subplans/task-6a-tenant-repo-service.md) | Task 5 | A2 |
+| A2 | Quy tắc sức chứa BR-02 + trạng thái phòng tự động | [task-6b-capacity-rules.md](subplans/task-6b-capacity-rules.md) | A1 | A1 |
+
+**Lưu ý phối hợp A1/A2:** hai sub-plan này cùng chạm `TenantService.cs`. Nếu chạy song song thật, A1 tạo file trước, A2 chỉ sửa phần `AddAsync`/`CheckoutAsync` — hoặc chạy tuần tự A1 → A2 để tránh conflict. Khuyến nghị **tuần tự**.
+
+### Chi tiết: Sub-Plan A1
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Repositories/TenantRepository.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/TenantService.cs`
+- Modify: `QuanLyTro/QuanLyTro.Server/Security/PasswordHasher.cs` (dùng lại, không sửa)
+- Test: `QuanLyTro/QuanLyTro.Tests/TenantTests.cs`
+
+**Interfaces:**
+- Consumes: `Database`, `PasswordHasher.Hash`, `TenantDto`.
+- Produces: `TenantService.GetByRoomAsync(int roomId)`, `AddAsync(TenantDto, string? plainPassword)`, `UpdateAsync(TenantDto, string? plainPassword)`, `CheckoutAsync(int tenantId)`, `DeleteAsync(int tenantId)`.
+
+- [ ] **Step 1: Viết test thất bại — thêm người thuê vào phòng**
+  - Test: thêm 1 tenant vào phòng có sức chứa 2 → `AddAsync` trả `TenantDto` có `Id > 0`.
+  - Test: `GetByRoomAsync(roomId)` trả đúng 1 bản ghi.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter TenantService`
+
+- [ ] **Step 3: Cài `TenantRepository`**
+  - `GetByRoomAsync`: `SELECT ... FROM tenants WHERE room_id = @roomId ORDER BY full_name`.
+  - `InsertAsync(TenantDto, string passwordHash)`: INSERT đủ cột, trả `LAST_INSERT_ID()`.
+  - `UpdateAsync(TenantDto, string? passwordHash)`: UPDATE; chỉ đổi `password_hash` khi tham số khác null.
+  - `CheckoutAsync(int tenantId)`: `UPDATE tenants SET room_id = NULL WHERE id = @id`.
+  - `DeleteAsync(int tenantId)`: `DELETE FROM tenants WHERE id = @id AND room_id IS NULL` (US-06) — trả về false nếu chưa trả phòng.
+  - `CountInRoomAsync(int roomId)`: `SELECT COUNT(*) FROM tenants WHERE room_id = @roomId`.
+  - Bắt MySQL 1062 (CCCD trùng) → `BusinessRuleException("CCCD này đã có trong hệ thống.")`.
+
+- [ ] **Step 4: Cài `TenantService` khung (chưa có BR-02)**
+  - Validate cơ bản: họ tên không rỗng, CCCD đúng 12 chữ số, SĐT 10 chữ số, `DateOfBirth` không ở tương lai.
+  - `AddAsync`: nếu `plainPassword` rỗng → băm 6 số cuối CCCD; nếu có → băm nguyên văn.
+  - `DeleteAsync`: gọi repo; false → `BusinessRuleException("Chỉ xóa được người đã trả phòng.")`.
+
+- [ ] **Step 5: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter TenantService`
+  - Expected: PASS.
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add tenant repository and service (Task 6-A1)`
+
+### Chi tiết: Sub-Plan A2
+
+**Files:**
+- Modify: `QuanLyTro/QuanLyTro.Server/Services/TenantService.cs`
+- Modify: `QuanLyTro/QuanLyTro.Server/Repositories/RoomRepository.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/TenantTests.cs`
+
+**Interfaces:**
+- Consumes: `TenantRepository.CountInRoomAsync`, `RoomRepository`.
+- Produces: hành vi BR-02 — vượt sức chứa thì `BusinessRuleException`; phòng tự chuyển `Rented`/`Available`.
+
+- [ ] **Step 1: Viết test thất bại — vượt sức chứa**
+  - Phòng sức chứa 2, đã có 2 người → `AddAsync` ném `BusinessRuleException` chứa chữ `"đủ sức chứa"`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter TenantService_RejectsOverCapacity`
+
+- [ ] **Step 3: Cài BR-02 trong transaction**
+  - Mở transaction; `SELECT ... FOR UPDATE` khóa dòng phòng để tránh 2 client cùng thêm vượt sức chứa.
+  - Đếm `CountInRoomAsync`; nếu `count >= room.MaxOccupants` → rollback + ném `BusinessRuleException($"Phòng {room.RoomNumber} đã đủ sức chứa.")`.
+  - Insert tenant; `UPDATE rooms SET status = 'Rented'` nếu phòng đang `Available`; commit.
+
+- [ ] **Step 4: Cài tự động trả trạng thái phòng khi checkout**
+  - Sau `CheckoutAsync`: nếu phòng không còn tenant VÀ không có hợp đồng `Active` → `UPDATE rooms SET status = 'Available'`.
+
+- [ ] **Step 5: Chạy test và verify trên MySQL thật**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"`
+  - Verify tay: insert 3 tenant vào phòng sức chứa 2 qua MySQL CLI → dòng thứ 3 phải bị chặn.
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: enforce room capacity and auto status (Task 6-A2)`
+
+---
+
+## Sub-Plan B — Chi tiết mở rộng (Task 7)
+
+Tách Task 7 thành 2 file nhỏ vì hợp đồng và điện nước độc lập nhau.
+
+| Sub-plan | Nội dung | File | Phụ thuộc | Song song với |
+|---|---|---|---|---|
+| B1 | `ContractRepository` + `ContractService` (BR-04/05/06, US-10/11) | [task-7a-contracts.md](subplans/task-7a-contracts.md) | Task 6 | B2 |
+| B2 | `UtilityRepository` + `UtilityService` (BR-07/08, US-12/13) | [task-7b-utilities.md](subplans/task-7b-utilities.md) | Task 6 | B1 |
+
+**Phối hợp:** B1 và B2 chạm file hoàn toàn khác nhau → **chạy song song an toàn**.
+
+### Chi tiết: Sub-Plan B1
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Repositories/ContractRepository.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/ContractService.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/ContractTests.cs`
+
+**Interfaces:**
+- Consumes: `Database`, `ContractDto`, `RoomRepository`.
+- Produces: `ContractService.CreateAsync(ContractDto)`, `TerminateAsync(int contractId, string? notes)`, `RenewAsync(int contractId, DateOnly newEndDate)`, `GetAllAsync()`.
+
+- [ ] **Step 1: Viết test thất bại — BR-06 ngày hợp lệ**
+  - `CreateAsync` với `EndDate <= StartDate` → `BusinessRuleException` chứa `"Ngày kết thúc"`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter ContractService`
+
+- [ ] **Step 3: Cài `ContractRepository`**
+  - `HasActiveContractAsync(int roomId)`: `SELECT COUNT(*) FROM contracts WHERE room_id = @id AND status = 'Active'`.
+  - `IsRepresentativeInRoomAsync(int tenantId, int roomId)`: kiểm tra `tenants.room_id = @roomId`.
+  - `GetAllAsync()`: JOIN rooms + tenants, trả kèm `RoomNumber` và `RepresentativeName`, `ORDER BY end_date`.
+  - `InsertAsync`, `TerminateAsync`, `RenewAsync(newEndDate)`.
+
+- [ ] **Step 4: Cài `ContractService` với BR-04/05/06**
+  - BR-06: `EndDate > StartDate`, ngược lại ném `BusinessRuleException("Ngày kết thúc phải sau ngày bắt đầu.")`.
+  - BR-05: đại diện phải đang ở trong phòng → ném `BusinessRuleException("Người đại diện không ở trong phòng này.")`.
+  - BR-04: phòng đã có HĐ Active → ném `BusinessRuleException("Phòng đã có hợp đồng đang hiệu lực.")`.
+  - `RenewAsync`: `newEndDate > EndDate` hiện tại; chỉ HĐ `Active`.
+
+- [ ] **Step 5: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Contract`
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add contract service with BR-04/05/06 (Task 7-B1)`
+
+### Chi tiết: Sub-Plan B2
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Repositories/UtilityRepository.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/UtilityService.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/UtilityTests.cs`
+
+**Interfaces:**
+- Consumes: `Database`, `UtilityReadingDto`, `RoomQuery`.
+- Produces: `UtilityService.GetPreviousAsync(int roomId)`, `RecordAsync(UtilityReadingDto)`.
+
+- [ ] **Step 1: Viết test thất bại — BR-07 chỉ số tăng dần**
+  - `RecordAsync` với `NewElectricity < OldElectricity` → `BusinessRuleException` chứa `"chỉ số"`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter UtilityService`
+
+- [ ] **Step 3: Cài `UtilityRepository`**
+  - `GetLatestAsync(int roomId)`: `SELECT new_electricity, new_water FROM utility_readings WHERE room_id = @id ORDER BY billing_month DESC LIMIT 1`.
+  - `InsertAsync(UtilityReadingDto)`: INSERT đủ cột; bắt MySQL 1062 → `BusinessRuleException($"Phòng đã chốt điện nước tháng {month}.")` (BR-08).
+
+- [ ] **Step 4: Cài `UtilityService`**
+  - `GetPreviousAsync`: chưa có bản ghi nào → trả `(0, 0)`.
+  - `RecordAsync`: BR-07 (`newElec >= oldElec`, `newWater >= oldWater`), giá > 0, tháng đúng định dạng `yyyy-MM`.
+  - BR-08 nhờ unique key ở DB, không cần kiểm tra trước (tránh race).
+
+- [ ] **Step 5: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Utility`
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add utility reading service with BR-07/08 (Task 7-B2)`
+
+---
+
+## Sub-Plan C — Chi tiết mở rộng (Task 8)
+
+| Sub-plan | Nội dung | File | Phụ thuộc | Song song với |
+|---|---|---|---|---|
+| C1 | `InvoiceRepository` + `InvoiceService` (BR-09/10/11/13) | [task-8a-invoices.md](subplans/task-8a-invoices.md) | B1, B2 | C2 |
+| C2 | `ReportRepository` + `ReportService` (US-04/08/18/19) | [task-8b-reports.md](subplans/task-8b-reports.md) | A1, C1 | C1 |
+
+**Phối hợp:** C1 và C2 chạm file khác nhau nhưng C2 cần bảng invoices đã có dữ liệu → **chạy song song được**, C2 chỉ đọc.
+
+### Chi tiết: Sub-Plan C1
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Repositories/InvoiceRepository.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/InvoiceService.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/InvoiceTests.cs`
+
+**Interfaces:**
+- Consumes: `Database`, `CreateInvoiceRequest`, `InvoiceDto`, `ActionNames`.
+- Produces: `InvoiceService.CreateAsync(CreateInvoiceRequest)`, `GetAllAsync(string billingMonth, int? roomId)`, `PayAsync(int invoiceId)`, `GetMineAsync(int tenantId)`.
+
+- [ ] **Step 1: Viết test thất bại — BR-11 hóa đơn Paid bất biến**
+  - `PayAsync(invoiceId)` gọi lần 2 trên hóa đơn đã `Paid` → `BusinessRuleException` chứa `"đã thanh toán"`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter InvoiceService`
+
+- [ ] **Step 3: Cài `InvoiceRepository`**
+  - `GetActiveContractAsync(int roomId)`: trả `(contractId, rentalPrice)` của HĐ `Active`.
+  - `GetReadingAsync(int roomId, string month)`: trả chỉ số + đơn giá của tháng.
+  - `InsertAsync(...)`: bắt MySQL 1062 → `BusinessRuleException($"Tháng {month} đã lập hóa đơn cho phòng này.")`.
+  - `GetAllAsync(string? month, int? roomId)`: cả hai tham số tùy chọn, ít nhất một (US-15, US-17).
+  - `PayAsync(int invoiceId)`: `UPDATE invoices SET status='Paid', paid_at=NOW() WHERE id=@id AND status='Unpaid'` — trả số dòng bị ảnh hưởng.
+  - `GetMineAsync(int tenantId)`: JOIN tenants để suy `room_id` từ token (BR-14).
+
+- [ ] **Step 4: Cài `InvoiceService` với BR-09/10**
+  - BR-09: thiếu HĐ Active hoặc chưa chốt điện nước → `BusinessRuleException("Phòng chưa có hợp đồng hiệu lực hoặc chưa chốt điện nước tháng này.")`.
+  - BR-10: `Total = RentalPrice + (newElec-oldElec)*elecRate + (newWater-oldWater)*waterRate + OtherFees`. Dùng `decimal`, không `double`.
+  - `PayAsync`: 0 dòng bị ảnh hưởng → `BusinessRuleException("Hóa đơn đã thanh toán hoặc không tồn tại.")` (BR-11).
+  - BR-13: `CreateAsync` bọc trong transaction.
+
+- [ ] **Step 5: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Invoice`
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add invoice service with BR-09/10/11/13 (Task 8-C1)`
+
+### Chi tiết: Sub-Plan C2
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Repositories/ReportRepository.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Services/ReportService.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/ReportTests.cs`
+
+**Interfaces:**
+- Consumes: `Database`, `SummaryReportDto`, `ResidenceExportDto`.
+- Produces: `ReportService.GetSummaryAsync(string billingMonth)`, `ExportResidenceAsync()`.
+
+- [ ] **Step 1: Viết test thất bại — SummaryReportDto tính đúng số phòng trống**
+  - DB rỗng → `TotalRooms = 0`, `AvailableRooms = 0`, `UnpaidAmount = 0m`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter ReportService`
+
+- [ ] **Step 3: Cài `ReportRepository`**
+  - `GetSummaryAsync(month)`: 1 câu SQL trả tổng phòng, trống, đang thuê, số người, đã thu, còn nợ — dùng subquery, KHÔNG N+1.
+  - `GetResidenceAsync()`: JOIN tenants + rooms, chỉ người đang ở (`room_id IS NOT NULL`), sắp theo số phòng.
+
+- [ ] **Step 4: Cài `ReportService`**
+  - `GetSummaryAsync`: map sang `SummaryReportDto`; tháng sai định dạng → `BusinessRuleException`.
+  - `ExportResidenceAsync`: trả danh sách; Client tự dựng CSV.
+
+- [ ] **Step 5: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Report`
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add report service (Task 8-C2)`
+
+---
+
+## Sub-Plan D/E — Chi tiết mở rộng (Task 9, 10)
+
+| Sub-plan | Nội dung | File | Phụ thuộc | Song song với |
+|---|---|---|---|---|
+| D1 | `RequestRouter` + `PermissionMatrix` enforcement | [task-9a-router.md](subplans/task-9a-router.md) | Task 5, 8 | D2 |
+| D2 | `TcpListenerServer` + `ClientHandler` đa kết nối | [task-9b-tcp-listener.md](subplans/task-9b-tcp-listener.md) | Task 5 | D1 |
+| E | `TcpClientService` + shell `Form1` | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | Task 2 | D1, D2 |
+
+**Phối hợp:** D1, D2, E chạm 3 nhóm file rời nhau → **3 agent chạy song song được**. D1 và D2 gặp nhau ở `Program.cs`; D2 giữ quyền sửa `Program.cs`, D1 chỉ tạo `RequestRouter.cs`.
+
+### Chi tiết: Sub-Plan D1
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Network/RequestRouter.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/RouterTests.cs`
+
+**Interfaces:**
+- Consumes: `IAuthService`, `RoomService`, `TenantService`, `ContractService`, `UtilityService`, `InvoiceService`, `ReportService`, `SessionStore`, `PermissionMatrix`.
+- Produces: `RequestRouter.HandleAsync(RequestPacket packet, CancellationToken ct)` → `ResponsePacket`.
+
+- [ ] **Step 1: Viết test thất bại — Tenant gọi action của chủ trọ bị từ chối**
+  - Gọi `ROOM_GET_ALL` với token vai Tenant → `Success = false`, `Message = "Không có quyền."`.
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Router_TenantCannotCallLandlordAction`
+
+- [ ] **Step 3: Cài `RequestRouter`**
+  - `AUTH_LOGIN` → đi thẳng `AuthService`, không cần token.
+  - Mọi action khác: `SessionStore.TryGet(token)` → sai → `ResponsePacket.Fail("Phiên đăng nhập không hợp lệ.")`.
+  - `PermissionMatrix.IsAllowed(action, role)` → false → `ResponsePacket.Fail("Không có quyền.")` (BR-14).
+  - `switch` trên action gọi đúng service; bọc `BusinessRuleException` → `Fail(message)`.
+  - Exception khác → log ra Console, trả `Fail("Lỗi hệ thống, vui lòng thử lại.")` — không lộ stack trace.
+
+- [ ] **Step 4: Chạy test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter Router`
+
+- [ ] **Step 5: Commit**
+  - Commit message: `feat: add request router with permission enforcement (Task 9-D1)`
+
+### Chi tiết: Sub-Plan D2
+
+**Files:**
+- Create: `QuanLyTro/QuanLyTro.Server/Network/TcpListenerServer.cs`
+- Create: `QuanLyTro/QuanLyTro.Server/Network/ClientHandler.cs`
+- Modify: `QuanLyTro/QuanLyTro.Server/Program.cs`
+- Test: `QuanLyTro/QuanLyTro.Tests/TcpRoundTripTests.cs`
+
+**Interfaces:**
+- Consumes: `RequestRouter`, `ServerOptions`.
+- Produces: `TcpListenerServer.StartAsync(CancellationToken)`, `ClientHandler.ServeAsync(TcpClient, CancellationToken)`.
+
+- [ ] **Step 1: Viết integration test round-trip thất bại**
+  - Khởi động listener cổng ngẫu nhiên → gửi `AUTH_LOGIN` thô qua `TcpClient` → đọc response JSON, `Success` phải là `false` (tài khoản không tồn tại).
+
+- [ ] **Step 2: Chạy test xác nhận fail**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --filter TcpRoundTrip`
+
+- [ ] **Step 3: Cài `ClientHandler`**
+  - Mỗi kết nối một `async Task` độc lập — KHÔNG `new Thread`.
+  - `StreamReader.ReadLineAsync()`; packet > 1 MiB → trả `Fail` rồi đóng.
+  - `StreamWriter.WriteLineAsync()` với `AutoFlush = true`; dùng chung `JsonDefaults.Options`.
+  - Bọc toàn bộ trong try/catch: một client hỏng không được sập server.
+
+- [ ] **Step 4: Cài `TcpListenerServer` và nối `Program.cs`**
+  - `TcpListener(IPAddress.Any, options.Port)`, vòng `AcceptTcpClientAsync`.
+  - Ghi log mỗi kết nối: `[HH:mm:ss] Client connected from <endpoint>`.
+  - `CancellationTokenSource` để Ctrl+C tắt êm.
+
+- [ ] **Step 5: Chạy test và smoke-test**
+  - Lệnh: `dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj"`
+  - Chạy `dotnet run --project "QuanLyTro/QuanLyTro.Server"`, gửi 1 request bằng script, xác nhận response JSON.
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add concurrent TCP listener (Task 9-D2)`
+
+---
+
+## Sub-Plan F — Chi tiết mở rộng (Task 11)
+
+Task 11 dài nhất (8 màn hình) → tách thành 3 file theo nhóm màn hình, chạy song song được.
+
+| Sub-plan | Nội dung | File | Phụ thuộc | Song song với |
+|---|---|---|---|---|
+| F1 | `DashboardForm` + `RoomsForm` + `TenantsForm` | [task-11a-dashboard-rooms-tenants.md](subplans/task-11a-dashboard-rooms-tenants.md) | Task 10 | F2, F3 |
+| F2 | `ContractsForm` + `UtilitiesForm` | [task-11b-contracts-utilities.md](subplans/task-11b-contracts-utilities.md) | Task 10 | F1, F3 |
+| F3 | `InvoicesForm` + `ReportsForm` + `MyInvoicesForm` | [task-11c-invoices-reports-tenant.md](subplans/task-11c-invoices-reports-tenant.md) | Task 10 | F1, F2 |
+
+**Phối hợp:** mỗi nhóm tạo file `Forms/*.cs` riêng. Cả 3 cùng cần `Form1.cs` để gắn tab → **giao `Form1.cs` cho F1**; F2 và F3 chỉ tạo UserControl, Leader gắn tab sau khi cả 3 xong (hoặc mỗi nhóm dùng partial class riêng).
+
+### Chi tiết: Sub-Plan F1
+
+**Files:**
+- Create: `QuanLyTro/Forms/DashboardForm.cs` (+ `.Designer.cs`)
+- Create: `QuanLyTro/Forms/RoomsForm.cs` (+ `.Designer.cs`)
+- Create: `QuanLyTro/Forms/TenantsForm.cs` (+ `.Designer.cs`)
+- Modify: `QuanLyTro/Form1.cs`, `QuanLyTro/Form1.Designer.cs`
+
+**Interfaces:**
+- Consumes: `TcpClientService`, `ActionNames.RoomGetAll`, `ActionNames.TenantGetByRoom`, `ActionNames.ReportSummary`, `ActionNames.ContractGetAll`, `ActionNames.InvoiceGetAll`.
+- Produces: 3 `UserControl` công khai; `Form1` dựng tab theo `Role`.
+
+- [ ] **Step 1: Tạo `DashboardForm`**
+  - 4 thẻ KPI (tổng phòng, trống + tỷ lệ lấp đầy, người đang ở, còn nợ tháng).
+  - 2 bảng: "Còn nợ — đôn đốc" (US-17) và "HĐ sắp hết hạn" (US-11), cột `Còn` tô `#D95D39` khi < 30 ngày.
+  - Gọi 3 action một lần khi load; click dòng → raise event để `Form1` chuyển tab.
+
+- [ ] **Step 2: Tạo `RoomsForm`**
+  - `DataGridView` readonly 6 cột + toolbar Thêm/Sửa/Xóa/F5; nút Xóa có `MessageBox` xác nhận.
+  - Reload grid sau mỗi thao tác thành công.
+
+- [ ] **Step 3: Tạo `TenantsForm`**
+  - ComboBox phòng + grid + input; ô mật khẩu có ghi chú "để trống = 6 số cuối CCCD".
+  - 4 nút: Thêm/Sửa/Trả phòng/Xóa hồ sơ.
+
+- [ ] **Step 4: Áp design system và accessibility**
+  - Token `DESIGN.md`: nền `#101417`, card `#181C1F`, header grid `#1A2025` chữ `#767E88` in hoa, dòng chọn `#21262B` + dải trái 3px `#D95D39`.
+  - `AccessibleName`, tab order, label liên kết, font `Segoe UI 9pt`.
+
+- [ ] **Step 5: Gắn tab vào `Form1` và build**
+  - `Form1` dựng `TabControl` theo `Role`: Landlord 7 tab, Tenant 1 tab.
+  - Lệnh: `dotnet build "QuanLyTro/QuanLyTro.slnx"`
+
+- [ ] **Step 6: Commit**
+  - Commit message: `feat: add dashboard, rooms and tenants screens (Task 11-F1)`
+
+### Chi tiết: Sub-Plan F2
+
+**Files:**
+- Create: `QuanLyTro/Forms/ContractsForm.cs` (+ `.Designer.cs`)
+- Create: `QuanLyTro/Forms/UtilitiesForm.cs` (+ `.Designer.cs`)
+
+**Interfaces:**
+- Consumes: `TcpClientService`, `ActionNames.ContractCreate`, `ContractTerminate`, `ContractRenew`, `ContractGetAll`, `UtilityGetPrevious`, `UtilityRecord`.
+
+- [ ] **Step 1: Tạo `ContractsForm`**
+  - Chọn phòng, đại diện, ngày bắt đầu/kết thúc, giá thuê, tiền cọc. Nút Tạo/Chấm dứt/Gia hạn.
+  - ComboBox lọc 4 mức: Tất cả / Đang hiệu lực / Sắp hết hạn ≤ 30 ngày / Đã thanh lý.
+  - Cột `Còn` tô `#D95D39` khi < 30 ngày. Hiện message lỗi Server nguyên văn.
+
+- [ ] **Step 2: Tạo `UtilitiesForm`**
+  - Chọn phòng/tháng; `UTILITY_GET_PREVIOUS` điền chỉ số cũ vào ô `disabled`.
+  - `NumericUpDown` cho chỉ số mới + đơn giá; preview tiền chỉ để UX (US-13), kết quả chính thức từ Server.
+
+- [ ] **Step 3: Áp design system và accessibility**
+  - Cùng token như F1; ô `disabled` nền `#12161A` chữ `#767E88`.
+
+- [ ] **Step 4: Build và commit**
+  - Lệnh: `dotnet build "QuanLyTro/QuanLyTro.slnx"`
+  - Commit message: `feat: add contracts and utilities screens (Task 11-F2)`
+
+### Chi tiết: Sub-Plan F3
+
+**Files:**
+- Create: `QuanLyTro/Forms/InvoicesForm.cs` (+ `.Designer.cs`)
+- Create: `QuanLyTro/Forms/ReportsForm.cs` (+ `.Designer.cs`)
+- Create: `QuanLyTro/Forms/MyInvoicesForm.cs` (+ `.Designer.cs`)
+
+**Interfaces:**
+- Consumes: `TcpClientService`, `ActionNames.InvoiceCreate`, `InvoiceGetAll`, `InvoicePay`, `InvoiceGetMine`, `ReportSummary`, `ExportResidence`.
+
+- [ ] **Step 1: Tạo `InvoicesForm`**
+  - Chọn tháng + phòng, list hóa đơn 8 cột, filter chưa thu. Nút Lập hóa đơn / Thu.
+  - Dòng `Paid` khóa nút Thu (BR-11).
+
+- [ ] **Step 2: Tạo `ReportsForm` và xuất CSV bằng stdlib**
+  - KPI + bảng nhiều tháng (US-19: gọi `REPORT_SUMMARY` từng tháng rồi cộng dòng tổng).
+  - `EXPORT_RESIDENCE` → `StreamWriter` UTF-8 BOM, escape bằng bọc `"` và nhân đôi `"`. KHÔNG thêm package Excel.
+
+- [ ] **Step 3: Tạo `MyInvoicesForm` (người thuê)**
+  - Thẻ hồ sơ + banner quá hạn + bảng quyết toán có dòng phụ chỉ số + khối tổng tiền + lịch sử.
+  - Gọi `INVOICE_GET_MINE`. **Không có nút thao tác ghi.**
+
+- [ ] **Step 4: Áp design system và accessibility**
+  - Cùng token; banner quá hạn nền `#1F1715` viền `rgba(217,93,57,.40)`.
+
+- [ ] **Step 5: Build và commit**
+  - Lệnh: `dotnet build "QuanLyTro/QuanLyTro.slnx"`
+  - Commit message: `feat: add invoices, reports and tenant screens (Task 11-F3)`
+
+---
+
+## Sub-Plan G — Chi tiết mở rộng (Task 12)
+
+Giữ nguyên 1 file, xem [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) — 8 bước đã đủ nhỏ.
+
+---
+
+## Bảng tổng hợp: chạy tối đa 3 agent song song
+
+| Wave | Agent 1 | Agent 2 | Agent 3 |
+|---|---|---|---|
+| 1 | A1 (tenant repo/service) | A2 (sức chứa BR-02) | — (tuần tự sau A1) |
+| 2 | B1 (hợp đồng) | B2 (điện nước) | — |
+| 3 | C1 (hóa đơn) | C2 (báo cáo) | — |
+| 4 | D1 (router) | D2 (TCP listener) | E (client + shell) |
+| 5 | F1 (dashboard/rooms/tenants) | F2 (contracts/utilities) | F3 (invoices/reports/tenant) |
+| 6 | G (test cuối + README) | — | — |
+
+**Tổng: 6 wave.** Mỗi wave chạy tối đa 3 agent, verify bằng `dotnet test` trước khi sang wave sau.
 - [ ] C — Task 8
 - [ ] D — Task 9
 - [ ] E — Task 10
