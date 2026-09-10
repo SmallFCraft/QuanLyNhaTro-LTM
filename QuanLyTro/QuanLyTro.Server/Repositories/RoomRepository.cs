@@ -8,6 +8,11 @@ namespace QuanLyTro.Server.Repositories;
 public sealed class RoomRepository(Database database)
 {
     private const int MySqlDuplicateKey = 1062;
+    private const int MySqlRowIsReferenced = 1451;
+
+    /// <summary>BR-12 — thông báo dùng chung cho cả đường kiểm tra lẫn khi MySQL chặn khóa ngoại.</summary>
+    public const string OccupiedMessage =
+        "Không thể xóa: phòng còn người thuê hoặc hợp đồng đang hiệu lực.";
 
     public async Task<List<RoomDto>> GetAllAsync(CancellationToken ct = default)
     {
@@ -90,15 +95,55 @@ public sealed class RoomRepository(Database database)
         }
     }
 
+    /// <summary>
+    /// BR-12: khóa dòng phòng, kiểm tra người thuê/hợp đồng, rồi xóa trong cùng transaction.
+    /// Khóa này tuần tự hóa với TenantRepository.AddAsync và ContractRepository.AddAsync.
+    /// </summary>
     public async Task<bool> DeleteAsync(int roomId, CancellationToken ct = default)
     {
-        const string sql = "DELETE FROM rooms WHERE id = @id";
+        const string lockRoomSql = "SELECT id FROM rooms WHERE id = @id FOR UPDATE";
+        const string occupancySql = """
+            SELECT
+                (SELECT COUNT(*) FROM tenants WHERE room_id = @id) AS tenant_count,
+                (SELECT COUNT(*) FROM contracts WHERE room_id = @id AND status = 'Active') AS active_contracts
+            """;
+        const string deleteSql = "DELETE FROM rooms WHERE id = @id";
 
-        await using var connection = await database.OpenAsync(ct);
-        await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@id", roomId);
+        try
+        {
+            await using var connection = await database.OpenAsync(ct);
+            await using var transaction = await connection.BeginTransactionAsync(ct);
 
-        return await command.ExecuteNonQueryAsync(ct) > 0;
+            await using (var lockCommand = new MySqlCommand(lockRoomSql, connection, transaction))
+            {
+                lockCommand.Parameters.AddWithValue("@id", roomId);
+                if (await lockCommand.ExecuteScalarAsync(ct) is null)
+                {
+                    return false;
+                }
+            }
+
+            await using (var occupancyCommand = new MySqlCommand(occupancySql, connection, transaction))
+            {
+                occupancyCommand.Parameters.AddWithValue("@id", roomId);
+                await using var reader = await occupancyCommand.ExecuteReaderAsync(ct);
+                await reader.ReadAsync(ct);
+                if (reader.GetInt64("tenant_count") > 0 || reader.GetInt64("active_contracts") > 0)
+                {
+                    throw new Services.BusinessRuleException(OccupiedMessage);
+                }
+            }
+
+            await using var deleteCommand = new MySqlCommand(deleteSql, connection, transaction);
+            deleteCommand.Parameters.AddWithValue("@id", roomId);
+            var deleted = await deleteCommand.ExecuteNonQueryAsync(ct) > 0;
+            await transaction.CommitAsync(ct);
+            return deleted;
+        }
+        catch (MySqlException ex) when (ex.Number == MySqlRowIsReferenced)
+        {
+            throw new Services.BusinessRuleException(OccupiedMessage);
+        }
     }
 
     /// <summary>BR-12: chỉ xóa phòng khi không còn người thuê và không có hợp đồng Active.</summary>

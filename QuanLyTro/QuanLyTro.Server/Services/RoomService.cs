@@ -22,15 +22,9 @@ public sealed class RoomService(RoomRepository rooms)
         return await rooms.UpdateAsync(Normalize(room), ct);
     }
 
-    public async Task<bool> DeleteAsync(int roomId, CancellationToken ct = default)
-    {
-        if (!await rooms.CanDeleteAsync(roomId, ct))
-        {
-            throw new BusinessRuleException("Không thể xóa: phòng còn người thuê hoặc hợp đồng đang hiệu lực.");
-        }
-
-        return await rooms.DeleteAsync(roomId, ct);
-    }
+    public async Task<bool> DeleteAsync(int roomId, CancellationToken ct = default) =>
+        // BR-12: toàn bộ kiểm tra + xóa nằm trong một transaction có khóa dòng phòng ở repository.
+        await rooms.DeleteAsync(roomId, ct);
 
     /// <summary>BR-01. Ném BusinessRuleException với thông báo tiếng Việt hiển thị thẳng cho người dùng.</summary>
     public static void Validate(RoomDto room)
