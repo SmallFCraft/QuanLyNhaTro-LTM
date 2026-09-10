@@ -1,6 +1,6 @@
 -- Schema Quản Lý Phòng Trọ — Ngũ Hành Sơn
 -- MySQL 8.0 / InnoDB / UTF8MB4
--- Mỗi statement kết thúc bằng marker "-- statement" để SchemaInitializer tách và chạy tuần tự.
+-- Mỗi statement kết thúc bằng marker dòng riêng "-- statement" để SchemaInitializer tách và chạy tuần tự.
 
 CREATE DATABASE IF NOT EXISTS quanly_phongtro_nhs
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

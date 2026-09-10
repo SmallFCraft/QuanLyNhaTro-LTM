@@ -12,7 +12,7 @@ public sealed class SchemaInitializer(Database database)
     {
         var script = ReadEmbeddedSchema();
 
-        await using var connection = await database.OpenAsync(ct);
+        await using var connection = await database.OpenServerLevelAsync(ct);
         foreach (var statement in SplitStatements(script))
         {
             await using var command = connection.CreateCommand();
@@ -33,16 +33,38 @@ public sealed class SchemaInitializer(Database database)
         return reader.ReadToEnd();
     }
 
+    /// <summary>
+    /// Tách script thành từng statement. Chỉ nhận marker nằm trên DÒNG RIÊNG — marker trong
+    /// comment mô tả (ví dụ chính dòng mô tả trong schema.sql) không được tính.
+    /// </summary>
     public static IEnumerable<string> SplitStatements(string script)
     {
-        var statements = script
-            .Split(["-- statement"], StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => s.Trim())
-            .Where(s => s.Length > 0);
+        var statements = new List<string>();
+        var buffer = new List<string>();
 
-        foreach (var statement in statements)
+        foreach (var line in script.Split('\n'))
         {
-            yield return statement;
+            if (line.Trim() == "-- statement")
+            {
+                Flush(statements, buffer);
+                continue;
+            }
+
+            buffer.Add(line);
+        }
+
+        Flush(statements, buffer);
+        return statements;
+    }
+
+    private static void Flush(List<string> statements, List<string> buffer)
+    {
+        var text = string.Join('\n', buffer).Trim();
+        buffer.Clear();
+
+        if (text.Length > 0)
+        {
+            statements.Add(text);
         }
     }
 }
