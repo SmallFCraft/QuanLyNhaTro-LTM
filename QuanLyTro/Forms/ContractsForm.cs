@@ -304,6 +304,7 @@ public partial class ContractsForm : UserControl
 
         var dtpNewEnd = new DateTimePicker
         {
+            AccessibleName = "Ngày kết thúc mới của hợp đồng",
             Location = new Point(20, 60),
             Size = new Size(300, 24),
             Format = DateTimePickerFormat.Custom,
@@ -315,6 +316,7 @@ public partial class ContractsForm : UserControl
 
         var btnOk = new Button
         {
+            AccessibleName = "Xác nhận gia hạn hợp đồng",
             Text = "Gia Hạn",
             DialogResult = DialogResult.OK,
             Location = new Point(140, 100),
@@ -327,6 +329,7 @@ public partial class ContractsForm : UserControl
 
         var btnCancel = new Button
         {
+            AccessibleName = "Hủy gia hạn hợp đồng",
             Text = "Hủy",
             DialogResult = DialogResult.Cancel,
             Location = new Point(236, 100),

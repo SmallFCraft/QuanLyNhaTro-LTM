@@ -175,25 +175,28 @@ partial class Form1
             this.lblStatusRuntime});
         this.statusStrip.Location = new System.Drawing.Point(0, 618);
         this.statusStrip.Name = "statusStrip";
-        this.statusStrip.Size = new System.Drawing.Size(1024, 22);
+        this.statusStrip.Size = new System.Drawing.Size(1024, 28);
         this.statusStrip.SizingGrip = false;
         this.statusStrip.TabIndex = 2;
         this.statusStrip.Text = "statusStrip";
         //
         // lblStatusRole
         //
+        this.lblStatusRole.AccessibleName = "Vai trò người dùng đang đăng nhập";
         this.lblStatusRole.Name = "lblStatusRole";
         this.lblStatusRole.Size = new System.Drawing.Size(105, 17);
         this.lblStatusRole.Text = "Chưa đăng nhập";
         //
         // lblStatusSpring
         //
+        this.lblStatusSpring.AccessibleName = "Vùng đệm thanh trạng thái";
         this.lblStatusSpring.Name = "lblStatusSpring";
         this.lblStatusSpring.Size = new System.Drawing.Size(816, 17);
         this.lblStatusSpring.Spring = true;
         //
         // lblStatusRuntime
         //
+        this.lblStatusRuntime.AccessibleName = "Phiên bản .NET đang chạy";
         this.lblStatusRuntime.Name = "lblStatusRuntime";
         this.lblStatusRuntime.Size = new System.Drawing.Size(88, 17);
         this.lblStatusRuntime.Text = ".NET 8.0 CLR";

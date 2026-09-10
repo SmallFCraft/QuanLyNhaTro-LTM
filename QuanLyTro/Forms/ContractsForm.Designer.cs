@@ -453,6 +453,7 @@ partial class ContractsForm
             this.colDepositAmount,
             this.colStatus,
             this.colNotes});
+        this.dgvContracts.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.ColorTranslator.FromHtml("#161B1F");
         this.dgvContracts.DefaultCellStyle.BackColor = System.Drawing.ColorTranslator.FromHtml("#14181C");
         this.dgvContracts.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F);
         this.dgvContracts.DefaultCellStyle.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
