@@ -10,15 +10,41 @@ namespace QuanLyTro.Server.Services;
 /// </summary>
 public sealed class UtilityService(IUtilityRepository readings)
 {
-    /// <summary>Chỉ số mới nhất của phòng (null nếu chưa từng chốt) — dùng làm chỉ số cũ kỳ này.</summary>
+    /// <summary>
+    /// Chỉ số cũ kỳ này: bản ghi gần nhất TRƯỚC `billingMonth` (null nếu chưa từng chốt).
+    /// Overload 2 tham số (roomId, ct) giữ nguyên cho call site cũ — không có chặn dưới.
+    /// </summary>
     public Task<UtilityReadingDto?> GetPreviousReadingAsync(int roomId, CancellationToken ct = default) =>
         readings.GetLatestAsync(roomId, ct);
+
+    /// <summary>Chỉ số cũ của kỳ trước `billingMonth` — bắt buộc có tháng, `yyyy-MM`.</summary>
+    public async Task<UtilityReadingDto?> GetPreviousReadingAsync(
+        int roomId, string billingMonth, CancellationToken ct = default)
+    {
+        if (!IsValidMonth(billingMonth))
+        {
+            throw new BusinessRuleException("Tháng chốt điện nước phải theo định dạng yyyy-MM.");
+        }
+
+        return await readings.GetLatestBeforeAsync(roomId, billingMonth.Trim(), ct);
+    }
 
     /// <summary>BR-07. Tháng hóa đơn là chuỗi `yyyy-MM`.</summary>
     public async Task<UtilityReadingDto> RecordAsync(UtilityReadingDto reading, CancellationToken ct = default)
     {
         Validate(reading);
-        return await readings.AddAsync(reading with { BillingMonth = reading.BillingMonth.Trim() }, ct);
+        var billingMonth = reading.BillingMonth.Trim();
+        var previous = await readings.GetLatestBeforeAsync(reading.RoomId, billingMonth, ct);
+        if (previous is not null && reading.OldElectricity != previous.NewElectricity)
+        {
+            throw new BusinessRuleException("Chỉ số cũ điện phải tiếp nối chỉ số mới của kỳ trước.");
+        }
+        if (previous is not null && reading.OldWater != previous.NewWater)
+        {
+            throw new BusinessRuleException("Chỉ số cũ nước phải tiếp nối chỉ số mới của kỳ trước.");
+        }
+
+        return await readings.AddAsync(reading with { BillingMonth = billingMonth }, ct);
     }
 
     public static void Validate(UtilityReadingDto reading)
