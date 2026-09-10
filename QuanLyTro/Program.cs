@@ -9,6 +9,7 @@ internal static class Program
     ///  The main entry point for the application.
     /// </summary>
     [STAThread]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
