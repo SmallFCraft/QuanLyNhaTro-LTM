@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\QuanLyTro.csproj" />
     <ProjectReference Include="..\QuanLyTro.Shared\QuanLyTro.Shared.csproj" />
     <ProjectReference Include="..\QuanLyTro.Server\QuanLyTro.Server.csproj" />
   </ItemGroup>
