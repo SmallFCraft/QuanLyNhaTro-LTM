@@ -35,6 +35,8 @@
 | 8 | `InvoiceRepository/Service` + `ReportRepository/Service` | `38d44c4` |
 | 9 | `RequestRouter` + `TcpListenerServer` + `ClientHandler` + 22 action | `f9f6e8b` |
 | 10 | `TcpClientService` + shell `Form1` + `App.config` | `70d9f88` |
+| 11 | 8 màn WinForms + gắn tab, design system | `234fd1c`, `da6738e`, `47df77e` |
+| — | Sửa lỗi audit: race BR-04/05/12, gia hạn lùi, khóa đăng nhập, chỉ số cũ, UI token | `01ffba5`, `051f3b2`, `a7b79c9`, `b059af1`, `fa7251a`, `5a2dff1`, `dabd0d6`, `910e102`, `b116470` |
 
 ### 1.2. Đã verify thật trên MySQL sống
 
@@ -54,10 +56,26 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 | C | 8 | [task-8-invoices-reports.md](subplans/task-8-invoices-reports.md) | ✅ XONG (`38d44c4`) |
 | D | 9 | [task-9-tcp-server-router.md](subplans/task-9-tcp-server-router.md) | ✅ XONG (`f9f6e8b`) |
 | E | 10 | [task-10-client-service-shell.md](subplans/task-10-client-service-shell.md) | ✅ XONG (`70d9f88`) |
-| F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | 🔶 2/8 màn xong (`234fd1c`), 3 nhóm đang chạy |
+| F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ✅ XONG 8/8 màn (`234fd1c`, `da6738e`, `47df77e`) |
 | G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ⬜ chưa |
 
-**Tổng test hiện tại:** 94 PASS, 0 FAIL.
+**Tổng test hiện tại:** 117 PASS, 0 FAIL. Build 0 warning / 0 error.
+
+**E2E thật (2026-09-11):** Server console + MySQL Laragon 3306 + TCP 8888 thật. `AUTH_LOGIN` admin → token; `ROOM_GET_ALL`/`REPORT_SUMMARY`/`CONTRACT_GET_ALL` trả JSON đúng; `UTILITY_GET_PREVIOUS` có `billingMonth` lấy đúng kỳ trước (bỏ qua kỳ sau); token sai → `"Phiên đăng nhập không hợp lệ hoặc đã hết hạn."`; sai mật khẩu 5 lần → khóa, biến thể `ADMIN` vẫn bị khóa.
+
+**Lỗi audit đã sửa (2026-09-11):** 6 lỗi do audit độc lập phát hiện, đều tái hiện bằng test đỏ trước khi sửa:
+1. BR-04/BR-05 race — `ContractRepository.AddAsync` thiếu transaction/khóa phòng; 10/10 client đồng thời cùng tạo được HĐ Active cho 1 phòng (`01ffba5`).
+2. BR-12 race — `RoomService.DeleteAsync` kiểm tra và xóa trên 2 connection; phòng bị xóa khi khách vừa vào, hoặc MySQL 1451 thô thoát ra client (`051f3b2`).
+3. US-10/BR-06 — gia hạn đồng thời ghi lùi `end_date` (`b059af1`).
+4. Khóa đăng nhập bị né bằng đổi hoa/thường: `_failures` ordinal vs MySQL `utf8mb4_unicode_ci` (`a7b79c9`).
+5. Chỉ số cũ lấy sai tháng — không chặn trên `billing_month`, tháng ghi lùi nhận chỉ số kỳ tương lai (`dabd0d6`, `910e102`).
+6. P0 — `AuthService._clock` không được gán khi `Program.cs` dùng constructor 3 tham số → NRE làm sập mọi đăng nhập trên server thật (`b116470`).
+
+Phụ: chỉ số cũ sửa tay được ở `UtilitiesForm` (`fa7251a`); status strip 22px → 28px theo `DESIGN.md` §3.1 + `AccessibleName` còn thiếu + thiếu `AlternatingRowsDefaultCellStyle` (`5a2dff1`).
+
+**Lưu ý còn lại:** `QuanLyTro.Tests.csproj` đã đổi TFM `net8.0` → `net8.0-windows` (bắt buộc để test project tham chiếu được client WinForms) → **suite không chạy được trên Linux/CI**. Chấp nhận theo bảng rủi ro §10.
+
+**Tài khoản demo:** chủ trọ `admin` / `admin-pass` (đã đặt lại `users.password_hash` trong DB Laragon cho khớp `TcpRoundTripTests`). Người thuê: đăng nhập bằng CCCD, mật khẩu mặc định 6 số cuối CCCD.
 
 ---
 
