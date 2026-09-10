@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Net.Sockets;
 using System.Windows.Forms;
 using QuanLyTro.Network;
+using QuanLyTro.Forms;
 using QuanLyTro.Protocol;
 using QuanLyTro.Shared.Models;
 using QuanLyTro.Shared.Protocol;
@@ -133,6 +134,7 @@ namespace QuanLyTro
             btnRoleTenant.Click += (_, _) => SelectRole(UserRole.Tenant);
             btnLogin.Click += BtnLogin_Click;
             tabControlMain.DrawItem += TabControlMain_DrawItem;
+            tabControlMain.SelectedIndexChanged += async (_, _) => await OnTabChangedAsync();
             menuItemDangXuat.Click += (_, _) => Logout();
             menuItemThoat.Click += (_, _) => Close();
             menuItemThongTin.Click += (_, _) => MessageBox.Show(
@@ -233,22 +235,55 @@ namespace QuanLyTro
         private void BuildTabs(UserRole role)
         {
             tabControlMain.TabPages.Clear();
-            foreach (var title in role == UserRole.Landlord ? LandlordTabs : TenantTabs)
+
+            if (role == UserRole.Landlord)
             {
-                var page = new TabPage(title)
-                {
-                    BackColor = SurfaceBase,
-                    ForeColor = TextNeutral,
-                    AccessibleName = $"Trang {title}",
-                };
-                page.Controls.Add(new Label
-                {
-                    Text = $"{title} — nội dung sẽ được gắn ở bước tiếp theo.",
-                    ForeColor = TextDim,
-                    AutoSize = true,
-                    Location = new Point(20, 20),
-                });
-                tabControlMain.TabPages.Add(page);
+                AddTab(LandlordTabs[0], new DashboardForm { NavigationRequested = SelectTab });
+                AddTab(LandlordTabs[1], new RoomsForm());
+                AddTab(LandlordTabs[2], new TenantsForm());
+                AddTab(LandlordTabs[3], new ContractsForm());
+                AddTab(LandlordTabs[4], new UtilitiesForm());
+                AddTab(LandlordTabs[5], new InvoicesForm());
+                AddTab(LandlordTabs[6], new ReportsForm());
+            }
+            else
+            {
+                AddTab(TenantTabs[0], new MyInvoicesForm());
+            }
+
+            tabControlMain.SelectedIndex = 0;
+            _ = OnTabChangedAsync();
+        }
+
+        private void AddTab(string title, UserControl content)
+        {
+            var page = new TabPage(title)
+            {
+                BackColor = SurfaceBase,
+                ForeColor = TextNeutral,
+                AccessibleName = $"Trang {title}",
+                Padding = new Padding(0),
+            };
+
+            content.Dock = DockStyle.Fill;
+            page.Controls.Add(content);
+            tabControlMain.TabPages.Add(page);
+        }
+
+        private void SelectTab(int index)
+        {
+            if (index >= 0 && index < tabControlMain.TabPages.Count)
+            {
+                tabControlMain.SelectedIndex = index;
+            }
+        }
+
+        /// <summary>Tổng quan gọi 3 action đúng một lần khi tab được mở (Sub-plan F Step 0).</summary>
+        private async Task OnTabChangedAsync()
+        {
+            if (tabControlMain.SelectedTab?.Controls.OfType<DashboardForm>().FirstOrDefault() is { } dashboard)
+            {
+                await dashboard.EnsureLoadedAsync();
             }
         }
 
