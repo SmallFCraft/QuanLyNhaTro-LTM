@@ -222,6 +222,7 @@ partial class UtilitiesForm
         this.numElecOld.Location = new System.Drawing.Point(16, 46);
         this.numElecOld.Maximum = new decimal(new int[] { 9999999, 0, 0, 0 });
         this.numElecOld.Name = "numElecOld";
+        this.numElecOld.ReadOnly = true;
         this.numElecOld.Size = new System.Drawing.Size(160, 22);
         this.numElecOld.TabIndex = 1;
         this.numElecOld.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -325,6 +326,7 @@ partial class UtilitiesForm
         this.numWaterOld.Location = new System.Drawing.Point(16, 46);
         this.numWaterOld.Maximum = new decimal(new int[] { 9999999, 0, 0, 0 });
         this.numWaterOld.Name = "numWaterOld";
+        this.numWaterOld.ReadOnly = true;
         this.numWaterOld.Size = new System.Drawing.Size(160, 22);
         this.numWaterOld.TabIndex = 1;
         this.numWaterOld.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
