@@ -60,7 +60,12 @@ Cột `tenants.password_hash` tồn tại (đăng nhập người thuê bằng C
 | F | 11 | [task-11-winforms-screens.md](subplans/task-11-winforms-screens.md) | ✅ XONG 8/8 màn (`234fd1c`, `da6738e`, `47df77e`) |
 | G | 12 | [task-12-final-tests-docs.md](subplans/task-12-final-tests-docs.md) | ✅ XONG (`52ec274`) |
 
-**Tổng test hiện tại:** 127 PASS, 0 FAIL (117 trước Task 12 + 10 acceptance `AcceptanceTests.cs`). Build 0 warning / 0 error.
+**Tổng test hiện tại:** 132 PASS, 0 FAIL (127 trước review + 2 BR-02/03 `32c97da` + 3 checkout-race `5eda7b1`). Build 0 warning / 0 error.
+
+**Code review sau hoàn thành (2026-09-11):** reviewer độc lập chấm "Ready to merge", 0 Critical. 2 Important đã xử lý:
+7. Checkout ghi đè trạng thái phòng bằng snapshot REPEATABLE READ cũ — phòng có người bị đánh dấu `Available`; sửa bằng atomic `UPDATE ... WHERE NOT EXISTS` current-read, regression test deterministic chặn khóa giữa 2 transaction (`5eda7b1`).
+8. BR-02/BR-03 thiếu test tự động — bổ sung 2 test MySQL thật cover sức chứa + map MySQL 1062 (`32c97da`).
+2 Minor cũng xử lý: `numOtherFees.Minimum = 0` + cleanup AcceptanceTests dùng constant thay literal (`32c97da`). Đề xuất reviewer KHÔNG áp dụng: `--seed-admin` (thay đổi production ngoài scope, cần bàn thiết kế riêng), tách `ScreenTheme` ra file riêng (refactor thuần, để sau).
 
 **Coverage Task 12 (2026-09-11):** 27.3% dòng (5.522/20.221) đo bằng collector `Code Coverage` (Visual Studio, Windows). `XPlat Code Coverage` không khả dụng vì test project không tham chiếu `coverlet.collector` — không thêm dependency chỉ để đo. Con số tính cả mã WinForms UI khó test tự động; tầng Server (Router/Service/Repository) có test MySQL thật phủ trực tiếp. Artifact: `QuanLyTro/QuanLyTro.Tests/TestResults/<guid>/*.coverage` (gitignored).
 
