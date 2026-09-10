@@ -78,6 +78,10 @@ public sealed class ContractRepository(Database database) : IContractRepository
         return Convert.ToInt64(await command.ExecuteScalarAsync(ct)) > 0;
     }
 
+    /// <summary>
+    /// BR-04 + BR-05: khóa dòng phòng (SELECT ... FOR UPDATE) rồi mới kiểm tra và chèn — tất cả
+    /// trong MỘT transaction. Hai client đồng thời không cùng lọt qua được khe kiểm tra.
+    /// </summary>
     public async Task<ContractDto> AddAsync(ContractDto contract, CancellationToken ct = default)
     {
         const string sql = """
@@ -89,10 +93,16 @@ public sealed class ContractRepository(Database database) : IContractRepository
             """;
 
         await using var connection = await database.OpenAsync(ct);
-        await using var command = new MySqlCommand(sql, connection);
-        AddContractParameters(command, contract);
+        await using var transaction = await connection.BeginTransactionAsync(ct);
 
+        await EnsureContractCanBeAddedAsync(
+            connection, transaction, contract.RoomId, contract.RepresentativeTenantId, ct);
+
+        await using var command = new MySqlCommand(sql, connection, transaction);
+        AddContractParameters(command, contract);
         var id = Convert.ToInt32(await command.ExecuteScalarAsync(ct));
+
+        await transaction.CommitAsync(ct);
         return contract with { Id = id };
     }
 
@@ -169,6 +179,53 @@ public sealed class ContractRepository(Database database) : IContractRepository
         reader.GetDecimal("deposit_amount"),
         Enum.Parse<ContractStatus>(reader.GetString("status")),
         reader.IsDBNull(reader.GetOrdinal("notes")) ? null : reader.GetString("notes"));
+
+    /// <summary>BR-04 + BR-05: kiểm tra sau khi đã khóa dòng phòng trong cùng transaction.</summary>
+    private static async Task EnsureContractCanBeAddedAsync(
+        MySqlConnection connection, MySqlTransaction transaction,
+        int roomId, int representativeTenantId, CancellationToken ct)
+    {
+        const string lockRoomSql = "SELECT id FROM rooms WHERE id = @roomId FOR UPDATE";
+        // FOR UPDATE = current read: đọc bản mới nhất đã commit, không dùng snapshot REPEATABLE READ.
+        const string hasActiveContractSql = """
+            SELECT COUNT(*)
+            FROM contracts
+            WHERE room_id = @roomId AND status = 'Active'
+            FOR UPDATE
+            """;
+        const string tenantInRoomSql = """
+            SELECT COUNT(*)
+            FROM tenants
+            WHERE id = @tenantId AND room_id = @roomId
+            FOR UPDATE
+            """;
+
+        await using (var command = new MySqlCommand(lockRoomSql, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@roomId", roomId);
+            if (await command.ExecuteScalarAsync(ct) is null)
+            {
+                throw new Services.BusinessRuleException("Phòng không tồn tại.");
+            }
+        }
+
+        await using (var command = new MySqlCommand(hasActiveContractSql, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@roomId", roomId);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(ct)) > 0)
+            {
+                throw new Services.BusinessRuleException("Phòng này đang có hợp đồng hiệu lực.");
+            }
+        }
+
+        await using var tenantCommand = new MySqlCommand(tenantInRoomSql, connection, transaction);
+        tenantCommand.Parameters.AddWithValue("@tenantId", representativeTenantId);
+        tenantCommand.Parameters.AddWithValue("@roomId", roomId);
+        if (Convert.ToInt64(await tenantCommand.ExecuteScalarAsync(ct)) == 0)
+        {
+            throw new Services.BusinessRuleException("Người đại diện phải là người đang ở trong phòng này.");
+        }
+    }
 
     private static void AddContractParameters(MySqlCommand command, ContractDto contract)
     {
