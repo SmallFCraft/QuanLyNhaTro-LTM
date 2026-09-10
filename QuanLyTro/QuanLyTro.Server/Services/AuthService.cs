@@ -17,7 +17,7 @@ public sealed class AuthService(IUserRepository users, ITenantRepository tenants
     public const string InvalidCredentialsMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
 
     private readonly ConcurrentDictionary<string, (int Count, DateTimeOffset LockedUntil)> _failures = new();
-    private readonly Func<DateTimeOffset> _clock;
+    private readonly Func<DateTimeOffset> _clock = () => DateTimeOffset.UtcNow;
 
     public AuthService(IUserRepository users, ITenantRepository tenants, SessionStore sessions, Func<DateTimeOffset>? clock = null)
         : this(users, tenants, sessions)
