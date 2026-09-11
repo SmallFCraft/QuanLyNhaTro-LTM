@@ -55,7 +55,6 @@ namespace QuanLyTro
         public Form1()
         {
             InitializeComponent();
-            ApplyDesignTokens();
             WireEvents();
             _client.Disconnected += OnClientDisconnected;
         }

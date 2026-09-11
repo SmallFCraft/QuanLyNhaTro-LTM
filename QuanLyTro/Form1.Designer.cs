@@ -498,6 +498,10 @@ partial class Form1
         this.pnlRoleSegment.ResumeLayout(false);
         this.ResumeLayout(false);
 
+        // WinForms Designer chỉ chạy InitializeComponent, KHÔNG chạy constructor của Form1.
+        // Gọi token ở đây để bản xem trước trong VS khớp với app đã build.
+        this.ApplyDesignTokens();
+        this.SelectRole(QuanLyTro.Shared.Models.UserRole.Landlord);
     }
 
     #endregion
