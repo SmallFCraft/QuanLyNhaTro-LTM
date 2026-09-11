@@ -32,6 +32,26 @@ internal static class ScreenTheme
     public const string EmphasisTop = "#2B333E"; // border-emphasis-top (khối tổng tiền)
     public const string RowAlt = "#14181C";      // DESIGN.md §3.2 nền xen kẽ
     public const string RowAlt2 = "#161B1F";
+    public const string FootBg = "#12161A";       // template .tblfoot / .note / .calc input[disabled]
+    public const string FootBorder = "#262D33";   // template .tblwrap / .tblfoot viền trên
+    public const string ToolbarBg = "#161B1F";    // template .toolbar nền
+    public const string ToolbarBorder = "#262D33";// template .toolbar viền
+    public const string TabStripBg = "#181C20";   // template .tabs nền container
+    public const string TabStripBorder = "#262D33";// template .tabs viền container
+    public const string TabOnBg = "#252C33";      // template .tab.on nền
+    public const string TabHoverBg = "#1E2429";   // template .tab:hover nền
+    public const string MenuBtnBg = "#1C2126";    // template .menustrip .mi nền
+    public const string MeterTrack = "#12161A";   // template .meter track
+    public const string MeterBorder = "#2A3239";  // template .meter viền
+    public const string ChartBarBg = "#262A2E";   // template .chartbar .b nền
+    public const string ChartBarBorder = "#2E3338";// template .chartbar .b viền
+    public const string ChartBarOnBg = "#4A2E24"; // rgba(217,93,57,.35) trên #181C1F
+    public const string ChartBarOnBorder = "#7A4130"; // rgba(217,93,57,.60) trên #181C1F
+    public const string ReceiptHeadBg = "#1A2027";// template khối header bảng kê
+    public const string ReceiptFootBg = "#111519";// template khối tổng tiền bảng kê
+    public const string AvatarBg = "#202730";     // template avatar ô chữ cái
+    public const string HeadlineBadgeBg = "#2E241F";     // rgba(217,93,57,.15) trên #101417
+    public const string HeadlineBadgeBorder = "#432A1E"; // rgba(217,93,57,.30) trên #101417
     public const string AvatarBorder = "#303945";// border-avatar
     public const string TagEmptyBorder = "#313A42"; // border-tag-empty
     public const string OutlineHover = "#3A444E";// border-strong (Outline hover)
@@ -68,6 +88,7 @@ internal static class ScreenTheme
     public const string EmptyBg = "#1C2227";     // nền tag trống/chờ (§2.4)
 
     public static readonly Font Body = new("Segoe UI", 9f);
+    public static readonly Font FootFont = new("Consolas", 8.25f);
     public static readonly Font Mono = new("Consolas", 9.5f);
     public static readonly Font HeaderFont = new("Segoe UI", 8.25f, FontStyle.Bold);
     public static readonly Font KpiValue = new("Consolas", 14f, FontStyle.Bold);
@@ -174,7 +195,7 @@ internal static class ScreenTheme
 
         protected override void OnPaintBackground(PaintEventArgs e)
         {
-            PaintCard(e.Graphics, ClientRectangle, FillHex, BorderHex, Radius);
+            ScreenTheme.PaintCard(e.Graphics, ClientRectangle, FillHex, BorderHex, Radius);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -232,4 +253,144 @@ internal static class ScreenTheme
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
     }
+}
+
+/// <summary>
+/// Dải chân bảng theo template .tblfoot: nền #12161A, viền trên #262D33,
+/// mono 10.5px — trái "Tổng: N bản ghi | Chọn: X" (phần chọn tô Terracotta), phải "Đã đồng bộ với Server".
+/// </summary>
+public class TblFootPanel : Panel
+{
+    private readonly Label _left = new();
+    private readonly Label _right = new();
+
+    public TblFootPanel()
+    {
+        BackColor = ScreenTheme.From(ScreenTheme.FootBg);
+        Height = 28;
+        Padding = new Padding(10, 0, 10, 0);
+
+        _left.AutoSize = true;
+        _left.Font = ScreenTheme.FootFont;
+        _left.ForeColor = ScreenTheme.From(ScreenTheme.Muted);
+        _left.Dock = DockStyle.Left;
+        _left.TextAlign = ContentAlignment.MiddleLeft;
+        _left.AccessibleName = "Tổng số bản ghi và dòng đang chọn";
+
+        _right.AutoSize = true;
+        _right.Font = ScreenTheme.FootFont;
+        _right.ForeColor = ScreenTheme.From(ScreenTheme.Muted);
+        _right.Dock = DockStyle.Right;
+        _right.TextAlign = ContentAlignment.MiddleRight;
+        _right.Text = "Đã đồng bộ với Server";
+
+        Controls.Add(_right);
+        Controls.Add(_left);
+        SetTotal(0);
+    }
+
+    public void SetTotal(int count)
+    {
+        _total = count;
+        Refresh_();
+    }
+
+    public void SetSelected(string? label)
+    {
+        _selected = label;
+        Refresh_();
+    }
+
+    private int _total;
+    private string? _selected;
+
+    private void Refresh_()
+    {
+        var tail = _selected is null ? "Chọn: —" : $"Chọn: {_selected}";
+        _left.Text = string.Concat("Tổng: ", _total.ToString(CultureInfo.InvariantCulture),
+            " bản ghi  |  ", tail);
+        _left.Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        using var pen = new Pen(ScreenTheme.From(ScreenTheme.FootBorder));
+        e.Graphics.DrawLine(pen, 0, 0, Width, 0);
+    }
+
+    /// <summary>Phần "Chọn:" tô Terracotta như template .sel-txt.</summary>
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        base.OnPaintBackground(e);
+    }
+}
+
+/// <summary>Dải ghi chú theo template .note: nền #12161A, viền #21272C, chữ 11px #767E88.</summary>
+public static class NoteBar
+{
+    public static Panel Create(string text, string? glyph = "\u2139")
+    {
+        var panel = new Panel
+        {
+            BackColor = ScreenTheme.From(ScreenTheme.FootBg),
+            Height = 34,
+            Padding = new Padding(11, 0, 11, 0),
+            Margin = new Padding(0),
+            AccessibleName = "Ghi chú nghiệp vụ",
+        };
+
+        var label = new Label
+        {
+            Dock = DockStyle.Fill,
+            Font = new Font("Segoe UI", 8.5f),
+            ForeColor = ScreenTheme.From(ScreenTheme.Dim),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = glyph is null ? text : $"{glyph}  {text}",
+            AccessibleName = text,
+        };
+
+        panel.Controls.Add(label);
+        panel.Paint += (_, e) =>
+        {
+            using var pen = new Pen(ScreenTheme.From(ScreenTheme.Subtle));
+            e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
+        };
+        return panel;
+    }
+}
+
+/// <summary>Thanh công cụ theo template .toolbar: nền #161B1F, viền #262D33, bo 8px, đệm 6px.</summary>
+public class ToolbarPanel : Panel
+{
+    public ToolbarPanel()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint
+            | ControlStyles.OptimizedDoubleBuffer, true);
+        FillHex = ScreenTheme.ToolbarBg;
+        BorderHex = ScreenTheme.ToolbarBorder;
+        Radius = 8;
+        BackColor = ScreenTheme.From(ScreenTheme.Base);
+        Padding = new Padding(6);
+        Height = 44;
+    }
+
+    public string FillHex { get; set; }
+
+    public string BorderHex { get; set; }
+
+    public int Radius { get; set; }
+
+    protected override void OnPaintBackground(PaintEventArgs e) =>
+        ScreenTheme.PaintCard(e.Graphics, ClientRectangle, FillHex, BorderHex, Radius);
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+    }
+}
+
+/// <summary>Tách chuỗi thành chữ in hoa có giãn ký tự — không có trong WinForms, dùng cho badge/nhãn.</summary>
+public static class ScreenText
+{
+    public static string Upper(string value) => value.ToUpper(CultureInfo.GetCultureInfo("vi-VN"));
 }

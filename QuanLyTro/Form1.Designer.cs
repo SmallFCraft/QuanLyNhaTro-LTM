@@ -58,6 +58,15 @@ partial class Form1
         this.btnLogin = new System.Windows.Forms.Button();
         this.lblLoginError = new System.Windows.Forms.Label();
         this.tabControlMain = new System.Windows.Forms.TabControl();
+        this.pnlUserbar = new System.Windows.Forms.Panel();
+        this.lblUserIcon = new System.Windows.Forms.Label();
+        this.lblUserName = new System.Windows.Forms.Label();
+        this.lblRoleBadge = new QuanLyTro.Forms.ScreenTheme.TagLabel();
+        this.btnLogoutUser = new System.Windows.Forms.Button();
+        this.pnlHeadline = new System.Windows.Forms.Panel();
+        this.lblModuleBadge = new QuanLyTro.Forms.ScreenTheme.TagLabel();
+        this.lblModuleTitle = new System.Windows.Forms.Label();
+        this.lblVerChip = new System.Windows.Forms.Label();
         this.pnlTitleBar.SuspendLayout();
         this.menuStrip.SuspendLayout();
         this.statusStrip.SuspendLayout();
@@ -200,6 +209,107 @@ partial class Form1
         this.lblStatusRuntime.Name = "lblStatusRuntime";
         this.lblStatusRuntime.Size = new System.Drawing.Size(88, 17);
         this.lblStatusRuntime.Text = ".NET 8.0 CLR";
+        //
+        // pnlUserbar
+        //
+        this.pnlUserbar.Controls.Add(this.btnLogoutUser);
+        this.pnlUserbar.Controls.Add(this.lblRoleBadge);
+        this.pnlUserbar.Controls.Add(this.lblUserName);
+        this.pnlUserbar.Controls.Add(this.lblUserIcon);
+        this.pnlUserbar.Dock = System.Windows.Forms.DockStyle.Top;
+        this.pnlUserbar.Location = new System.Drawing.Point(0, 68);
+        this.pnlUserbar.Name = "pnlUserbar";
+        this.pnlUserbar.Size = new System.Drawing.Size(1024, 38);
+        this.pnlUserbar.TabIndex = 2;
+        this.pnlUserbar.Visible = false;
+        //
+        // lblUserIcon
+        //
+        this.lblUserIcon.Dock = System.Windows.Forms.DockStyle.Left;
+        this.lblUserIcon.Location = new System.Drawing.Point(0, 0);
+        this.lblUserIcon.Name = "lblUserIcon";
+        this.lblUserIcon.Size = new System.Drawing.Size(30, 38);
+        this.lblUserIcon.TabIndex = 0;
+        this.lblUserIcon.Text = "●";
+        this.lblUserIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+        this.lblUserIcon.AccessibleName = "Biểu tượng người dùng";
+        //
+        // lblUserName
+        //
+        this.lblUserName.Dock = System.Windows.Forms.DockStyle.Left;
+        this.lblUserName.Location = new System.Drawing.Point(30, 0);
+        this.lblUserName.Name = "lblUserName";
+        this.lblUserName.Size = new System.Drawing.Size(220, 38);
+        this.lblUserName.TabIndex = 1;
+        this.lblUserName.Text = "";
+        this.lblUserName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+        this.lblUserName.AccessibleName = "Tên người đang đăng nhập";
+        //
+        // lblRoleBadge
+        //
+        this.lblRoleBadge.Dock = System.Windows.Forms.DockStyle.Left;
+        this.lblRoleBadge.Location = new System.Drawing.Point(250, 0);
+        this.lblRoleBadge.Name = "lblRoleBadge";
+        this.lblRoleBadge.Size = new System.Drawing.Size(110, 38);
+        this.lblRoleBadge.TabIndex = 2;
+        this.lblRoleBadge.Text = "";
+        this.lblRoleBadge.AccessibleName = "Vai trò hiện tại";
+        //
+        // btnLogoutUser
+        //
+        this.btnLogoutUser.Dock = System.Windows.Forms.DockStyle.Right;
+        this.btnLogoutUser.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        this.btnLogoutUser.Location = new System.Drawing.Point(914, 0);
+        this.btnLogoutUser.Name = "btnLogoutUser";
+        this.btnLogoutUser.Size = new System.Drawing.Size(110, 38);
+        this.btnLogoutUser.TabIndex = 3;
+        this.btnLogoutUser.Text = "Đăng xuất";
+        this.btnLogoutUser.UseVisualStyleBackColor = false;
+        this.btnLogoutUser.AccessibleName = "Đăng xuất";
+        //
+        // pnlHeadline
+        //
+        this.pnlHeadline.Controls.Add(this.lblVerChip);
+        this.pnlHeadline.Controls.Add(this.lblModuleTitle);
+        this.pnlHeadline.Controls.Add(this.lblModuleBadge);
+        this.pnlHeadline.Dock = System.Windows.Forms.DockStyle.Top;
+        this.pnlHeadline.Location = new System.Drawing.Point(0, 106);
+        this.pnlHeadline.Name = "pnlHeadline";
+        this.pnlHeadline.Size = new System.Drawing.Size(1024, 44);
+        this.pnlHeadline.TabIndex = 3;
+        this.pnlHeadline.Visible = false;
+        //
+        // lblModuleBadge
+        //
+        this.lblModuleBadge.Dock = System.Windows.Forms.DockStyle.Left;
+        this.lblModuleBadge.Location = new System.Drawing.Point(0, 0);
+        this.lblModuleBadge.Name = "lblModuleBadge";
+        this.lblModuleBadge.Size = new System.Drawing.Size(86, 44);
+        this.lblModuleBadge.TabIndex = 0;
+        this.lblModuleBadge.Text = "MODULE";
+        this.lblModuleBadge.AccessibleName = "Nhãn nhóm chức năng";
+        //
+        // lblModuleTitle
+        //
+        this.lblModuleTitle.Dock = System.Windows.Forms.DockStyle.Left;
+        this.lblModuleTitle.Location = new System.Drawing.Point(86, 0);
+        this.lblModuleTitle.Name = "lblModuleTitle";
+        this.lblModuleTitle.Size = new System.Drawing.Size(700, 44);
+        this.lblModuleTitle.TabIndex = 1;
+        this.lblModuleTitle.Text = "";
+        this.lblModuleTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+        this.lblModuleTitle.AccessibleName = "Tên màn hình đang mở";
+        //
+        // lblVerChip
+        //
+        this.lblVerChip.Dock = System.Windows.Forms.DockStyle.Right;
+        this.lblVerChip.Location = new System.Drawing.Point(914, 0);
+        this.lblVerChip.Name = "lblVerChip";
+        this.lblVerChip.Size = new System.Drawing.Size(110, 44);
+        this.lblVerChip.TabIndex = 2;
+        this.lblVerChip.Text = "v8.0.4-rtm";
+        this.lblVerChip.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+        this.lblVerChip.AccessibleName = "Phiên bản ứng dụng";
         //
         // pnlContent
         //
@@ -363,6 +473,8 @@ partial class Form1
         this.ClientSize = new System.Drawing.Size(1024, 640);
         this.Controls.Add(this.pnlContent);
         this.Controls.Add(this.statusStrip);
+        this.Controls.Add(this.pnlHeadline);
+        this.Controls.Add(this.pnlUserbar);
         this.Controls.Add(this.menuStrip);
         this.Controls.Add(this.pnlTitleBar);
         this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
@@ -376,6 +488,10 @@ partial class Form1
         this.menuStrip.PerformLayout();
         this.statusStrip.ResumeLayout(false);
         this.statusStrip.PerformLayout();
+        this.pnlUserbar.ResumeLayout(false);
+        this.pnlUserbar.PerformLayout();
+        this.pnlHeadline.ResumeLayout(false);
+        this.pnlHeadline.PerformLayout();
         this.pnlContent.ResumeLayout(false);
         this.pnlLoginCard.ResumeLayout(false);
         this.pnlLoginCard.PerformLayout();
@@ -416,4 +532,13 @@ partial class Form1
     private System.Windows.Forms.Button btnLogin;
     private System.Windows.Forms.Label lblLoginError;
     private System.Windows.Forms.TabControl tabControlMain;
+    private System.Windows.Forms.Panel pnlUserbar;
+    private System.Windows.Forms.Label lblUserIcon;
+    private System.Windows.Forms.Label lblUserName;
+    private QuanLyTro.Forms.ScreenTheme.TagLabel lblRoleBadge;
+    private System.Windows.Forms.Button btnLogoutUser;
+    private System.Windows.Forms.Panel pnlHeadline;
+    private QuanLyTro.Forms.ScreenTheme.TagLabel lblModuleBadge;
+    private System.Windows.Forms.Label lblModuleTitle;
+    private System.Windows.Forms.Label lblVerChip;
 }

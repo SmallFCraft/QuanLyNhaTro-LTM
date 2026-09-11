@@ -1,6 +1,7 @@
 using System;
 using System.Configuration;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Net.Sockets;
 using System.Windows.Forms;
 using QuanLyTro.Network;
@@ -49,6 +50,7 @@ namespace QuanLyTro
         private readonly TcpClientService _client = Client;
         private UserRole _selectedRole = UserRole.Landlord;
         private UserRole? _currentRole;
+        private int? _roomCount;
 
         public Form1()
         {
@@ -83,7 +85,9 @@ namespace QuanLyTro
 
             pnlLoginCard.BackColor = SurfaceCard;
             lblLoginTitle.ForeColor = TextCream;
+            lblLoginTitle.Text = "Ký Túc Xá & Nhà Trọ Số";
             lblLoginSubtitle.ForeColor = TextDim;
+            lblLoginSubtitle.Text = "PHƯỜNG NGŨ HÀNH SƠN · TP. ĐÀ NẴNG";
 
             pnlRoleSegment.BackColor = SurfaceField;
             StyleRoleButton(btnRoleLandlord, selected: true);
@@ -106,10 +110,48 @@ namespace QuanLyTro
             tabControlMain.BackColor = SurfaceBase;
             tabControlMain.ForeColor = TextNeutral;
             tabControlMain.DrawMode = TabDrawMode.OwnerDrawFixed;
-            tabControlMain.ItemSize = new Size(140, 30);
+            tabControlMain.ItemSize = new Size(150, 32);
             tabControlMain.SizeMode = TabSizeMode.Fixed;
+            tabControlMain.Padding = new Point(10, 4);
             tabControlMain.AccessibleName = "Khu vực chức năng theo vai trò";
+            StyleUserbar();
+            StyleHeadline();
             SetStatus("Chưa đăng nhập");
+        }
+
+        /// <summary>Userbar theo template .userbar — chỉ hiện sau khi đăng nhập.</summary>
+        private void StyleUserbar()
+        {
+            pnlUserbar.BackColor = SurfaceHeader;
+            lblUserIcon.ForeColor = TextMuted;
+            lblUserIcon.Font = new Font("Segoe UI", 11F);
+            lblUserName.ForeColor = TextCream;
+            lblUserName.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+
+            lblRoleBadge.FillHex = ScreenTheme.DangerTagBg;
+            lblRoleBadge.BorderHex = ScreenTheme.DangerTagBorder;
+            lblRoleBadge.ForeHex = ScreenTheme.Tint;
+            lblRoleBadge.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+
+            btnLogoutUser.BackColor = SurfaceHeader;
+            btnLogoutUser.ForeColor = TextDim;
+            btnLogoutUser.FlatAppearance.BorderSize = 0;
+            btnLogoutUser.FlatAppearance.MouseOverBackColor = ColorTranslator.FromHtml(ScreenTheme.HoverBg);
+            btnLogoutUser.Cursor = Cursors.Hand;
+        }
+
+        /// <summary>Headline theo template .headline — badge MODULE + tên màn + chip phiên bản.</summary>
+        private void StyleHeadline()
+        {
+            pnlHeadline.BackColor = SurfaceBase;
+            lblModuleBadge.FillHex = ScreenTheme.HeadlineBadgeBg;
+            lblModuleBadge.BorderHex = ScreenTheme.HeadlineBadgeBorder;
+            lblModuleBadge.ForeHex = ScreenTheme.Terracotta;
+            lblModuleBadge.Font = new Font("Segoe UI", 7F, FontStyle.Bold);
+            lblModuleTitle.ForeColor = ColorTranslator.FromHtml(ScreenTheme.CreamLight);
+            lblModuleTitle.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            lblVerChip.ForeColor = TextDim;
+            lblVerChip.Font = new Font("Consolas", 8F);
         }
 
         private static void StyleField(TextBox box)
@@ -136,6 +178,7 @@ namespace QuanLyTro
             tabControlMain.DrawItem += TabControlMain_DrawItem;
             tabControlMain.SelectedIndexChanged += async (_, _) => await OnTabChangedAsync();
             menuItemDangXuat.Click += (_, _) => Logout();
+            btnLogoutUser.Click += (_, _) => Logout();
             menuItemThoat.Click += (_, _) => Close();
             menuItemThongTin.Click += (_, _) => MessageBox.Show(
                 this,
@@ -219,8 +262,13 @@ namespace QuanLyTro
             BuildTabs(login.Role);
 
             pnlLoginCard.Visible = false;
+            pnlUserbar.Visible = true;
+            pnlHeadline.Visible = true;
+            lblUserName.Text = login.FullName;
+            lblRoleBadge.Text = login.Role == UserRole.Landlord ? "CHỦ TRỌ" : "KHÁCH THUÊ";
             tabControlMain.Visible = true;
             tabControlMain.SelectedIndex = 0;
+            UpdateHeadline();
 
             var roleText = login.Role == UserRole.Landlord
                 ? "Chủ trọ (Landlord)"
@@ -230,6 +278,35 @@ namespace QuanLyTro
 
             menuItemQuanLy.Visible = login.Role == UserRole.Landlord;
             menuItemBaoCao.Visible = login.Role == UserRole.Landlord;
+
+            if (login.Role == UserRole.Landlord)
+            {
+                _ = LoadRoomCountAsync();
+            }
+        }
+
+        /// <summary>Tiêu đề module theo tab — ánh xạ y hệt template JS (dòng 782-783).</summary>
+        private void UpdateHeadline()
+        {
+            if (_currentRole == UserRole.Tenant)
+            {
+                lblModuleBadge.Text = "CHỨNG TỪ THU CƯỚC";
+                lblModuleTitle.Text = "Hóa Đơn Của Tôi";
+                return;
+            }
+
+            lblModuleBadge.Text = "MODULE";
+            lblModuleTitle.Text = tabControlMain.SelectedIndex switch
+            {
+                0 => "Tổng quan vận hành cơ sở",
+                1 => "Danh sách phòng trọ",
+                2 => "Hồ sơ khách thuê",
+                3 => "Hợp đồng & khách thuê",
+                4 => "Chốt chỉ số điện nước",
+                5 => "Hóa đơn & thu tiền",
+                6 => "Thống kê doanh thu",
+                _ => string.Empty,
+            };
         }
 
         private void BuildTabs(UserRole role)
@@ -281,6 +358,7 @@ namespace QuanLyTro
         /// <summary>Tổng quan gọi 3 action đúng một lần khi tab được mở (Sub-plan F Step 0).</summary>
         private async Task OnTabChangedAsync()
         {
+            UpdateHeadline();
             if (tabControlMain.SelectedTab?.Controls.OfType<DashboardForm>().FirstOrDefault() is { } dashboard)
             {
                 await dashboard.EnsureLoadedAsync();
@@ -293,6 +371,9 @@ namespace QuanLyTro
             _currentRole = null;
             tabControlMain.TabPages.Clear();
             tabControlMain.Visible = false;
+            pnlUserbar.Visible = false;
+            pnlHeadline.Visible = false;
+            lblUserName.Text = string.Empty;
             pnlLoginCard.Visible = true;
             txtPassword.Clear();
             lblLoginError.Text = string.Empty;
@@ -328,19 +409,54 @@ namespace QuanLyTro
             lblStatusRuntime.Text = ".NET 8.0 CLR";
         }
 
+        /// <summary>Tab dạng segmented theo template .tabs: bo 4px, tab chọn nền #252C33 + viền Terracotta.</summary>
         private void TabControlMain_DrawItem(object? sender, DrawItemEventArgs e)
         {
             var page = tabControlMain.TabPages[e.Index];
             var selected = e.Index == tabControlMain.SelectedIndex;
-            using var background = new SolidBrush(selected ? SurfaceActive : SurfaceHeader);
-            e.Graphics.FillRectangle(background, e.Bounds);
+            var tab = new Rectangle(e.Bounds.X + 2, e.Bounds.Y + 2, e.Bounds.Width - 4, e.Bounds.Height - 4);
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var path = ScreenTheme.RoundedRect(tab, 4))
+            {
+                using var brush = new SolidBrush(selected ? ScreenTheme.From(ScreenTheme.TabOnBg)
+                    : SurfaceBase);
+                e.Graphics.FillPath(brush, path);
+                if (selected)
+                {
+                    using var pen = new Pen(ScreenTheme.From(ScreenTheme.DangerTagBorder));
+                    e.Graphics.DrawPath(pen, path);
+                }
+            }
+
+            var label = page.Text;
+            if (_roomCount.HasValue && page.Text == LandlordTabs[1])
+            {
+                label = $"{page.Text}  ({_roomCount.Value})";
+            }
+
             TextRenderer.DrawText(
                 e.Graphics,
-                page.Text,
+                label,
                 Font,
-                e.Bounds,
-                selected ? TextCream : TextDim,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                tab,
+                selected ? ScreenTheme.From(ScreenTheme.CreamLight) : TextMuted,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        }
+
+        /// <summary>Số phòng cho badge trên tab — nạp một lần sau khi đăng nhập chủ trọ, lỗi thì bỏ badge.</summary>
+        private async Task LoadRoomCountAsync()
+        {
+            try
+            {
+                var rooms = await _client.SendAsync<object, List<RoomDto>>(ActionNames.RoomGetAll, new { });
+                _roomCount = rooms?.Count ?? 0;
+                tabControlMain.Invalidate();
+            }
+            catch (Exception)
+            {
+                _roomCount = null;
+            }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
