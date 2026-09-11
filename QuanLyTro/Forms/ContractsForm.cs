@@ -1,3 +1,4 @@
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using QuanLyTro.Shared.Models;
 using QuanLyTro.Shared.Protocol;
@@ -51,18 +52,31 @@ public partial class ContractsForm : UserControl
     private sealed record RoomComboItem(int Id, string DisplayText);
     private sealed record TenantComboItem(int Id, string DisplayText);
 
+    /// <summary>Bộ lọc toolbar — nhãn y hệt template #tab-contracts.</summary>
+    private enum ContractFilter { All, Active, Expiring, Terminated }
+
+    private sealed record FilterItem(ContractFilter Kind, string DisplayText);
+
+    private const int ExpiringSoonDays = 30;
+
     private readonly List<ContractGridRow> _contractRows = [];
+    private List<ContractGridRow> _viewRows = [];
 
     public ContractsForm()
     {
         InitializeComponent();
         WireEvents();
+
+        noteContracts.Controls.Add(NoteBar.Create("Cột \"Còn\" < 30 ngày tô Terracotta: US-11."));
     }
 
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
         if (DesignMode) return;
+        // InitializeComponent chạy khi UserControl còn cỡ mặc định nên SplitterDistance bị kẹp;
+        // đặt lại sau khi layout thật đã có (Panel1 là FixedPanel).
+        splitMain.SplitterDistance = 320;
         _ = LoadRoomsAsync();
         _ = LoadContractsAsync();
     }
@@ -74,6 +88,10 @@ public partial class ContractsForm : UserControl
         btnTerminate.Click += async (_, _) => await OnTerminateContractAsync();
         btnRenew.Click += async (_, _) => await OnRenewContractAsync();
         btnRefresh.Click += async (_, _) => await LoadContractsAsync();
+
+        txtSearch.TextChanged += (_, _) => ApplyFilter();
+        cboFilter.SelectedIndexChanged += (_, _) => ApplyFilter();
+        dgvContracts.SelectionChanged += (_, _) => UpdateFootSelection();
 
         dgvContracts.CellFormatting += DgvContracts_CellFormatting;
         // RowPostPaint: vẽ SAU khi cell tô nền, nếu không dải 3px bị SelectionBackColor phủ mất.
@@ -167,13 +185,106 @@ public partial class ContractsForm : UserControl
                 ));
             }
 
-            dgvContracts.DataSource = null;
-            dgvContracts.DataSource = _contractRows;
+            BuildFilterItems();
+            UpdateKpis();
+            ApplyFilter();
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Lỗi tải danh sách hợp đồng", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+    }
+
+    private static bool IsExpiringSoon(ContractGridRow r) =>
+        r.Status == ContractStatus.Active && r.RemainingDays >= 0 && r.RemainingDays < ExpiringSoonDays;
+
+    private int CountOf(ContractFilter kind) => _contractRows.Count(r => kind switch
+    {
+        ContractFilter.Active => r.Status == ContractStatus.Active,
+        ContractFilter.Expiring => IsExpiringSoon(r),
+        ContractFilter.Terminated => r.Status == ContractStatus.Terminated,
+        _ => true
+    });
+
+    /// <summary>Dựng lại nhãn lọc kèm số đếm (template: "Tất cả hợp đồng (18)"), giữ nguyên dòng đang chọn.</summary>
+    private void BuildFilterItems()
+    {
+        var keep = cboFilter.SelectedIndex;
+        cboFilter.Items.Clear();
+        foreach (var kind in new[] { ContractFilter.All, ContractFilter.Active, ContractFilter.Expiring, ContractFilter.Terminated })
+        {
+            var label = kind switch
+            {
+                ContractFilter.Active => "Đang hiệu lực",
+                ContractFilter.Expiring => $"Sắp hết hạn ≤ {ExpiringSoonDays} ngày",
+                ContractFilter.Terminated => "Đã chấm dứt",
+                _ => "Tất cả hợp đồng"
+            };
+            cboFilter.Items.Add(new FilterItem(kind, $"{label} ({CountOf(kind)})"));
+        }
+
+        cboFilter.DisplayMember = nameof(FilterItem.DisplayText);
+        cboFilter.SelectedIndex = keep is >= 0 and < 4 ? keep : 0;
+    }
+
+    private void ApplyFilter()
+    {
+        var kind = (cboFilter.SelectedItem as FilterItem)?.Kind ?? ContractFilter.All;
+        var query = txtSearch.Text.Trim();
+
+        IEnumerable<ContractGridRow> rows = kind switch
+        {
+            ContractFilter.Active => _contractRows.Where(r => r.Status == ContractStatus.Active),
+            ContractFilter.Expiring => _contractRows.Where(IsExpiringSoon),
+            ContractFilter.Terminated => _contractRows.Where(r => r.Status == ContractStatus.Terminated),
+            _ => _contractRows
+        };
+
+        // Template gợi ý tìm theo CCCD/SĐT; payload CONTRACT_GET_ALL không có 2 trường đó.
+        if (query.Length > 0)
+        {
+            rows = rows.Where(r =>
+                Contains(r.RoomNumber, query)
+                || Contains(r.RepresentativeName, query)
+                || Contains(r.Notes ?? string.Empty, query));
+        }
+
+        _viewRows = rows.ToList();
+        dgvContracts.DataSource = null;
+        dgvContracts.DataSource = _viewRows;
+
+        tblFoot.SetTotal(_viewRows.Count);
+        if (_viewRows.Count > 0 && dgvContracts.Rows.Count > 0)
+        {
+            dgvContracts.Rows[0].Selected = true;
+        }
+
+        UpdateFootSelection();
+    }
+
+    private static bool Contains(string source, string query) =>
+        source.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+
+    /// <summary>3 thẻ KPI template: Hiệu lực (x / tổng) · Sắp hết ≤ 30 ngày · Tổng cọc đang giữ.</summary>
+    private void UpdateKpis()
+    {
+        var active = CountOf(ContractFilter.Active);
+        var total = _contractRows.Count;
+        // Tổng cọc = cọc của hợp đồng còn hiệu lực (HĐ đã chấm dứt/hết hạn đã trả cọc).
+        var deposit = _contractRows.Where(r => r.Status == ContractStatus.Active).Sum(r => r.DepositAmount);
+
+        lblKpiActive.Text = $"{active} / {total} HĐ";
+        lblKpiExpiring.Text = CountOf(ContractFilter.Expiring).ToString("D2", CultureInfo.InvariantCulture);
+        lblKpiDeposit.Text = ScreenTheme.Money(deposit);
+    }
+
+    private void UpdateFootSelection()
+    {
+        var label = dgvContracts.SelectedRows.Count > 0
+            && dgvContracts.SelectedRows[0].DataBoundItem is ContractGridRow row
+            ? row.RoomNumber
+            : null;
+        tblFoot.SetSelected(label);
     }
 
     private async Task OnCreateContractAsync()
@@ -289,8 +400,8 @@ public partial class ContractsForm : UserControl
             MinimizeBox = false,
             StartPosition = FormStartPosition.CenterParent,
             Size = new Size(360, 190),
-            BackColor = ColorTranslator.FromHtml("#181C1F"),
-            ForeColor = ColorTranslator.FromHtml("#F4EFEA")
+            BackColor = ScreenTheme.From(ScreenTheme.Card),
+            ForeColor = ScreenTheme.From(ScreenTheme.Cream)
         };
 
         var lblPrompt = new Label
@@ -298,8 +409,8 @@ public partial class ContractsForm : UserControl
             Text = $"Ngày kết thúc hiện tại: {selected.EndDateText}\nChọn ngày kết thúc mới:",
             Location = new Point(20, 16),
             Size = new Size(300, 36),
-            Font = new Font("Segoe UI", 9F),
-            ForeColor = ColorTranslator.FromHtml("#CAC6C1")
+            Font = ScreenTheme.Body,
+            ForeColor = ScreenTheme.From(ScreenTheme.Neutral)
         };
 
         var dtpNewEnd = new DateTimePicker
@@ -310,8 +421,8 @@ public partial class ContractsForm : UserControl
             Format = DateTimePickerFormat.Custom,
             CustomFormat = "dd/MM/yyyy",
             Value = selected.EndDate.ToDateTime(TimeOnly.MinValue).AddMonths(6),
-            CalendarForeColor = ColorTranslator.FromHtml("#F4EFEA"),
-            CalendarMonthBackground = ColorTranslator.FromHtml("#181C1F")
+            CalendarForeColor = ScreenTheme.From(ScreenTheme.Cream),
+            CalendarMonthBackground = ScreenTheme.From(ScreenTheme.Card)
         };
 
         var btnOk = new Button
@@ -321,8 +432,8 @@ public partial class ContractsForm : UserControl
             DialogResult = DialogResult.OK,
             Location = new Point(140, 100),
             Size = new Size(88, 32),
-            BackColor = ColorTranslator.FromHtml("#D95D39"),
-            ForeColor = Color.White,
+            BackColor = ScreenTheme.From(ScreenTheme.Terracotta),
+            ForeColor = ScreenTheme.From(ScreenTheme.OnFill),
             FlatStyle = FlatStyle.Flat
         };
         btnOk.FlatAppearance.BorderSize = 0;
@@ -334,11 +445,11 @@ public partial class ContractsForm : UserControl
             DialogResult = DialogResult.Cancel,
             Location = new Point(236, 100),
             Size = new Size(84, 32),
-            BackColor = ColorTranslator.FromHtml("#1C2126"),
-            ForeColor = ColorTranslator.FromHtml("#F4EFEA"),
+            BackColor = ScreenTheme.From(ScreenTheme.MenuBtnBg),
+            ForeColor = ScreenTheme.From(ScreenTheme.Cream),
             FlatStyle = FlatStyle.Flat
         };
-        btnCancel.FlatAppearance.BorderColor = ColorTranslator.FromHtml("#2E373F");
+        btnCancel.FlatAppearance.BorderColor = ScreenTheme.From(ScreenTheme.OutlineBtn);
 
         renewDialog.Controls.AddRange([lblPrompt, dtpNewEnd, btnOk, btnCancel]);
         renewDialog.AcceptButton = btnOk;
@@ -370,27 +481,20 @@ public partial class ContractsForm : UserControl
 
     private void DgvContracts_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
     {
-        if (e.RowIndex < 0 || e.RowIndex >= _contractRows.Count) return;
-
-        var row = _contractRows[e.RowIndex];
+        // Lấy theo DataBoundItem, không theo chỉ số: bảng có thể đang bị lọc.
+        if (e.RowIndex < 0 || dgvContracts.Rows[e.RowIndex].DataBoundItem is not ContractGridRow row) return;
 
         // Format Còn column: paint #D95D39 when < 30 days
         if (dgvContracts.Columns[e.ColumnIndex].Name == colRemainingDays.Name)
         {
             if (row.Status == ContractStatus.Active)
             {
-                if (row.RemainingDays < 30)
-                {
-                    e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#D95D39");
-                }
-                else
-                {
-                    e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#8BD7A3");
-                }
+                e.CellStyle!.ForeColor = ScreenTheme.From(
+                    row.RemainingDays < ExpiringSoonDays ? ScreenTheme.Terracotta : ScreenTheme.Sage);
             }
             else
             {
-                e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#767E88");
+                e.CellStyle!.ForeColor = ScreenTheme.From(ScreenTheme.Dim);
             }
         }
         // Semantic tag coloring for Status column
@@ -399,13 +503,13 @@ public partial class ContractsForm : UserControl
             switch (row.Status)
             {
                 case ContractStatus.Active:
-                    e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#8BD7A3");
+                    e.CellStyle!.ForeColor = ScreenTheme.From(ScreenTheme.Sage);
                     break;
                 case ContractStatus.Expired:
-                    e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#E0AF68");
+                    e.CellStyle!.ForeColor = ScreenTheme.From(ScreenTheme.Amber);
                     break;
                 case ContractStatus.Terminated:
-                    e.CellStyle!.ForeColor = ColorTranslator.FromHtml("#CAC6C1");
+                    e.CellStyle!.ForeColor = ScreenTheme.From(ScreenTheme.Neutral);
                     break;
             }
         }
@@ -416,8 +520,43 @@ public partial class ContractsForm : UserControl
         // Dòng đang chọn: dải trái 3px #D95D39 (DESIGN.md "Selected Signature").
         if ((e.State & DataGridViewElementStates.Selected) != 0)
         {
-            using var brush = new SolidBrush(ColorTranslator.FromHtml("#D95D39"));
+            using var brush = new SolidBrush(ScreenTheme.From(ScreenTheme.Terracotta));
             e.Graphics.FillRectangle(brush, e.RowBounds.Left, e.RowBounds.Top, 3, e.RowBounds.Height);
+        }
+    }
+
+    /// <summary>
+    /// Thẻ KPI template .kpi: nền card, viền hairline, bo 6px, dải đỉnh 2px mang ngữ nghĩa
+    /// (Sage = hiệu lực, Terracotta = sắp hết hạn, border-emphasis-top = tổng cọc). DESIGN.md §3.4.
+    /// </summary>
+    internal sealed class KpiCard : Panel
+    {
+        public KpiCard()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint
+                | ControlStyles.OptimizedDoubleBuffer, true);
+            BackColor = ScreenTheme.From(ScreenTheme.Base);
+        }
+
+        public string FillHex { get; set; } = ScreenTheme.Card;
+
+        public string BorderHex { get; set; } = ScreenTheme.Hairline;
+
+        public string TopHex { get; set; } = ScreenTheme.EmphasisTop;
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            ScreenTheme.PaintCard(e.Graphics, ClientRectangle, FillHex, BorderHex, 6);
+
+            // Dải đỉnh 2px vẽ lọt trong 2 góc bo 6px.
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using var pen = new Pen(ScreenTheme.From(TopHex), 2);
+            e.Graphics.DrawLine(pen, 6, 1, Width - 7, 1);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            // Nền đã vẽ ở OnPaintBackground — không tô đè hình chữ nhật.
         }
     }
 }

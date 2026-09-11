@@ -15,6 +15,9 @@ public partial class UtilitiesForm : UserControl
     {
         InitializeComponent();
         WireEvents();
+
+        noteUtils.Controls.Add(
+            NoteBar.Create("Chỉ số cũ tự điền từ kỳ trước. Server tính tiền, preview chỉ để xem (US-12/13)."));
     }
 
     protected override void OnLoad(EventArgs e)
@@ -52,7 +55,7 @@ public partial class UtilitiesForm : UserControl
             cboRoom.Items.Clear();
             foreach (var r in rooms)
             {
-                cboRoom.Items.Add(new RoomComboItem(r.Id, $"{r.RoomNumber} — {r.CurrentOccupants}/{r.MaxOccupants} người"));
+                cboRoom.Items.Add(new RoomComboItem(r.Id, r.RoomNumber));
             }
 
             cboRoom.DisplayMember = nameof(RoomComboItem.DisplayText);
@@ -69,7 +72,7 @@ public partial class UtilitiesForm : UserControl
         }
     }
 
-    /// <summary>US-13: điền chỉ số cũ kỳ trước vào ô "Chỉ số cũ".</summary>
+    /// <summary>US-13: điền chỉ số cũ kỳ trước vào ô "Chỉ số cũ" (ReadOnly).</summary>
     private async Task LoadPreviousReadingAsync()
     {
         if (cboRoom.SelectedItem is not RoomComboItem selectedRoom) return;
@@ -87,14 +90,14 @@ public partial class UtilitiesForm : UserControl
             if (numElecNew.Value < numElecOld.Value) numElecNew.Value = numElecOld.Value;
             if (numWaterNew.Value < numWaterOld.Value) numWaterNew.Value = numWaterOld.Value;
 
-            lblStatusMsg.ForeColor = ColorTranslator.FromHtml("#CAC6C1");
+            lblStatusMsg.ForeColor = ScreenTheme.From(ScreenTheme.Neutral);
             lblStatusMsg.Text = prev is null
                 ? "Phòng chưa có chỉ số kỳ trước — bắt đầu từ 0."
                 : $"Đã nạp chỉ số kỳ trước: điện {prev.OldElectricity:N0} kWh · nước {prev.OldWater:N0} m³.";
         }
         catch (Exception ex)
         {
-            lblStatusMsg.ForeColor = ColorTranslator.FromHtml("#FFB4AB");
+            lblStatusMsg.ForeColor = ScreenTheme.From(ScreenTheme.Error);
             lblStatusMsg.Text = ex.Message;
         }
 
@@ -104,21 +107,16 @@ public partial class UtilitiesForm : UserControl
     /// <summary>US-13: ước tính chỉ để UX — số chính thức do Server tính khi UTILITY_RECORD.</summary>
     private void UpdatePreview()
     {
-        var elecUsage = numElecNew.Value - numElecOld.Value;
-        var waterUsage = numWaterNew.Value - numWaterOld.Value;
-        var elecAmount = elecUsage * numElecRate.Value;
-        var waterAmount = waterUsage * numWaterRate.Value;
+        var elecAmount = (numElecNew.Value - numElecOld.Value) * numElecRate.Value;
+        var waterAmount = (numWaterNew.Value - numWaterOld.Value) * numWaterRate.Value;
 
-        lblElecUsageVal.Text = $"{elecUsage:N0} kWh";
-        lblElecEstVal.Text = $"{elecAmount:N0} VNĐ";
-        lblWaterUsageVal.Text = $"{waterUsage:N0} m³";
-        lblWaterEstVal.Text = $"{waterAmount:N0} VNĐ";
-        lblTotalEstVal.Text = $"{elecAmount + waterAmount:N0} VNĐ";
+        lblElecTotal.Text = ScreenTheme.Money(elecAmount);
+        lblWaterTotal.Text = ScreenTheme.Money(waterAmount);
 
         // Negative usage is a client-side format hint only; Server enforces BR-07.
-        var invalid = elecUsage < 0 || waterUsage < 0;
-        lblElecEstVal.ForeColor = ColorTranslator.FromHtml(invalid ? "#D95D39" : "#E0AF68");
-        lblWaterEstVal.ForeColor = ColorTranslator.FromHtml(invalid ? "#D95D39" : "#8BD7A3");
+        var invalid = numElecNew.Value < numElecOld.Value || numWaterNew.Value < numWaterOld.Value;
+        lblElecTotal.ForeColor = ScreenTheme.From(invalid ? ScreenTheme.Terracotta : ScreenTheme.Tint);
+        lblWaterTotal.ForeColor = ScreenTheme.From(invalid ? ScreenTheme.Terracotta : ScreenTheme.Tint);
     }
 
     private async Task OnRecordAsync()
@@ -149,7 +147,7 @@ public partial class UtilitiesForm : UserControl
             numWaterOld.Value = saved.NewWater;
             UpdatePreview();
 
-            lblStatusMsg.ForeColor = ColorTranslator.FromHtml("#8BD7A3");
+            lblStatusMsg.ForeColor = ScreenTheme.From(ScreenTheme.Sage);
             lblStatusMsg.Text = $"Đã chốt điện nước tháng {saved.BillingMonth} cho phòng {selectedRoom.DisplayText}.";
         }
         catch (Exception ex)
@@ -157,8 +155,15 @@ public partial class UtilitiesForm : UserControl
             // Server message verbatim (BR-07 / BR-08), inputs preserved.
             MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-            lblStatusMsg.ForeColor = ColorTranslator.FromHtml("#FFB4AB");
+            lblStatusMsg.ForeColor = ScreenTheme.From(ScreenTheme.Error);
             lblStatusMsg.Text = ex.Message;
         }
+    }
+
+    /// <summary>Đường kẻ #21272C dưới mỗi hàng .calc (template .calc .row border-bottom).</summary>
+    private void RowRule_Paint(object? sender, PaintEventArgs e)
+    {
+        using var pen = new Pen(ScreenTheme.From(ScreenTheme.Subtle));
+        e.Graphics.DrawLine(pen, 0, e.ClipRectangle.Height - 1, e.ClipRectangle.Width, e.ClipRectangle.Height - 1);
     }
 }

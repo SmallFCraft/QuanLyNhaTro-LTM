@@ -35,12 +35,22 @@ partial class ContractsForm
         this.lblNotes = new System.Windows.Forms.Label();
         this.txtNotes = new System.Windows.Forms.TextBox();
         this.btnCreate = new System.Windows.Forms.Button();
-        this.pnlGridSection = new System.Windows.Forms.Panel();
-        this.pnlGridToolbar = new System.Windows.Forms.Panel();
-        this.lblGridTitle = new System.Windows.Forms.Label();
-        this.btnRenew = new System.Windows.Forms.Button();
-        this.btnTerminate = new System.Windows.Forms.Button();
+        this.tblRight = new System.Windows.Forms.TableLayoutPanel();
+        this.toolbarContracts = new QuanLyTro.Forms.ToolbarPanel();
+        this.txtSearch = new System.Windows.Forms.TextBox();
+        this.cboFilter = new System.Windows.Forms.ComboBox();
         this.btnRefresh = new System.Windows.Forms.Button();
+        this.tblKpis = new System.Windows.Forms.TableLayoutPanel();
+        this.cardKpiActive = new QuanLyTro.Forms.ContractsForm.KpiCard();
+        this.lblKpiActiveCaption = new System.Windows.Forms.Label();
+        this.lblKpiActive = new System.Windows.Forms.Label();
+        this.cardKpiExpiring = new QuanLyTro.Forms.ContractsForm.KpiCard();
+        this.lblKpiExpiringCaption = new System.Windows.Forms.Label();
+        this.lblKpiExpiring = new System.Windows.Forms.Label();
+        this.cardKpiDeposit = new QuanLyTro.Forms.ContractsForm.KpiCard();
+        this.lblKpiDepositCaption = new System.Windows.Forms.Label();
+        this.lblKpiDeposit = new System.Windows.Forms.Label();
+        this.pnlGridWrap = new System.Windows.Forms.Panel();
         this.dgvContracts = new System.Windows.Forms.DataGridView();
         this.colId = new System.Windows.Forms.DataGridViewTextBoxColumn();
         this.colRoom = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -52,6 +62,11 @@ partial class ContractsForm
         this.colDepositAmount = new System.Windows.Forms.DataGridViewTextBoxColumn();
         this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
         this.colNotes = new System.Windows.Forms.DataGridViewTextBoxColumn();
+        this.tblFoot = new QuanLyTro.Forms.TblFootPanel();
+        this.pnlRowButtons = new System.Windows.Forms.Panel();
+        this.btnRenew = new System.Windows.Forms.Button();
+        this.btnTerminate = new System.Windows.Forms.Button();
+        this.noteContracts = new System.Windows.Forms.Panel();
         ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
         this.splitMain.Panel1.SuspendLayout();
         this.splitMain.Panel2.SuspendLayout();
@@ -59,9 +74,15 @@ partial class ContractsForm
         this.cardInput.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)(this.numRentalPrice)).BeginInit();
         ((System.ComponentModel.ISupportInitialize)(this.numDepositAmount)).BeginInit();
-        this.pnlGridSection.SuspendLayout();
-        this.pnlGridToolbar.SuspendLayout();
+        this.tblRight.SuspendLayout();
+        this.toolbarContracts.SuspendLayout();
+        this.tblKpis.SuspendLayout();
+        this.cardKpiActive.SuspendLayout();
+        this.cardKpiExpiring.SuspendLayout();
+        this.cardKpiDeposit.SuspendLayout();
+        this.pnlGridWrap.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)(this.dgvContracts)).BeginInit();
+        this.pnlRowButtons.SuspendLayout();
         this.SuspendLayout();
 
         //
@@ -87,7 +108,7 @@ partial class ContractsForm
         // splitMain.Panel2 (Grid Section)
         //
         this.splitMain.Panel2.BackColor = System.Drawing.ColorTranslator.FromHtml("#101417");
-        this.splitMain.Panel2.Controls.Add(this.pnlGridSection);
+        this.splitMain.Panel2.Controls.Add(this.tblRight);
         this.splitMain.Panel2.Padding = new System.Windows.Forms.Padding(0, 12, 12, 12);
 
         //
@@ -338,93 +359,194 @@ partial class ContractsForm
         this.btnCreate.UseVisualStyleBackColor = false;
 
         //
-        // pnlGridSection
+        // tblRight — cột phải theo template #tab-contracts: toolbar → KPI → bảng → nút → note
         //
-        this.pnlGridSection.BackColor = System.Drawing.ColorTranslator.FromHtml("#181C1F");
-        this.pnlGridSection.Controls.Add(this.dgvContracts);
-        this.pnlGridSection.Controls.Add(this.pnlGridToolbar);
-        this.pnlGridSection.Dock = System.Windows.Forms.DockStyle.Fill;
-        this.pnlGridSection.Location = new System.Drawing.Point(0, 12);
-        this.pnlGridSection.Name = "pnlGridSection";
-        this.pnlGridSection.Padding = new System.Windows.Forms.Padding(12);
-        this.pnlGridSection.TabIndex = 0;
+        this.tblRight.ColumnCount = 1;
+        this.tblRight.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this.tblRight.Controls.Add(this.toolbarContracts, 0, 0);
+        this.tblRight.Controls.Add(this.tblKpis, 0, 1);
+        this.tblRight.Controls.Add(this.pnlGridWrap, 0, 2);
+        this.tblRight.Controls.Add(this.pnlRowButtons, 0, 3);
+        this.tblRight.Controls.Add(this.noteContracts, 0, 4);
+        this.tblRight.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.tblRight.Location = new System.Drawing.Point(0, 12);
+        this.tblRight.Name = "tblRight";
+        this.tblRight.RowCount = 5;
+        this.tblRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
+        this.tblRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 86F));
+        this.tblRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this.tblRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 44F));
+        this.tblRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
+        this.tblRight.TabIndex = 0;
 
         //
-        // pnlGridToolbar
+        // toolbarContracts — .toolbar: tìm kiếm + lọc + nút Tải lại
         //
-        this.pnlGridToolbar.BackColor = System.Drawing.ColorTranslator.FromHtml("#181C1F");
-        this.pnlGridToolbar.Controls.Add(this.lblGridTitle);
-        this.pnlGridToolbar.Controls.Add(this.btnRenew);
-        this.pnlGridToolbar.Controls.Add(this.btnTerminate);
-        this.pnlGridToolbar.Controls.Add(this.btnRefresh);
-        this.pnlGridToolbar.Dock = System.Windows.Forms.DockStyle.Top;
-        this.pnlGridToolbar.Location = new System.Drawing.Point(12, 12);
-        this.pnlGridToolbar.Name = "pnlGridToolbar";
-        this.pnlGridToolbar.Size = new System.Drawing.Size(650, 42);
-        this.pnlGridToolbar.TabIndex = 0;
+        this.toolbarContracts.Controls.Add(this.txtSearch);
+        this.toolbarContracts.Controls.Add(this.cboFilter);
+        this.toolbarContracts.Controls.Add(this.btnRefresh);
+        this.toolbarContracts.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.toolbarContracts.Margin = new System.Windows.Forms.Padding(0, 0, 0, 12);
+        this.toolbarContracts.Name = "toolbarContracts";
+        this.toolbarContracts.TabIndex = 0;
 
         //
-        // lblGridTitle
+        // txtSearch
         //
-        this.lblGridTitle.AutoSize = true;
-        this.lblGridTitle.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-        this.lblGridTitle.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
-        this.lblGridTitle.Location = new System.Drawing.Point(0, 10);
-        this.lblGridTitle.Name = "lblGridTitle";
-        this.lblGridTitle.Size = new System.Drawing.Size(182, 19);
-        this.lblGridTitle.TabIndex = 0;
-        this.lblGridTitle.Text = "DANH SÁCH HỢP ĐỒNG";
+        this.txtSearch.AccessibleName = "Tìm kiếm hợp đồng theo phòng hoặc tên khách";
+        this.txtSearch.BackColor = System.Drawing.ColorTranslator.FromHtml("#15191D");
+        this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+        this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+        this.txtSearch.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
+        this.txtSearch.Location = new System.Drawing.Point(6, 7);
+        this.txtSearch.Name = "txtSearch";
+        this.txtSearch.PlaceholderText = "Tìm CCCD, SĐT, tên khách hoặc số phòng...";
+        this.txtSearch.Size = new System.Drawing.Size(280, 23);
+        this.txtSearch.TabIndex = 0;
 
         //
-        // btnRenew
+        // cboFilter
         //
-        this.btnRenew.AccessibleName = "Gia hạn hợp đồng đã chọn";
-        this.btnRenew.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-        this.btnRenew.BackColor = System.Drawing.ColorTranslator.FromHtml("#1C2126");
-        this.btnRenew.FlatAppearance.BorderColor = System.Drawing.ColorTranslator.FromHtml("#2E373F");
-        this.btnRenew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-        this.btnRenew.Font = new System.Drawing.Font("Segoe UI", 9F);
-        this.btnRenew.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
-        this.btnRenew.Location = new System.Drawing.Point(366, 4);
-        this.btnRenew.Name = "btnRenew";
-        this.btnRenew.Size = new System.Drawing.Size(88, 32);
-        this.btnRenew.TabIndex = 1;
-        this.btnRenew.Text = "Gia Hạn";
-        this.btnRenew.UseVisualStyleBackColor = false;
-
-        //
-        // btnTerminate
-        //
-        this.btnTerminate.AccessibleName = "Chấm dứt hợp đồng đã chọn";
-        this.btnTerminate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-        this.btnTerminate.BackColor = System.Drawing.ColorTranslator.FromHtml("#1F252A");
-        this.btnTerminate.FlatAppearance.BorderColor = System.Drawing.ColorTranslator.FromHtml("#3E2925");
-        this.btnTerminate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-        this.btnTerminate.Font = new System.Drawing.Font("Segoe UI", 9F);
-        this.btnTerminate.ForeColor = System.Drawing.ColorTranslator.FromHtml("#FFB4AB");
-        this.btnTerminate.Location = new System.Drawing.Point(460, 4);
-        this.btnTerminate.Name = "btnTerminate";
-        this.btnTerminate.Size = new System.Drawing.Size(96, 32);
-        this.btnTerminate.TabIndex = 2;
-        this.btnTerminate.Text = "Chấm Dứt";
-        this.btnTerminate.UseVisualStyleBackColor = false;
+        this.cboFilter.AccessibleName = "Lọc hợp đồng theo trạng thái";
+        this.cboFilter.BackColor = System.Drawing.ColorTranslator.FromHtml("#15191D");
+        this.cboFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        this.cboFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        this.cboFilter.Font = new System.Drawing.Font("Segoe UI", 9F);
+        this.cboFilter.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
+        this.cboFilter.FormattingEnabled = true;
+        this.cboFilter.ItemHeight = 20;
+        this.cboFilter.Location = new System.Drawing.Point(294, 6);
+        this.cboFilter.Name = "cboFilter";
+        this.cboFilter.Size = new System.Drawing.Size(190, 28);
+        this.cboFilter.TabIndex = 1;
 
         //
         // btnRefresh
         //
-        this.btnRefresh.AccessibleName = "Làm mới danh sách hợp đồng";
+        this.btnRefresh.AccessibleName = "Tải lại danh sách hợp đồng";
         this.btnRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
         this.btnRefresh.BackColor = System.Drawing.ColorTranslator.FromHtml("#1C2126");
         this.btnRefresh.FlatAppearance.BorderColor = System.Drawing.ColorTranslator.FromHtml("#2E373F");
         this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnRefresh.Font = new System.Drawing.Font("Segoe UI", 9F);
         this.btnRefresh.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
-        this.btnRefresh.Location = new System.Drawing.Point(562, 4);
+        this.btnRefresh.Location = new System.Drawing.Point(566, 6);
         this.btnRefresh.Name = "btnRefresh";
         this.btnRefresh.Size = new System.Drawing.Size(88, 32);
-        this.btnRefresh.TabIndex = 3;
-        this.btnRefresh.Text = "Làm Mới";
+        this.btnRefresh.TabIndex = 2;
+        this.btnRefresh.Text = "Tải lại";
         this.btnRefresh.UseVisualStyleBackColor = false;
+
+        //
+        // tblKpis — 3 thẻ KPI: Hiệu lực / Sắp hết / Tổng cọc
+        //
+        this.tblKpis.ColumnCount = 3;
+        this.tblKpis.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33F));
+        this.tblKpis.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33F));
+        this.tblKpis.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.34F));
+        this.tblKpis.Controls.Add(this.cardKpiActive, 0, 0);
+        this.tblKpis.Controls.Add(this.cardKpiExpiring, 1, 0);
+        this.tblKpis.Controls.Add(this.cardKpiDeposit, 2, 0);
+        this.tblKpis.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.tblKpis.Margin = new System.Windows.Forms.Padding(0, 0, 0, 12);
+        this.tblKpis.Name = "tblKpis";
+        this.tblKpis.RowCount = 1;
+        this.tblKpis.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        this.tblKpis.TabIndex = 1;
+
+        //
+        // cardKpiActive — kpi.green: dải đỉnh Sage
+        //
+        this.cardKpiActive.BorderHex = QuanLyTro.Forms.ScreenTheme.Hairline;
+        this.cardKpiActive.Controls.Add(this.lblKpiActiveCaption);
+        this.cardKpiActive.Controls.Add(this.lblKpiActive);
+        this.cardKpiActive.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.cardKpiActive.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+        this.cardKpiActive.Name = "cardKpiActive";
+        this.cardKpiActive.TopHex = QuanLyTro.Forms.ScreenTheme.Sage;
+        this.cardKpiActive.TabIndex = 0;
+
+        this.lblKpiActiveCaption.AutoSize = true;
+        this.lblKpiActiveCaption.Font = QuanLyTro.Forms.ScreenTheme.KpiLabel;
+        this.lblKpiActiveCaption.ForeColor = System.Drawing.ColorTranslator.FromHtml("#A89988");
+        this.lblKpiActiveCaption.Location = new System.Drawing.Point(12, 11);
+        this.lblKpiActiveCaption.Name = "lblKpiActiveCaption";
+        this.lblKpiActiveCaption.Text = "HIỆU LỰC";
+
+        this.lblKpiActive.AccessibleName = "Số hợp đồng đang hiệu lực";
+        this.lblKpiActive.AutoSize = true;
+        this.lblKpiActive.Font = QuanLyTro.Forms.ScreenTheme.KpiValue;
+        this.lblKpiActive.ForeColor = System.Drawing.ColorTranslator.FromHtml("#8BD7A3");
+        this.lblKpiActive.Location = new System.Drawing.Point(12, 32);
+        this.lblKpiActive.Name = "lblKpiActive";
+        this.lblKpiActive.Text = "—";
+
+        //
+        // cardKpiExpiring — kpi.warn: nền #1F1715, viền #693323, dải đỉnh Terracotta
+        //
+        this.cardKpiExpiring.BorderHex = QuanLyTro.Forms.ScreenTheme.ErrorBorder;
+        this.cardKpiExpiring.Controls.Add(this.lblKpiExpiringCaption);
+        this.cardKpiExpiring.Controls.Add(this.lblKpiExpiring);
+        this.cardKpiExpiring.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.cardKpiExpiring.FillHex = QuanLyTro.Forms.ScreenTheme.ErrorBg;
+        this.cardKpiExpiring.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
+        this.cardKpiExpiring.Name = "cardKpiExpiring";
+        this.cardKpiExpiring.TopHex = QuanLyTro.Forms.ScreenTheme.Terracotta;
+        this.cardKpiExpiring.TabIndex = 1;
+
+        this.lblKpiExpiringCaption.AutoSize = true;
+        this.lblKpiExpiringCaption.BackColor = System.Drawing.Color.Transparent;
+        this.lblKpiExpiringCaption.Font = QuanLyTro.Forms.ScreenTheme.KpiLabel;
+        this.lblKpiExpiringCaption.ForeColor = System.Drawing.ColorTranslator.FromHtml("#A89988");
+        this.lblKpiExpiringCaption.Location = new System.Drawing.Point(12, 11);
+        this.lblKpiExpiringCaption.Name = "lblKpiExpiringCaption";
+        this.lblKpiExpiringCaption.Text = "SẮP HẾT";
+
+        this.lblKpiExpiring.AccessibleName = "Số hợp đồng sắp hết hạn trong 30 ngày";
+        this.lblKpiExpiring.AutoSize = true;
+        this.lblKpiExpiring.BackColor = System.Drawing.Color.Transparent;
+        this.lblKpiExpiring.Font = QuanLyTro.Forms.ScreenTheme.KpiValue;
+        this.lblKpiExpiring.ForeColor = System.Drawing.ColorTranslator.FromHtml("#D95D39");
+        this.lblKpiExpiring.Location = new System.Drawing.Point(12, 32);
+        this.lblKpiExpiring.Name = "lblKpiExpiring";
+        this.lblKpiExpiring.Text = "—";
+
+        //
+        // cardKpiDeposit — kpi mặc định: dải đỉnh border-emphasis-top
+        //
+        this.cardKpiDeposit.BorderHex = QuanLyTro.Forms.ScreenTheme.Hairline;
+        this.cardKpiDeposit.Controls.Add(this.lblKpiDepositCaption);
+        this.cardKpiDeposit.Controls.Add(this.lblKpiDeposit);
+        this.cardKpiDeposit.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.cardKpiDeposit.Name = "cardKpiDeposit";
+        this.cardKpiDeposit.TopHex = QuanLyTro.Forms.ScreenTheme.EmphasisTop;
+        this.cardKpiDeposit.TabIndex = 2;
+
+        this.lblKpiDepositCaption.AutoSize = true;
+        this.lblKpiDepositCaption.Font = QuanLyTro.Forms.ScreenTheme.KpiLabel;
+        this.lblKpiDepositCaption.ForeColor = System.Drawing.ColorTranslator.FromHtml("#A89988");
+        this.lblKpiDepositCaption.Location = new System.Drawing.Point(12, 11);
+        this.lblKpiDepositCaption.Name = "lblKpiDepositCaption";
+        this.lblKpiDepositCaption.Text = "TỔNG CỌC";
+
+        this.lblKpiDeposit.AccessibleName = "Tổng tiền đặt cọc";
+        this.lblKpiDeposit.AutoSize = true;
+        this.lblKpiDeposit.Font = QuanLyTro.Forms.ScreenTheme.KpiValue;
+        this.lblKpiDeposit.ForeColor = System.Drawing.ColorTranslator.FromHtml("#FAF8F5");
+        this.lblKpiDeposit.Location = new System.Drawing.Point(12, 32);
+        this.lblKpiDeposit.Name = "lblKpiDeposit";
+        this.lblKpiDeposit.Text = "—";
+
+        //
+        // pnlGridWrap — .tblwrap: bảng + dải chân
+        //
+        this.pnlGridWrap.BackColor = System.Drawing.ColorTranslator.FromHtml("#14181C");
+        this.pnlGridWrap.Controls.Add(this.dgvContracts);
+        this.pnlGridWrap.Controls.Add(this.tblFoot);
+        this.pnlGridWrap.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.pnlGridWrap.Margin = new System.Windows.Forms.Padding(0, 0, 0, 12);
+        this.pnlGridWrap.Name = "pnlGridWrap";
+        this.pnlGridWrap.TabIndex = 2;
 
         //
         // dgvContracts
@@ -433,7 +555,8 @@ partial class ContractsForm
         this.dgvContracts.AllowUserToAddRows = false;
         this.dgvContracts.AllowUserToDeleteRows = false;
         this.dgvContracts.AllowUserToResizeRows = false;
-        this.dgvContracts.BackgroundColor = System.Drawing.ColorTranslator.FromHtml("#181C1F");
+        this.dgvContracts.AutoGenerateColumns = false;
+        this.dgvContracts.BackgroundColor = System.Drawing.ColorTranslator.FromHtml("#14181C");
         this.dgvContracts.BorderStyle = System.Windows.Forms.BorderStyle.None;
         this.dgvContracts.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
         this.dgvContracts.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
@@ -462,7 +585,7 @@ partial class ContractsForm
         this.dgvContracts.Dock = System.Windows.Forms.DockStyle.Fill;
         this.dgvContracts.EnableHeadersVisualStyles = false;
         this.dgvContracts.GridColor = System.Drawing.ColorTranslator.FromHtml("#1F252B");
-        this.dgvContracts.Location = new System.Drawing.Point(12, 54);
+        this.dgvContracts.Location = new System.Drawing.Point(0, 0);
         this.dgvContracts.MultiSelect = false;
         this.dgvContracts.Name = "dgvContracts";
         this.dgvContracts.ReadOnly = true;
@@ -470,8 +593,15 @@ partial class ContractsForm
         this.dgvContracts.RowTemplate.DefaultCellStyle.Padding = new System.Windows.Forms.Padding(6, 0, 6, 0);
         this.dgvContracts.RowTemplate.Height = 40;
         this.dgvContracts.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-        this.dgvContracts.Size = new System.Drawing.Size(650, 520);
-        this.dgvContracts.TabIndex = 1;
+        this.dgvContracts.Size = new System.Drawing.Size(650, 480);
+        this.dgvContracts.TabIndex = 0;
+
+        //
+        // tblFoot — .tblfoot
+        //
+        this.tblFoot.Dock = System.Windows.Forms.DockStyle.Bottom;
+        this.tblFoot.Name = "tblFoot";
+        this.tblFoot.TabIndex = 1;
 
         //
         // colId
@@ -572,6 +702,57 @@ partial class ContractsForm
         this.colNotes.ReadOnly = true;
 
         //
+        // pnlRowButtons — .rowbn dưới bảng: Gia hạn / Chấm dứt
+        //
+        this.pnlRowButtons.BackColor = System.Drawing.ColorTranslator.FromHtml("#101417");
+        this.pnlRowButtons.Controls.Add(this.btnRenew);
+        this.pnlRowButtons.Controls.Add(this.btnTerminate);
+        this.pnlRowButtons.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.pnlRowButtons.Margin = new System.Windows.Forms.Padding(0, 0, 0, 12);
+        this.pnlRowButtons.Name = "pnlRowButtons";
+        this.pnlRowButtons.TabIndex = 3;
+
+        //
+        // btnRenew
+        //
+        this.btnRenew.AccessibleName = "Gia hạn hợp đồng đã chọn";
+        this.btnRenew.BackColor = System.Drawing.ColorTranslator.FromHtml("#1C2126");
+        this.btnRenew.FlatAppearance.BorderColor = System.Drawing.ColorTranslator.FromHtml("#2E373F");
+        this.btnRenew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        this.btnRenew.Font = new System.Drawing.Font("Segoe UI", 9F);
+        this.btnRenew.ForeColor = System.Drawing.ColorTranslator.FromHtml("#F4EFEA");
+        this.btnRenew.Location = new System.Drawing.Point(0, 0);
+        this.btnRenew.Name = "btnRenew";
+        this.btnRenew.Size = new System.Drawing.Size(100, 32);
+        this.btnRenew.TabIndex = 0;
+        this.btnRenew.Text = "Gia hạn...";
+        this.btnRenew.UseVisualStyleBackColor = false;
+
+        //
+        // btnTerminate
+        //
+        this.btnTerminate.AccessibleName = "Chấm dứt hợp đồng đã chọn";
+        this.btnTerminate.BackColor = System.Drawing.ColorTranslator.FromHtml("#1F252A");
+        this.btnTerminate.FlatAppearance.BorderColor = System.Drawing.ColorTranslator.FromHtml("#3E2925");
+        this.btnTerminate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        this.btnTerminate.Font = new System.Drawing.Font("Segoe UI", 9F);
+        this.btnTerminate.ForeColor = System.Drawing.ColorTranslator.FromHtml("#FFB4AB");
+        this.btnTerminate.Location = new System.Drawing.Point(108, 0);
+        this.btnTerminate.Name = "btnTerminate";
+        this.btnTerminate.Size = new System.Drawing.Size(110, 32);
+        this.btnTerminate.TabIndex = 1;
+        this.btnTerminate.Text = "Chấm dứt...";
+        this.btnTerminate.UseVisualStyleBackColor = false;
+
+        //
+        // noteContracts — .note
+        //
+        this.noteContracts.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.noteContracts.Margin = new System.Windows.Forms.Padding(0);
+        this.noteContracts.Name = "noteContracts";
+        this.noteContracts.TabIndex = 4;
+
+        //
         // ContractsForm
         //
         this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -590,10 +771,16 @@ partial class ContractsForm
         this.cardInput.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)(this.numRentalPrice)).EndInit();
         ((System.ComponentModel.ISupportInitialize)(this.numDepositAmount)).EndInit();
-        this.pnlGridSection.ResumeLayout(false);
-        this.pnlGridToolbar.ResumeLayout(false);
-        this.pnlGridToolbar.PerformLayout();
+        this.tblRight.ResumeLayout(false);
+        this.toolbarContracts.ResumeLayout(false);
+        this.toolbarContracts.PerformLayout();
+        this.tblKpis.ResumeLayout(false);
+        this.cardKpiActive.ResumeLayout(false);
+        this.cardKpiExpiring.ResumeLayout(false);
+        this.cardKpiDeposit.ResumeLayout(false);
+        this.pnlGridWrap.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)(this.dgvContracts)).EndInit();
+        this.pnlRowButtons.ResumeLayout(false);
         this.ResumeLayout(false);
     }
 
@@ -615,12 +802,22 @@ partial class ContractsForm
     private System.Windows.Forms.Label lblNotes;
     private System.Windows.Forms.TextBox txtNotes;
     private System.Windows.Forms.Button btnCreate;
-    private System.Windows.Forms.Panel pnlGridSection;
-    private System.Windows.Forms.Panel pnlGridToolbar;
-    private System.Windows.Forms.Label lblGridTitle;
-    private System.Windows.Forms.Button btnRenew;
-    private System.Windows.Forms.Button btnTerminate;
+    private System.Windows.Forms.TableLayoutPanel tblRight;
+    private QuanLyTro.Forms.ToolbarPanel toolbarContracts;
+    private System.Windows.Forms.TextBox txtSearch;
+    private System.Windows.Forms.ComboBox cboFilter;
     private System.Windows.Forms.Button btnRefresh;
+    private System.Windows.Forms.TableLayoutPanel tblKpis;
+    private QuanLyTro.Forms.ContractsForm.KpiCard cardKpiActive;
+    private System.Windows.Forms.Label lblKpiActiveCaption;
+    private System.Windows.Forms.Label lblKpiActive;
+    private QuanLyTro.Forms.ContractsForm.KpiCard cardKpiExpiring;
+    private System.Windows.Forms.Label lblKpiExpiringCaption;
+    private System.Windows.Forms.Label lblKpiExpiring;
+    private QuanLyTro.Forms.ContractsForm.KpiCard cardKpiDeposit;
+    private System.Windows.Forms.Label lblKpiDepositCaption;
+    private System.Windows.Forms.Label lblKpiDeposit;
+    private System.Windows.Forms.Panel pnlGridWrap;
     private System.Windows.Forms.DataGridView dgvContracts;
     private System.Windows.Forms.DataGridViewTextBoxColumn colId;
     private System.Windows.Forms.DataGridViewTextBoxColumn colRoom;
@@ -632,4 +829,9 @@ partial class ContractsForm
     private System.Windows.Forms.DataGridViewTextBoxColumn colDepositAmount;
     private System.Windows.Forms.DataGridViewTextBoxColumn colStatus;
     private System.Windows.Forms.DataGridViewTextBoxColumn colNotes;
+    private QuanLyTro.Forms.TblFootPanel tblFoot;
+    private System.Windows.Forms.Panel pnlRowButtons;
+    private System.Windows.Forms.Button btnRenew;
+    private System.Windows.Forms.Button btnTerminate;
+    private System.Windows.Forms.Panel noteContracts;
 }
