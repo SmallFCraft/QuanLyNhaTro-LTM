@@ -309,6 +309,8 @@ public class TblFootPanel : Panel
         var tail = _selected is null ? "Chọn: —" : $"Chọn: {_selected}";
         _left.Text = string.Concat("Tổng: ", _total.ToString(CultureInfo.InvariantCulture),
             " bản ghi  |  ", tail);
+        // Giữ AccessibleName khớp nội dung thật: trình đọc màn hình và UIA đọc đúng số liệu.
+        _left.AccessibleName = _left.Text;
         _left.Invalidate();
     }
 

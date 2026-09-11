@@ -4,7 +4,9 @@ namespace QuanLyTro.Forms
     {
         private System.ComponentModel.IContainer components = null;
 
-        private System.Windows.Forms.Panel pnlToolbar;
+        private ToolbarPanel pnlToolbar;
+        private TblFootPanel tblFoot;
+        private System.Windows.Forms.Panel pnlNote;
         private System.Windows.Forms.Panel pnlHeader;
         private System.Windows.Forms.Panel pnlMain;
         private System.Windows.Forms.SplitContainer splitMain;
@@ -69,7 +71,9 @@ namespace QuanLyTro.Forms
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.pnlToolbar = new System.Windows.Forms.Panel();
+            this.pnlToolbar = new ToolbarPanel();
+            this.tblFoot = new TblFootPanel();
+            this.pnlNote = NoteBar.Create("Đã thu = bất biến (BR-11). Server tự tính mọi khoản, Client chỉ gửi Phòng + Tháng + Phí khác.");
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.pnlMain = new System.Windows.Forms.Panel();
             this.splitMain = new System.Windows.Forms.SplitContainer();
@@ -207,15 +211,28 @@ namespace QuanLyTro.Forms
             this.splitMain.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitMain.SplitterDistance = 640;
             this.splitMain.SplitterWidth = 8;
-            this.splitMain.Panel1.Controls.Add(this.grid);
             this.splitMain.Panel2.Controls.Add(this.pnlForm);
             this.splitMain.Panel2.Controls.Add(this.pnlDetail);
 
-            // ---- grid ----
+            // ---- grid + chân bảng + ghi chú (template .tblwrap/.tblfoot/.note) ----
+            // Thứ tự Add quyết định layout dock: Note dưới cùng, rồi tblFoot, grid lấp phần còn lại.
             this.grid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grid.TabIndex = 0;
             this.grid.AccessibleName = "Danh sách hóa đơn";
             this.grid.Name = "grid";
+
+            this.tblFoot.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.tblFoot.Name = "tblFoot";
+            this.tblFoot.TabIndex = 1;
+            this.tblFoot.AccessibleName = "Chân bảng danh sách hóa đơn";
+
+            this.pnlNote.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlNote.Name = "pnlNote";
+            this.pnlNote.TabIndex = 2;
+
+            this.splitMain.Panel1.Controls.Add(this.grid);
+            this.splitMain.Panel1.Controls.Add(this.tblFoot);
+            this.splitMain.Panel1.Controls.Add(this.pnlNote);
 
             // ---- detail panel ----
             this.pnlDetail.Dock = System.Windows.Forms.DockStyle.Top;

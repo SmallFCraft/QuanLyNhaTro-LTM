@@ -13,8 +13,13 @@ namespace QuanLyTro.Forms
         private System.Windows.Forms.Panel pnlKpiOccupancy;
         private System.Windows.Forms.Panel pnlKpiOccupancyBar;
         private System.Windows.Forms.Panel pnlHeader;
+        private ScreenTheme.CardPanel pnlChart;
+        private System.Windows.Forms.Label lblChartTitle;
+        private ChartBarsPanel pnlChartArea;
+        private MeterPanel pnlMeter;
         private System.Windows.Forms.Panel pnlGridHost;
         private System.Windows.Forms.Panel pnlNote;
+
 
         private System.Windows.Forms.Label lblMonth;
         private System.Windows.Forms.ComboBox cboMonth;
@@ -67,6 +72,10 @@ namespace QuanLyTro.Forms
             this.pnlKpiOccupancy = new System.Windows.Forms.Panel();
             this.pnlKpiOccupancyBar = new System.Windows.Forms.Panel();
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.pnlChart = new ScreenTheme.CardPanel();
+            this.lblChartTitle = new System.Windows.Forms.Label();
+            this.pnlChartArea = new ChartBarsPanel();
+            this.pnlMeter = new MeterPanel();
             this.pnlGridHost = new System.Windows.Forms.Panel();
             this.pnlNote = new System.Windows.Forms.Panel();
             this.lblMonth = new System.Windows.Forms.Label();
@@ -136,7 +145,7 @@ namespace QuanLyTro.Forms
 
             // ---- kpi panel ----
             this.pnlKpis.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlKpis.Height = 96;
+            this.pnlKpis.Height = 104;
             this.pnlKpis.BackColor = ScreenTheme.From(ScreenTheme.Base);
             this.pnlKpis.Padding = new System.Windows.Forms.Padding(12, 0, 12, 8);
             this.pnlKpis.Controls.Add(this.pnlKpiOccupancy);
@@ -219,6 +228,7 @@ namespace QuanLyTro.Forms
             this.pnlKpiOccupancy.Controls.Add(this.lblKpiOccupancyTitle);
             this.pnlKpiOccupancy.Controls.Add(this.lblKpiOccupancyValue);
             this.pnlKpiOccupancy.Controls.Add(this.lblKpiOccupancySub);
+            this.pnlKpiOccupancy.Controls.Add(this.pnlMeter);
 
             this.pnlKpiOccupancyBar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlKpiOccupancyBar.Height = 2;
@@ -244,6 +254,37 @@ namespace QuanLyTro.Forms
             this.lblKpiOccupancySub.Font = ScreenTheme.Body;
             this.lblKpiOccupancySub.ForeColor = ScreenTheme.From(ScreenTheme.Dim);
             this.lblKpiOccupancySub.BackColor = System.Drawing.Color.Transparent;
+
+            // ---- meter 6px (template .meter) trong KPI lấp đầy: track #12161A viền #2A3239, fill Sage ----
+            this.pnlMeter.Location = new System.Drawing.Point(12, 82);
+            this.pnlMeter.Size = new System.Drawing.Size(312, 8);
+            this.pnlMeter.Name = "pnlMeter";
+            this.pnlMeter.AccessibleName = "Thanh lấp đầy phòng";
+
+            // ---- card biểu đồ cột "Đã thu theo tháng" (template .card.barchart + .chartbar) ----
+            this.pnlChart.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlChart.Height = 158;
+            this.pnlChart.Name = "pnlChart";
+            this.pnlChart.FillHex = ScreenTheme.Card;
+            this.pnlChart.BorderHex = ScreenTheme.Hairline;
+            this.pnlChart.Radius = 8;
+            this.pnlChart.BackColor = ScreenTheme.From(ScreenTheme.Base);
+            this.pnlChart.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
+            this.pnlChart.Controls.Add(this.pnlChartArea);
+            this.pnlChart.Controls.Add(this.lblChartTitle);
+
+            this.lblChartTitle.AutoSize = true;
+            this.lblChartTitle.Location = new System.Drawing.Point(12, 10);
+            this.lblChartTitle.Text = "ĐÃ THU THEO THÁNG (6 KỲ)";
+            this.lblChartTitle.Font = ScreenTheme.HeaderFont;
+            this.lblChartTitle.ForeColor = ScreenTheme.From(ScreenTheme.Muted);
+            this.lblChartTitle.BackColor = System.Drawing.Color.Transparent;
+
+            this.pnlChartArea.Location = new System.Drawing.Point(14, 30);
+            this.pnlChartArea.Size = new System.Drawing.Size(980, 110);
+            this.pnlChartArea.Name = "pnlChartArea";
+            this.pnlChartArea.AccessibleName = "Biểu đồ cột đã thu theo tháng";
+            this.pnlChartArea.BackColor = ScreenTheme.From(ScreenTheme.Card);
 
             // ---- header khối bảng ----
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
@@ -300,6 +341,7 @@ namespace QuanLyTro.Forms
             this.Controls.Add(this.pnlGridHost);
             this.Controls.Add(this.pnlNote);
             this.Controls.Add(this.pnlHeader);
+            this.Controls.Add(this.pnlChart);
             this.Controls.Add(this.pnlKpis);
             this.Controls.Add(this.pnlToolbar);
             this.Font = ScreenTheme.Body;
@@ -320,6 +362,8 @@ namespace QuanLyTro.Forms
             this.pnlKpiOccupancy.PerformLayout();
             this.pnlHeader.ResumeLayout(false);
             this.pnlHeader.PerformLayout();
+            this.pnlChart.ResumeLayout(false);
+            this.pnlChartArea.ResumeLayout(false);
             this.pnlGridHost.ResumeLayout(false);
             this.pnlNote.ResumeLayout(false);
             this.pnlNote.PerformLayout();

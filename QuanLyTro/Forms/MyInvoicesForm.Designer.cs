@@ -51,6 +51,10 @@ namespace QuanLyTro.Forms
         private System.Windows.Forms.Panel pnlHistoryHeader;
         private System.Windows.Forms.Label lblHistoryTitle;
         private System.Windows.Forms.Label lblRowCount;
+        private TblFootPanel tblFoot;
+        private System.Windows.Forms.FlowLayoutPanel pnlActions;
+        private System.Windows.Forms.Button btnCopyTransfer;
+        private System.Windows.Forms.Button btnSync;
         private System.Windows.Forms.Panel pnlHistoryHost;
         private System.Windows.Forms.DataGridView grid;
         private ScreenTheme.CardPanel pnlEmptyState;
@@ -119,6 +123,10 @@ namespace QuanLyTro.Forms
             this.lblHistoryTitle = new System.Windows.Forms.Label();
             this.lblRowCount = new System.Windows.Forms.Label();
             this.pnlHistoryHost = new System.Windows.Forms.Panel();
+            this.tblFoot = new TblFootPanel();
+            this.pnlActions = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnCopyTransfer = new System.Windows.Forms.Button();
+            this.btnSync = new System.Windows.Forms.Button();
             this.grid = new System.Windows.Forms.DataGridView();
             this.pnlEmptyState = new ScreenTheme.CardPanel();
             this.lblEmpty = new System.Windows.Forms.Label();
@@ -154,6 +162,7 @@ namespace QuanLyTro.Forms
             this.pnlMain.Controls.Add(this.pnlEmptyState);
             this.pnlMain.Controls.Add(this.pnlBanner);
             this.pnlMain.Controls.Add(this.pnlProfile);
+            this.pnlMain.Controls.Add(this.pnlActions);
 
             // ---- profile card ----
             this.pnlProfile.Dock = System.Windows.Forms.DockStyle.Top;
@@ -487,6 +496,35 @@ namespace QuanLyTro.Forms
             this.pnlHistoryHost.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlHistoryHost.BackColor = ScreenTheme.From(ScreenTheme.Base);
             this.pnlHistoryHost.Controls.Add(this.grid);
+            this.pnlHistoryHost.Controls.Add(this.tblFoot);
+
+            // ---- hàng nút (template .rowbn): primary copy + outline đồng bộ ----
+            this.pnlActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActions.Height = 34;
+            this.pnlActions.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.pnlActions.WrapContents = false;
+            this.pnlActions.BackColor = ScreenTheme.From(ScreenTheme.Base);
+            this.pnlActions.Padding = new System.Windows.Forms.Padding(0, 4, 0, 0);
+            this.pnlActions.Controls.Add(this.btnCopyTransfer);
+            this.pnlActions.Controls.Add(this.btnSync);
+
+            this.btnCopyTransfer.AutoSize = true;
+            this.btnCopyTransfer.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
+            this.btnCopyTransfer.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.btnCopyTransfer.Text = "Sao chép nội dung chuyển khoản";
+            this.btnCopyTransfer.UseVisualStyleBackColor = false;
+            this.btnCopyTransfer.FlatStyle = FlatStyle.Flat;
+            this.btnCopyTransfer.Enabled = false;
+            this.btnCopyTransfer.TabIndex = 1;
+            this.btnCopyTransfer.AccessibleName = "Sao chép nội dung chuyển khoản";
+
+            this.btnSync.AutoSize = true;
+            this.btnSync.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.btnSync.Text = "Đồng bộ F5";
+            this.btnSync.UseVisualStyleBackColor = false;
+            this.btnSync.FlatStyle = FlatStyle.Flat;
+            this.btnSync.TabIndex = 2;
+            this.btnSync.AccessibleName = "Đồng bộ F5";
 
             this.grid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grid.TabIndex = 0;
@@ -540,6 +578,8 @@ namespace QuanLyTro.Forms
             this.pnlHistoryHeader.ResumeLayout(false);
             this.pnlHistoryHeader.PerformLayout();
             this.pnlHistoryHost.ResumeLayout(false);
+            this.pnlActions.ResumeLayout(false);
+            this.pnlActions.PerformLayout();
             this.pnlEmptyState.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.grid)).EndInit();
             this.ResumeLayout(false);

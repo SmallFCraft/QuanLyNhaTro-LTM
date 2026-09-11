@@ -300,6 +300,8 @@ public partial class InvoicesForm : UserControl
         }
 
         lblRowCount.Text = $"{count} bản ghi";
+        tblFoot.SetTotal(count);
+        tblFoot.SetSelected(grid.Rows.Count > 0 ? Convert.ToString(grid.Rows[0].Cells[0].Value, CultureInfo.InvariantCulture) : null);
         if (grid.Rows.Count > 0)
         {
             grid.Rows[0].Selected = true;
@@ -462,6 +464,11 @@ public partial class InvoicesForm : UserControl
         if (grid.SelectedRows.Count > 0 && grid.SelectedRows[0].Tag is InvoiceDto inv)
         {
             ShowDetail(inv);
+            tblFoot.SetSelected(Convert.ToString(grid.SelectedRows[0].Cells[0].Value, CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            tblFoot.SetSelected(null);
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Text;
 using QuanLyTro.Shared.Models;
@@ -15,6 +16,7 @@ public partial class ReportsForm : UserControl
 {
     private const int MonthRange = 6;
     private readonly List<SummaryReportDto> _summaries = [];
+    private readonly List<string> _months = [];
 
     public ReportsForm()
     {
@@ -156,6 +158,7 @@ public partial class ReportsForm : UserControl
     {
         var anchor = ParseAnchorMonth();
         _summaries.Clear();
+        _months.Clear();
         grid.Rows.Clear();
 
         try
@@ -172,6 +175,7 @@ public partial class ReportsForm : UserControl
                     CancellationToken.None);
 
                 _summaries.Add(summary);
+            _months.Add(month);
                 grid.Rows.Add(
                     month,
                     ScreenTheme.Money(summary.PaidAmount),
@@ -228,6 +232,13 @@ public partial class ReportsForm : UserControl
             : 0;
         lblKpiOccupancyValue.Text = $"{occupancy}%";
         lblKpiOccupancySub.Text = $"Đang thuê {current.RentedRooms} / {current.TotalRooms} phòng · {current.CurrentTenants} người ở";
+        pnlMeter.SetPercent(occupancy);
+
+        // Biểu đồ cột "Đã thu theo tháng": cột kỳ đang chọn tô Terracotta (.b.on)
+        var anchor = ParseAnchorMonth().ToString("yyyy-MM", CultureInfo.InvariantCulture);
+        pnlChartArea.SetData(_summaries
+            .Select((s, i) => (_months[i], s.PaidAmount, _months[i] == anchor))
+            .ToList());
     }
 
     private void Grid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
@@ -332,4 +343,118 @@ public partial class ReportsForm : UserControl
         var text = value ?? string.Empty;
         return "\"" + text.Replace("\"", "\"\"") + "\"";
     }
+}
+
+/// <summary>Thanh lấp đầy theo template .meter: track #12161A viền #2A3239 bo 4px, phần trăm tô Sage.</summary>
+public class MeterPanel : Panel
+{
+    public MeterPanel()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint
+            | ControlStyles.OptimizedDoubleBuffer, true);
+        BackColor = ScreenTheme.From(ScreenTheme.Card);
+        AccessibleName = "Thanh lấp đầy";
+    }
+
+    /// <summary>0–100.</summary>
+    private int Percent { get; set; }
+
+    public void SetPercent(int percent)
+    {
+        Percent = percent;
+        Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var bounds = new Rectangle(0, 0, Width - 1, Height - 1);
+        ScreenTheme.PaintCard(e.Graphics, bounds, ScreenTheme.MeterTrack, ScreenTheme.MeterBorder, 4);
+
+        var inner = new Rectangle(bounds.X + 1, bounds.Y + 1, bounds.Width - 2, bounds.Height - 2);
+        var filled = (int)Math.Round(inner.Width * Math.Clamp(Percent, 0, 100) / 100d);
+        if (filled <= 0)
+        {
+            return;
+        }
+
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        using var brush = new SolidBrush(ScreenTheme.From(ScreenTheme.Sage));
+        e.Graphics.FillRectangle(brush, inner.X, inner.Y, Math.Min(filled, inner.Width), inner.Height);
+    }
+}
+
+/// <summary>
+/// Biểu đồ cột theo template .chartbar: cột flex đáy, bo trên 3px, nhãn giá trị trên cột và
+/// nhãn tháng dưới chân. Cột kỳ đang chọn dùng ChartBarOnBg/ChartBarOnBorder như .b.on.
+/// </summary>
+public class ChartBarsPanel : Panel
+{
+    private readonly List<(string Month, decimal Paid, bool On)> _bars = [];
+
+    public ChartBarsPanel()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint
+            | ControlStyles.OptimizedDoubleBuffer, true);
+        BackColor = ScreenTheme.From(ScreenTheme.Card);
+    }
+
+    public void SetData(List<(string Month, decimal Paid, bool On)> bars)
+    {
+        _bars.Clear();
+        _bars.AddRange(bars);
+        Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        if (_bars.Count == 0)
+        {
+            return;
+        }
+
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        const int LabelTop = 16;    // chỗ cho nhãn giá trị phía trên cột
+        const int LabelBottom = 18; // chỗ cho nhãn tháng dưới chân
+        const int Gap = 6;
+        var trackTop = LabelTop;
+        var trackBottom = Math.Max(trackTop + 1, Height - LabelBottom);
+        var trackHeight = trackBottom - trackTop;
+        var max = _bars.Max(b => b.Paid);
+        var barWidth = Math.Max(4, (Width - Gap * (_bars.Count - 1)) / _bars.Count);
+
+        for (var i = 0; i < _bars.Count; i++)
+        {
+            var (month, paid, on) = _bars[i];
+            var ratio = max > 0 ? (double)paid / (double)max : 0d;
+            var barHeight = Math.Max(2, (int)Math.Round(trackHeight * ratio));
+            var x = i * (barWidth + Gap);
+            var rect = new Rectangle(x, trackBottom - barHeight, barWidth, barHeight);
+
+            using (var path = ScreenTheme.RoundedRect(rect, 3))
+            {
+                using var brush = new SolidBrush(ScreenTheme.From(on ? ScreenTheme.ChartBarOnBg : ScreenTheme.ChartBarBg));
+                e.Graphics.FillPath(brush, path);
+                using var pen = new Pen(ScreenTheme.From(on ? ScreenTheme.ChartBarOnBorder : ScreenTheme.ChartBarBorder));
+                e.Graphics.DrawPath(pen, path);
+            }
+
+            var valueText = ShortMoney(paid);
+            TextRenderer.DrawText(e.Graphics, valueText, ScreenTheme.FootFont,
+                new Rectangle(x, rect.Y - 16, barWidth, 14), ScreenTheme.From(ScreenTheme.Muted),
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+
+            // Nhãn tháng cuối kỳ: "yyyy-MM" -> "MM"
+            var monthLabel = month.Length >= 7 ? month[5..7] : month;
+            TextRenderer.DrawText(e.Graphics, monthLabel, ScreenTheme.FootFont,
+                new Rectangle(x, trackBottom + 2, barWidth, 14), ScreenTheme.From(ScreenTheme.Dim),
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+    }
+
+    /// <summary>Rút gọn tiền cho nhãn cột: 15.400.000 -> "15,4Tr" (template .chartbar .b i).</summary>
+    private static string ShortMoney(decimal value) =>
+        value >= 1_000_000m
+            ? (value / 1_000_000m).ToString("0.#", CultureInfo.GetCultureInfo("vi-VN")) + "Tr"
+            : value.ToString("N0", CultureInfo.GetCultureInfo("vi-VN"));
 }

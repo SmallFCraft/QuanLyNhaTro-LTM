@@ -35,6 +35,17 @@ public partial class MyInvoicesForm : UserControl
         pnlEmptyState.BorderHex = ScreenTheme.Hairline;
         pnlEmptyState.Radius = 8;
 
+        // Nút hàng .rowbn: primary copy + outline đồng bộ (DESIGN.md §3.3)
+        btnCopyTransfer.BackColor = ScreenTheme.From(ScreenTheme.Terracotta);
+        btnCopyTransfer.ForeColor = ScreenTheme.From(ScreenTheme.OnFill);
+        btnCopyTransfer.FlatAppearance.BorderColor = ScreenTheme.From(ScreenTheme.Terracotta);
+        btnCopyTransfer.FlatAppearance.MouseOverBackColor = ScreenTheme.From(ScreenTheme.TerracottaHover);
+
+        btnSync.BackColor = ScreenTheme.From(ScreenTheme.Panel);
+        btnSync.ForeColor = ScreenTheme.From(ScreenTheme.Cream);
+        btnSync.FlatAppearance.BorderColor = ScreenTheme.From(ScreenTheme.OutlineBtn);
+        btnSync.FlatAppearance.MouseOverBackColor = ScreenTheme.From(ScreenTheme.HoverBg);
+
         grid.BackColor = ScreenTheme.From(ScreenTheme.GridBg);
         grid.AlternatingRowsDefaultCellStyle.BackColor = ScreenTheme.From(ScreenTheme.RowAlt);
         grid.AlternatingRowsDefaultCellStyle.ForeColor = ScreenTheme.From(ScreenTheme.Cream);
@@ -108,6 +119,20 @@ public partial class MyInvoicesForm : UserControl
 
         grid.CellPainting += Grid_CellPainting;
         grid.SelectionChanged += Grid_SelectionChanged;
+        btnCopyTransfer.Click += BtnCopyTransfer_Click;
+        btnSync.Click += async (s, e) => await RefreshAsync();
+    }
+
+    /// <summary>F5 đồng bộ lại — template .rowbn "Đồng bộ F5".</summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.F5)
+        {
+            _ = RefreshAsync();
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
     }
 
     protected override async void OnLoad(EventArgs e)
@@ -158,11 +183,18 @@ public partial class MyInvoicesForm : UserControl
         }
 
         lblRowCount.Text = $"{_invoices.Count} bản ghi";
+        tblFoot.SetTotal(_invoices.Count);
+        tblFoot.SetSelected(grid.Rows.Count > 0
+            ? Convert.ToString(grid.Rows[0].Cells[0].Value, CultureInfo.InvariantCulture)
+            : null);
 
         if (grid.Rows.Count > 0)
         {
             grid.Rows[0].Selected = true;
         }
+
+        // DataGridView tự chọn dòng 0 lúc Rows.Add (Tag chưa gán) nên event không bật được nút copy.
+        UpdateCopyButton(grid.Rows.Count > 0 ? grid.Rows[0].Tag as InvoiceDto : null);
     }
 
     private void BindReceipt(InvoiceDto? inv)
@@ -213,7 +245,32 @@ public partial class MyInvoicesForm : UserControl
         if (grid.SelectedRows.Count > 0 && grid.SelectedRows[0].Tag is InvoiceDto inv)
         {
             BindReceipt(inv);
+            tblFoot.SetSelected(inv.BillingMonth);
+            UpdateCopyButton(inv);
         }
+        else
+        {
+            tblFoot.SetSelected(null);
+            UpdateCopyButton(null);
+        }
+    }
+
+    /// <summary>Nút copy chỉ bật khi đã chọn một kỳ (template .rowbn, BR-14: chỉ đọc).</summary>
+    private void UpdateCopyButton(InvoiceDto? inv)
+    {
+        btnCopyTransfer.Enabled = inv != null;
+    }
+
+    private void BtnCopyTransfer_Click(object? sender, EventArgs e)
+    {
+        if (grid.SelectedRows.Count == 0 || grid.SelectedRows[0].Tag is not InvoiceDto inv)
+        {
+            return;
+        }
+
+        var room = _roomNames.TryGetValue(inv.RoomId, out var roomNumber) ? roomNumber : inv.RoomId.ToString(CultureInfo.InvariantCulture);
+        var amount = inv.TotalAmount.ToString("N0", CultureInfo.GetCultureInfo("vi-VN"));
+        Clipboard.SetText($"Chuyen tien P{room} ky {inv.BillingMonth} so tien {amount}đ - QuanLy Tro Ngu Hanh Son");
     }
 
     private void Grid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
