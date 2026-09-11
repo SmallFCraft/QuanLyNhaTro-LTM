@@ -5,38 +5,37 @@ using QuanLyTro.Shared.Protocol;
 namespace QuanLyTro.Forms;
 
 /// <summary>
-/// Màn hình quản lý phòng (Sub-Plan F — Step 1).
-/// DataGridView readonly: số phòng, giá, sức chứa, số người, trạng thái, mô tả.
+/// Màn hình quản lý phòng — bố cục theo template .toolbar / .tblwrap / .tblfoot / .note.
+/// DataGridView readonly: số phòng, giá, sức chứa, đang ở, trạng thái, mô tả + cột nút Sửa/Xóa.
 /// Thêm/Sửa/Xóa/F5 gọi ROOM_*, client chỉ kiểm tra empty/malformed, Server quyết BR-01/BR-12.
 /// </summary>
 public partial class RoomsForm : UserControl
 {
-    private sealed record StatusComboItem(RoomStatus Status, string DisplayText);
+    private const string RowActionEdit = "Sửa";
+    private const string RowActionDelete = "Xóa";
 
-    private static readonly Color SurfacePanel = ColorTranslator.FromHtml("#1A1F24");
-    private static readonly Color SurfaceActive = ColorTranslator.FromHtml("#21262B");
-    private static readonly Color HeaderBg = ColorTranslator.FromHtml("#1A2025");
-    private static readonly Color GridBg = ColorTranslator.FromHtml("#14181C");
-    private static readonly Color RowAlt = ColorTranslator.FromHtml("#161B1F");
-    private static readonly Color BorderSubtle = ColorTranslator.FromHtml("#21272C");
-    private static readonly Color TextDim = ColorTranslator.FromHtml("#767E88");
-    private static readonly Color TextCream = ColorTranslator.FromHtml("#F4EFEA");
-    private static readonly Color TextCreamLight = ColorTranslator.FromHtml("#FAF8F5");
-    private static readonly Color Terracotta = ColorTranslator.FromHtml("#D95D39");
+    public sealed record StatusFilterItem(RoomStatus? Status, string DisplayText);
 
-    private static readonly Font HeaderFont = new("Segoe UI", 8.25f, FontStyle.Bold);
-    private static readonly Font BodyFont = new("Segoe UI", 9f);
-    private static readonly Font MonoFont = new("Consolas", 9.5f);
+    private static readonly (string Fore, string Back, string Border) TagAvailable =
+        (ScreenTheme.Neutral, ScreenTheme.EmptyBg, ScreenTheme.TagEmptyBorder);
+    private static readonly (string Fore, string Back, string Border) TagRented =
+        (ScreenTheme.Sage, ScreenTheme.SageBg, ScreenTheme.SageBorder);
+    private static readonly (string Fore, string Back, string Border) TagMaintenance =
+        (ScreenTheme.Amber, ScreenTheme.AmberBg, ScreenTheme.AmberBorder);
 
     private readonly List<RoomDto> _rooms = [];
     private RoomDto? _editingRoom;
+    private bool _suppressFilterReload;
 
     public RoomsForm()
     {
         InitializeComponent();
         ConfigureGrid();
-        PopulateStatusCombo();
+        PopulateStatusFilter();
         WireEvents();
+
+        pnlNote.Controls.Add(NoteBar.Create(
+            "Chỉ xóa được phòng trống (BR-12). Số người = đếm trực tiếp từ tenants."));
     }
 
     private void ConfigureGrid()
@@ -50,42 +49,47 @@ public partial class RoomsForm : UserControl
         dgvRooms.MultiSelect = false;
         dgvRooms.RowHeadersVisible = false;
         dgvRooms.BorderStyle = BorderStyle.None;
-        dgvRooms.BackgroundColor = GridBg;
-        dgvRooms.GridColor = BorderSubtle;
+        dgvRooms.BackgroundColor = ScreenTheme.From(ScreenTheme.GridBg);
+        dgvRooms.GridColor = ScreenTheme.From(ScreenTheme.Subtle);
         dgvRooms.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
         dgvRooms.RowTemplate.Height = 40;
         dgvRooms.ColumnHeadersHeight = 34;
         dgvRooms.EnableHeadersVisualStyles = false;
         dgvRooms.ScrollBars = ScrollBars.Vertical;
+        dgvRooms.DefaultCellStyle.SelectionBackColor = ScreenTheme.From(ScreenTheme.Active);
+        dgvRooms.AlternatingRowsDefaultCellStyle.SelectionBackColor = ScreenTheme.From(ScreenTheme.Active);
 
-        dgvRooms.ColumnHeadersDefaultCellStyle.BackColor = HeaderBg;
-        dgvRooms.ColumnHeadersDefaultCellStyle.ForeColor = TextDim;
-        dgvRooms.ColumnHeadersDefaultCellStyle.Font = HeaderFont;
+        dgvRooms.ColumnHeadersDefaultCellStyle.BackColor = ScreenTheme.From(ScreenTheme.HeaderBg);
+        dgvRooms.ColumnHeadersDefaultCellStyle.ForeColor = ScreenTheme.From(ScreenTheme.Dim);
+        dgvRooms.ColumnHeadersDefaultCellStyle.Font = ScreenTheme.HeaderFont;
         dgvRooms.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
         dgvRooms.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
 
-        dgvRooms.DefaultCellStyle.BackColor = SurfacePanel;
-        dgvRooms.DefaultCellStyle.ForeColor = TextCream;
-        dgvRooms.DefaultCellStyle.Font = BodyFont;
-        dgvRooms.DefaultCellStyle.SelectionBackColor = SurfaceActive;
-        dgvRooms.DefaultCellStyle.SelectionForeColor = TextCreamLight;
-        dgvRooms.AlternatingRowsDefaultCellStyle.BackColor = RowAlt;
-        dgvRooms.AlternatingRowsDefaultCellStyle.ForeColor = TextCream;
-        dgvRooms.AlternatingRowsDefaultCellStyle.SelectionBackColor = SurfaceActive;
-        dgvRooms.AlternatingRowsDefaultCellStyle.SelectionForeColor = TextCreamLight;
+        dgvRooms.DefaultCellStyle.BackColor = ScreenTheme.From(ScreenTheme.Panel);
+        dgvRooms.DefaultCellStyle.ForeColor = ScreenTheme.From(ScreenTheme.Cream);
+        dgvRooms.DefaultCellStyle.Font = ScreenTheme.Body;
+        dgvRooms.DefaultCellStyle.SelectionForeColor = ScreenTheme.From(ScreenTheme.CreamLight);
+        dgvRooms.AlternatingRowsDefaultCellStyle.BackColor = ScreenTheme.From(ScreenTheme.RowAlt2);
+        dgvRooms.AlternatingRowsDefaultCellStyle.ForeColor = ScreenTheme.From(ScreenTheme.Cream);
+        dgvRooms.AlternatingRowsDefaultCellStyle.SelectionForeColor = ScreenTheme.From(ScreenTheme.CreamLight);
 
         dgvRooms.CellPainting += DgvRooms_CellPainting;
+        dgvRooms.CellMouseClick += DgvRooms_CellMouseClick;
+        dgvRooms.CellMouseMove += DgvRooms_CellMouseMove;
+        dgvRooms.SelectionChanged += (_, _) => UpdateSelectionSummary();
     }
 
-    private void PopulateStatusCombo()
+    private void PopulateStatusFilter()
     {
-        cboStatus.Items.Clear();
-        cboStatus.Items.Add(new StatusComboItem(RoomStatus.Available, "Trống (Available)"));
-        cboStatus.Items.Add(new StatusComboItem(RoomStatus.Rented, "Đang thuê (Rented)"));
-        cboStatus.Items.Add(new StatusComboItem(RoomStatus.Maintenance, "Bảo trì (Maintenance)"));
-        cboStatus.DisplayMember = nameof(StatusComboItem.DisplayText);
-        cboStatus.ValueMember = nameof(StatusComboItem.Status);
-        cboStatus.SelectedIndex = 0;
+        _suppressFilterReload = true;
+        cboStatusFilter.Items.Clear();
+        cboStatusFilter.Items.Add(new StatusFilterItem(null, "Tất cả trạng thái"));
+        cboStatusFilter.Items.Add(new StatusFilterItem(RoomStatus.Available, "Trống"));
+        cboStatusFilter.Items.Add(new StatusFilterItem(RoomStatus.Rented, "Đang thuê"));
+        cboStatusFilter.Items.Add(new StatusFilterItem(RoomStatus.Maintenance, "Bảo trì"));
+        cboStatusFilter.DisplayMember = nameof(StatusFilterItem.DisplayText);
+        cboStatusFilter.SelectedIndex = 0;
+        _suppressFilterReload = false;
     }
 
     private void WireEvents()
@@ -96,14 +100,35 @@ public partial class RoomsForm : UserControl
         btnRefresh.Click += async (_, _) => await ReloadAsync();
         btnSave.Click += async (_, _) => await SaveRoomAsync();
         btnCancel.Click += (_, _) => HideForm();
+        txtSearch.TextChanged += (_, _) => ApplyFilter();
+        cboStatusFilter.SelectedIndexChanged += (_, _) =>
+        {
+            if (!_suppressFilterReload)
+            {
+                ApplyFilter();
+            }
+        };
         dgvRooms.DoubleClick += (_, _) => ShowEditForm();
     }
 
+    /// <summary>F1 thêm · F2 sửa · F5 tải lại — điều hướng bàn phím như template.</summary>
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
         if (keyData == Keys.F5)
         {
             _ = ReloadAsync();
+            return true;
+        }
+
+        if (keyData == Keys.F1)
+        {
+            ShowAddForm();
+            return true;
+        }
+
+        if (keyData == Keys.F2)
+        {
+            ShowEditForm();
             return true;
         }
 
@@ -134,21 +159,7 @@ public partial class RoomsForm : UserControl
 
             _rooms.Clear();
             _rooms.AddRange(rooms);
-
-            dgvRooms.Rows.Clear();
-            foreach (var r in _rooms)
-            {
-                var index = dgvRooms.Rows.Add(
-                    r.RoomNumber,
-                    r.Price.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + " đ",
-                    r.MaxOccupants.ToString(CultureInfo.InvariantCulture),
-                    $"{r.CurrentOccupants}/{r.MaxOccupants}",
-                    FormatStatus(r.Status),
-                    r.Description ?? string.Empty);
-                dgvRooms.Rows[index].Tag = r;
-            }
-
-            lblCount.Text = $"{_rooms.Count} bản ghi";
+            ApplyFilter();
         }
         catch (Exception ex)
         {
@@ -157,12 +168,83 @@ public partial class RoomsForm : UserControl
         }
     }
 
+    private void ApplyFilter()
+    {
+        var keyword = txtSearch.Text.Trim();
+        var status = (cboStatusFilter.SelectedItem as StatusFilterItem)?.Status;
+
+        var selectedId = SelectedRoom?.Id;
+        dgvRooms.Rows.Clear();
+
+        foreach (var r in _rooms)
+        {
+            if (status is { } wanted && r.Status != wanted)
+            {
+                continue;
+            }
+
+            if (keyword.Length > 0
+                && !r.RoomNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                && !(r.Description ?? string.Empty).Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var index = dgvRooms.Rows.Add(
+                r.RoomNumber,
+                r.Price.ToString("N0", CultureInfo.InvariantCulture),
+                r.MaxOccupants.ToString(CultureInfo.InvariantCulture),
+                $"{r.CurrentOccupants}/{r.MaxOccupants}",
+                FormatStatus(r.Status),
+                r.Description ?? string.Empty,
+                string.Empty);
+            dgvRooms.Rows[index].Tag = r;
+        }
+
+        if (selectedId is { } id)
+        {
+            SelectRoomById(id);
+        }
+
+        tblFoot.SetTotal(dgvRooms.Rows.Count);
+        UpdateSelectionSummary();
+    }
+
+    private void SelectRoomById(int id)
+    {
+        foreach (DataGridViewRow row in dgvRooms.Rows)
+        {
+            if (row.Tag is RoomDto room && room.Id == id)
+            {
+                row.Selected = true;
+                return;
+            }
+        }
+    }
+
+    private RoomDto? SelectedRoom => dgvRooms.CurrentRow?.Tag as RoomDto;
+
+    private void UpdateSelectionSummary()
+    {
+        // Template .sel-txt in tên phòng đang chọn; chưa chọn thì để trống.
+        tblFoot.SetSelected(SelectedRoom?.RoomNumber);
+        btnEdit.Enabled = SelectedRoom is not null;
+        btnDelete.Enabled = SelectedRoom is not null;
+    }
+
     private static string FormatStatus(RoomStatus status) => status switch
     {
         RoomStatus.Available => "Phòng trống",
         RoomStatus.Rented => "Đang thuê",
         RoomStatus.Maintenance => "Bảo trì",
         _ => status.ToString(),
+    };
+
+    private static (string Fore, string Back, string Border) TagColors(RoomStatus status) => status switch
+    {
+        RoomStatus.Rented => TagRented,
+        RoomStatus.Maintenance => TagMaintenance,
+        _ => TagAvailable,
     };
 
     private void ShowAddForm()
@@ -181,7 +263,7 @@ public partial class RoomsForm : UserControl
 
     private void ShowEditForm()
     {
-        if (dgvRooms.CurrentRow?.Tag is not RoomDto room)
+        if (SelectedRoom is not { } room)
         {
             MessageBox.Show(this, "Vui lòng chọn phòng cần sửa.", "Thông báo",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -198,7 +280,7 @@ public partial class RoomsForm : UserControl
 
         for (var i = 0; i < cboStatus.Items.Count; i++)
         {
-            if (cboStatus.Items[i] is StatusComboItem item && item.Status == room.Status)
+            if (cboStatus.Items[i] is StatusFilterItem item && item.Status == room.Status)
             {
                 cboStatus.SelectedIndex = i;
                 break;
@@ -238,7 +320,7 @@ public partial class RoomsForm : UserControl
         }
 
         var max = (int)numMaxOccupants.Value;
-        var status = (cboStatus.SelectedItem as StatusComboItem)?.Status ?? RoomStatus.Available;
+        var status = (cboStatus.SelectedItem as StatusFilterItem)?.Status ?? RoomStatus.Available;
         var desc = string.IsNullOrWhiteSpace(txtDescription.Text) ? null : txtDescription.Text.Trim();
 
         btnSave.Enabled = false;
@@ -274,7 +356,7 @@ public partial class RoomsForm : UserControl
 
     private async Task DeleteSelectedAsync()
     {
-        if (dgvRooms.CurrentRow?.Tag is not RoomDto room)
+        if (SelectedRoom is not { } room)
         {
             MessageBox.Show(this, "Vui lòng chọn phòng cần xóa.", "Thông báo",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -310,6 +392,53 @@ public partial class RoomsForm : UserControl
         }
     }
 
+    /// <summary>Vị trí ô nút Sửa / Xóa trong cột hành động — dùng chung cho vẽ và hit-test.</summary>
+    private static (Rectangle Edit, Rectangle Delete) ActionBounds(Rectangle cell)
+    {
+        const int w = 62;
+        const int gap = 6;
+        var del = new Rectangle(cell.Right - gap - w, cell.Y, w, cell.Height);
+        var edit = new Rectangle(del.X - gap - w, cell.Y, w, cell.Height);
+        return (edit, del);
+    }
+
+    private bool IsActionCell(int rowIndex, int columnIndex) =>
+        rowIndex >= 0 && rowIndex < dgvRooms.Rows.Count
+        && columnIndex >= 0 && columnIndex < dgvRooms.Columns.Count
+        && dgvRooms.Columns[columnIndex].Name == colActions.Name;
+
+    private void DgvRooms_CellMouseMove(object? sender, DataGridViewCellMouseEventArgs e)
+    {
+        if (!IsActionCell(e.RowIndex, e.ColumnIndex))
+        {
+            dgvRooms.Cursor = Cursors.Default;
+            return;
+        }
+
+        var (edit, delete) = ActionBounds(dgvRooms.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false));
+        dgvRooms.Cursor = edit.Contains(e.Location) || delete.Contains(e.Location)
+            ? Cursors.Hand
+            : Cursors.Default;
+    }
+
+    private void DgvRooms_CellMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
+    {
+        if (!IsActionCell(e.RowIndex, e.ColumnIndex))
+        {
+            return;
+        }
+
+        var (edit, delete) = ActionBounds(dgvRooms.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false));
+        if (edit.Contains(e.Location))
+        {
+            ShowEditForm();
+        }
+        else if (delete.Contains(e.Location))
+        {
+            _ = DeleteSelectedAsync();
+        }
+    }
+
     private void DgvRooms_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
     {
         if (e.RowIndex < 0 || e.Graphics == null)
@@ -323,28 +452,46 @@ public partial class RoomsForm : UserControl
         if (isSelected && e.ColumnIndex == 0)
         {
             e.Paint(e.CellBounds, DataGridViewPaintParts.All);
-            using var brush = new SolidBrush(Terracotta);
+            using var brush = new SolidBrush(ScreenTheme.From(ScreenTheme.Terracotta));
             e.Graphics.FillRectangle(brush, e.CellBounds.X, e.CellBounds.Y, 3, e.CellBounds.Height);
             e.Handled = true;
             return;
         }
 
-        // Tag trạng thái (DESIGN.md §2.4)
-        if (dgvRooms.Columns[e.ColumnIndex].Name == colStatus.Name && !isSelected)
+        // Cột hành động: 2 nút outline Sửa · danger Xóa như template
+        if (dgvRooms.Columns[e.ColumnIndex].Name == colActions.Name
+            && dgvRooms.Rows[e.RowIndex].Tag is RoomDto actionRow)
         {
-            if (dgvRooms.Rows[e.RowIndex].Tag is RoomDto r)
+            e.PaintBackground(e.CellBounds, isSelected);
+            var (edit, delete) = ActionBounds(e.CellBounds);
+            var canDelete = actionRow.Status == RoomStatus.Available;
+
+            ScreenTheme.PaintButton(e.Graphics, edit, RowActionEdit,
+                ScreenTheme.MenuBtnBg, ScreenTheme.Cream, ScreenTheme.OutlineBtn);
+
+            if (canDelete)
             {
-                e.PaintBackground(e.CellBounds, false);
-                var (fore, back, border) = r.Status switch
-                {
-                    RoomStatus.Available => ("#CAC6C1", "#1C2227", "#313A42"),
-                    RoomStatus.Rented => ("#8BD7A3", "#29322F", "#2E4A35"),
-                    RoomStatus.Maintenance => ("#E0AF68", "#2A2319", "#483A24"),
-                    _ => ("#CAC6C1", "#1C2227", "#313A42"),
-                };
-                ScreenTheme.PaintTag(e.Graphics, e.CellBounds, FormatStatus(r.Status), fore, back, border);
-                e.Handled = true;
+                ScreenTheme.PaintButton(e.Graphics, delete, RowActionDelete,
+                    ScreenTheme.HoverBg, ScreenTheme.Error, ScreenTheme.DangerBtn);
             }
+            else
+            {
+                ScreenTheme.PaintButton(e.Graphics, delete, RowActionDelete,
+                    ScreenTheme.Panel, ScreenTheme.Placeholder, ScreenTheme.OutlineBtn);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        // Tag trạng thái (DESIGN.md §2.4)
+        if (dgvRooms.Columns[e.ColumnIndex].Name == colStatus.Name && !isSelected
+            && dgvRooms.Rows[e.RowIndex].Tag is RoomDto r)
+        {
+            e.PaintBackground(e.CellBounds, false);
+            var (fore, back, border) = TagColors(r.Status);
+            ScreenTheme.PaintTag(e.Graphics, e.CellBounds, FormatStatus(r.Status), fore, back, border);
+            e.Handled = true;
         }
     }
 }
