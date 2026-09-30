@@ -12,17 +12,20 @@ public static class PermissionMatrix
     // Phải khai báo TRƯỚC `Allowed`: static initializer chạy theo thứ tự khai báo.
     private static readonly HashSet<UserRole> LandlordOnly = [UserRole.Landlord];
 
+    // Police chỉ được đọc danh sách phòng / người thuê / xuất hồ sơ thường trú (BR-16).
+    private static readonly HashSet<UserRole> LandlordAndPolice = [UserRole.Landlord, UserRole.Police];
+
     private static readonly IReadOnlyDictionary<string, HashSet<UserRole>> Allowed =
         new Dictionary<string, HashSet<UserRole>>(StringComparer.Ordinal)
         {
-            [ActionNames.AuthLogin] = Roles(UserRole.Landlord, UserRole.Tenant),
+            [ActionNames.AuthLogin] = Roles(UserRole.Landlord, UserRole.Tenant, UserRole.Police),
 
-            [ActionNames.RoomGetAll] = LandlordOnly,
+            [ActionNames.RoomGetAll] = LandlordAndPolice,
             [ActionNames.RoomAdd] = LandlordOnly,
             [ActionNames.RoomUpdate] = LandlordOnly,
             [ActionNames.RoomDelete] = LandlordOnly,
 
-            [ActionNames.TenantGetByRoom] = LandlordOnly,
+            [ActionNames.TenantGetByRoom] = LandlordAndPolice,
             [ActionNames.TenantAdd] = LandlordOnly,
             [ActionNames.TenantUpdate] = LandlordOnly,
             [ActionNames.TenantCheckout] = LandlordOnly,
@@ -42,7 +45,10 @@ public static class PermissionMatrix
             [ActionNames.InvoiceGetMine] = Roles(UserRole.Tenant),
 
             [ActionNames.ReportSummary] = LandlordOnly,
-            [ActionNames.ExportResidence] = LandlordOnly,
+            [ActionNames.ExportResidence] = LandlordAndPolice,
+
+            [ActionNames.ResidenceHistoryGet] = LandlordAndPolice,
+            [ActionNames.ExportResidenceHistory] = LandlordAndPolice,
         };
 
     public static bool IsAllowed(string action, UserRole role) =>

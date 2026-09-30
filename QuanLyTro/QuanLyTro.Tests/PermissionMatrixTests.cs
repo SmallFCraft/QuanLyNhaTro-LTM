@@ -35,6 +35,33 @@ public sealed class PermissionMatrixTests
     }
 
     [TestMethod]
+    public void Police_HasReadOnlyAccessToAllowedActions_AndRejectedOnAllWrites()
+    {
+        // Được phép đọc
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.AuthLogin, UserRole.Police));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomGetAll, UserRole.Police));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.TenantGetByRoom, UserRole.Police));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ExportResidence, UserRole.Police));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ResidenceHistoryGet, UserRole.Police));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ExportResidenceHistory, UserRole.Police));
+
+        // Bị cấm toàn bộ thao tác ghi (BR-16)
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomUpdate, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomDelete, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantAdd, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantUpdate, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantCheckout, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantDelete, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ContractCreate, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ContractTerminate, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.UtilityRecord, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceCreate, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoicePay, UserRole.Police));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetMine, UserRole.Police));
+    }
+
+    [TestMethod]
     public void Landlord_HasAccessToAllActionsExceptInvoiceGetMine()
     {
         foreach (var action in ActionNames.All)
