@@ -4,12 +4,10 @@ const POLICE_TITLES = {
   history: 'Lịch sử biến động lưu trú'
 };
 
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fmtDate = s => String(s ?? '').slice(0, 10).split('-').reverse().join('/');
-const searchBox = () => document.querySelector('#ptab-citizens .toolbar input.inp');
+const searchBox = () => document.getElementById('p-search');
 const searchKey = () => (searchBox()?.value || '').toLowerCase().trim();
 
-// index.html không có id cho ô tìm kiếm → chọn theo lớp. Bộ lọc chạy client-side trên cache.
+// Bộ lọc chạy client-side trên cache.
 let policeCache = null;
 
 async function loadPoliceTab(tabKey) {
@@ -56,7 +54,7 @@ function renderCitizens(rows) {
   body.innerHTML = filtered.map(t => `
     <tr>
       <td><b>${esc(t.fullName)}</b></td>
-      <td class="mono">${fmtDate(t.dateOfBirth)}</td>
+      <td class="mono">${fmtDateOnly(t.dateOfBirth)}</td>
       <td class="mono">${esc(t.idCard)}</td>
       <td>${esc(t.hometown)}</td>
       <td><b>${esc(t.roomNumber)}</b></td>
@@ -73,7 +71,7 @@ function renderResidence(rows) {
   body.innerHTML = pending.map(t => `
     <tr>
       <td><b>${esc(t.fullName)}</b></td>
-      <td class="mono">${fmtDate(t.dateOfBirth)}</td>
+      <td class="mono">${fmtDateOnly(t.dateOfBirth)}</td>
       <td class="mono">${esc(t.idCard)}</td>
       <td>${esc(t.hometown)}</td>
       <td><b>${esc(t.roomNumber)}</b></td>
@@ -82,10 +80,12 @@ function renderResidence(rows) {
     </tr>`).join('') || `<tr><td colspan="7">Tất cả đã đăng ký tạm trú</td></tr>`;
 }
 
-// Toolbar #ptab-history không có id -> lấy 2 input date theo thứ tự from, to.
+// Toolbar #ptab-history đọc khoảng ngày theo id #p-from, #p-to.
 function historyRange() {
-  const dates = document.querySelectorAll('#ptab-history input[type="date"]');
-  return { from: dates[0]?.value || '', to: dates[1]?.value || '' };
+  return {
+    from: document.getElementById('p-from')?.value || '',
+    to: document.getElementById('p-to')?.value || ''
+  };
 }
 
 async function loadHistory() {
@@ -98,7 +98,7 @@ async function loadHistory() {
       <td><b>${esc(h.fullName)}</b></td>
       <td><b>${esc(h.roomNumber)}</b></td>
       <td><span class="tag rent">${esc(h.eventType)}</span></td>
-      <td class="mono">${fmtDate(h.eventDate)}</td>
+      <td class="mono">${fmtDateOnly(h.eventDate)}</td>
       <td class="mono">—</td>
       <td>${esc(h.notes) || '—'}</td>
     </tr>`).join('') || `<tr><td colspan="6">Không có biến động nào</td></tr>`;
@@ -107,11 +107,11 @@ async function loadHistory() {
 async function exportHistory() {
   const { from, to } = historyRange();
   const payload = {
-    FromDate: from,
-    ToDate: to,
-    Format: 'CSV',
-    RoomNumber: null,
-    EventType: null
+    fromDate: from,
+    toDate: to,
+    format: 'CSV',
+    roomNumber: null,
+    eventType: null
   };
   try {
     const res = await window.bridge.call('EXPORT_RESIDENCE_HISTORY', payload);
@@ -121,11 +121,8 @@ async function exportHistory() {
   }
 }
 
-// Nút trên toolbar index.html chưa gắn onclick -> gắn ở đây, không sửa HTML.
+// Gắn lắng nghe tìm kiếm công dân khi DOM sẵn sàng.
 document.addEventListener('DOMContentLoaded', () => {
-  const btns = document.querySelectorAll('#ptab-history .toolbar button');
-  if (btns[0]) btns[0].addEventListener('click', () => loadHistory().catch(e => alert(e.message)));
-  if (btns[1]) btns[1].addEventListener('click', exportHistory);
   const search = searchBox();
   if (search) search.addEventListener('input', () => renderCitizens(policeCache));
 });

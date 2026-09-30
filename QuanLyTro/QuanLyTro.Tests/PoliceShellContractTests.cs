@@ -52,4 +52,36 @@ public sealed class PoliceShellContractTests
                 $"{Path.GetFileName(file)} dùng storage trình duyệt — token không được lưu ở đó.");
         }
     }
+
+    [TestMethod]
+    public void PoliceJs_SearchInputAndDateRangeAreAddressableById()
+    {
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        Assert.IsTrue(html.Contains("id=\"p-search\""), "ô tìm kiếm công an cần id để JS đọc");
+        Assert.IsTrue(html.Contains("id=\"p-from\""), "ô ngày bắt đầu cần id");
+        Assert.IsTrue(html.Contains("id=\"p-to\""), "ô ngày kết thúc cần id");
+    }
+
+    [TestMethod]
+    public void PoliceJs_UsesDocumentElementIds_AndNoWriteActions()
+    {
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "police.js"));
+        Assert.IsTrue(js.Contains("document.getElementById('p-search')"), "police.js phải đọc #p-search bằng getElementById");
+        Assert.IsTrue(js.Contains("document.getElementById('p-from')"), "police.js phải đọc #p-from bằng getElementById");
+        Assert.IsTrue(js.Contains("document.getElementById('p-to')"), "police.js phải đọc #p-to bằng getElementById");
+
+        // BR-16: shell công an không gọi bất kỳ action ghi nào
+        var forbiddenWriteActions = new[]
+        {
+            "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE",
+            "TENANT_ADD", "TENANT_UPDATE", "TENANT_CHECKOUT", "TENANT_DELETE",
+            "CONTRACT_CREATE", "CONTRACT_TERMINATE", "CONTRACT_RENEW",
+            "UTILITY_RECORD",
+            "INVOICE_CREATE", "INVOICE_PAY"
+        };
+        foreach (var action in forbiddenWriteActions)
+        {
+            Assert.IsFalse(js.Contains(action), $"police.js vi phạm BR-16 — chứa action ghi: {action}");
+        }
+    }
 }
