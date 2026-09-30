@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản Lý Phòng Trọ Ngũ Hành Sơn: Terracotta &amp; Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====== LOGIN ====== -->
+<div class="win" id="login">
+  <div class="titlebar">
+    <div class="title">
+      <i class="fas fa-building"></i>
+      <span>Quản Lý Phòng Trọ .NET 8</span>
+    </div>
+    <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
+  </div>
+  <div class="login-body">
+    <div class="app-icon"><i class="fas fa-warehouse"></i></div>
+    <div class="app-name">Ký Túc Xá &amp; Nhà Trọ Số</div>
+    <div class="app-sub">Phường Ngũ Hành Sơn · TP. Đà Nẵng</div>
+    <form onsubmit="doLogin();return false">
+      <div class="roleseg" style="grid-column:1/-1">
+        <label><input type="radio" name="role" value="LANDLORD" checked><i class="fas fa-shield-alt"></i><span>Chủ trọ / Quản lý</span></label>
+        <label><input type="radio" name="role" value="POLICE"><i class="fas fa-user-shield"></i><span>Công an phường</span></label>
+        <label><input type="radio" name="role" value="TENANT"><i class="fas fa-user"></i><span>Khách thuê phòng</span></label>
+      </div>
+      <label id="lblAcc"><i class="fas fa-user"></i> Tài khoản</label>
+      <input class="inp mono" id="lu" placeholder="admin (chủ trọ) / caphuong (công an) / CCCD (người thuê)">
+      <label><i class="fas fa-lock"></i> Mật khẩu</label>
+      <input class="inp mono" type="password" id="lp" placeholder="••••••••">
+      <label></label>
+      <button class="btn btn-primary" style="justify-content:center"><i class="fas fa-sign-in-alt"></i> Đăng nhập <kbd>F5</kbd></button>
+    </form>
+  </div>
+</div>
+
+<!-- ====== LANDLORD SHELL ====== -->
+<div class="win" id="landlord">
+  <div class="titlebar">
+    <div class="title">
+      <i class="fas fa-building"></i>
+      <span>Quản Lý Nhà Trọ .NET 8</span>
+    </div>
+    <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
+  </div>
+  <div class="app">
+    <!-- menu strip -->
+    <div class="menustrip">
+      <div class="hscroll" style="display:flex;gap:6px">
+        <span class="mi"><i class="fas fa-cog"></i> Hệ thống</span>
+        <span class="mi cur"><i class="fas fa-th-large"></i> Quản lý</span>
+        <span class="mi"><i class="fas fa-chart-bar"></i> Báo cáo</span>
+        <span class="mi"><i class="fas fa-question-circle"></i> Trợ giúp</span>
+      </div>
+      <span style="color:var(--dim)"><i class="fas fa-user"></i></span>
+    </div>
+    <!-- userbar -->
+    <div class="userbar">
+      <div class="usr">
+        <i class="fas fa-user-circle fa-lg"></i> <b id="uname">Nguyễn Văn A</b>
+        <span class="role"><i class="fas fa-crown"></i> Chủ trọ</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+      </div>
+    </div>
+    <!-- module headline -->
+    <div class="headline">
+      <div class="l">
+        <span class="badge-module">Module</span>
+        <h1 id="modtitle">Tổng quan vận hành cơ sở</h1>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-tab="dash" onclick="loadLandlordTab('dash')"><i class="fas fa-th-large"></i> Tổng quan</div>
+      <div class="tab" data-tab="rooms" onclick="loadLandlordTab('rooms')"><i class="fas fa-door-open"></i> Phòng <span class="cnt">24</span></div>
+      <div class="tab" data-tab="tenants" onclick="loadLandlordTab('tenants')"><i class="fas fa-users"></i> Người thuê</div>
+      <div class="tab" data-tab="contracts" onclick="loadLandlordTab('contracts')"><i class="fas fa-file-signature"></i> Hợp đồng</div>
+      <div class="tab" data-tab="utils" onclick="loadLandlordTab('utils')"><i class="fas fa-tachometer-alt"></i> Điện nước</div>
+      <div class="tab" data-tab="invoices" onclick="loadLandlordTab('invoices')"><i class="fas fa-receipt"></i> Hóa đơn</div>
+      <div class="tab" data-tab="reports" onclick="loadLandlordTab('reports')"><i class="fas fa-chart-bar"></i> Thống kê</div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="tab-dash">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Thuê 18 · Trống 6</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-door-open"></i> Phòng trống</div><div class="val">6</div><div class="sub">Tỷ lệ lấp đầy 75%</div></div>
+          <div class="kpi"><div class="lbl"><i class="fas fa-user-friends"></i> Người đang ở</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Còn nợ 09/2026</div><div class="val">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div><div class="sub">3 phòng chưa thu</div></div>
+        </div>
+        <div class="duo">
+          <div class="card">
+            <div class="hdr"><i class="fas fa-clock"></i> Còn nợ: đôn đốc (US-17)</div>
+            <div class="tblwrap">
+            <table class="tbl">
+              <thead><tr><th>Phòng</th><th>Kỳ</th><th class="num">Còn nợ</th><th>Đại diện</th></tr></thead>
+              <tbody>
+                <tr><td><b>P102</b></td><td class="mono">09/2026</td><td class="num due-red">2.417.000</td><td>Trần Văn B</td></tr>
+                <tr><td><b>P105</b></td><td class="mono">08–09/2026</td><td class="num due-red">4.812.500</td><td>Lê Thị C</td></tr>
+                <tr><td><b>P108</b></td><td class="mono">09/2026</td><td class="num due-red">2.918.000</td><td>Phạm D</td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="hdr"><i class="fas fa-calendar-times"></i> HĐ sắp hết hạn (US-11)</div>
+            <div class="tblwrap">
+            <table class="tbl">
+              <thead><tr><th>Phòng</th><th>Đại diện</th><th>Hết hạn</th><th class="num">Còn</th></tr></thead>
+              <tbody>
+                <tr><td><b>P201</b></td><td>Trần Văn B</td><td class="mono">22/09/2026</td><td class="num due-red">12 ngày</td></tr>
+                <tr><td><b>P108</b></td><td>Phạm D</td><td class="mono">05/10/2026</td><td class="num due-red">25 ngày</td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Dashboard: REPORT_SUMMARY + CONTRACT_GET_ALL + INVOICE_GET_ALL: tải 1 lần khi mở tab.</div>
+      </div>
+
+      <!-- ROOMS -->
+      <div id="tab-rooms" hidden>
+        <div class="toolbar">
+          <input class="inp" placeholder="Tìm phòng…" style="width:170px">
+          <select class="inp"><option>Tất cả trạng thái</option><option>Trống</option><option>Đang thuê</option><option>Bảo trì</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-plus"></i> Thêm (F1)</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Sửa (F2)</button>
+          <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Xóa</button>
+          <span class="divider"></span>
+          <button class="btn btn-ghost btn-sm"><i class="fas fa-sync"></i> F5</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead>
+            <tr><th>Số phòng</th><th class="num">Giá/tháng</th><th class="num">Sức chứa</th><th class="num">Đang ở</th><th>Trạng thái</th><th>Mô tả</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>P101</b></td><td class="num">2.500.000</td><td class="num">2</td><td class="num due-red">2/2</td><td><span class="tag rent">Đang thuê</span></td><td>Tầng 1</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P102</b></td><td class="num">2.000.000</td><td class="num">2</td><td class="num">1/2</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P103</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">0/4</td><td><span class="tag avail">Phòng trống</span></td><td>Tầng trệt</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P104</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">3/4</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P201</b></td><td class="num">3.600.000</td><td class="num">2</td><td class="num">0/2</td><td><span class="tag warn">Bảo trì</span></td><td>Thay máy lạnh</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 5 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Chỉ xóa được phòng trống (BR-12). Số người = đếm trực tiếp từ tenants.</div>
+      </div>
+
+      <!-- TENANTS -->
+      <div id="tab-tenants" hidden>
+        <div class="toolbar">
+          <label style="color:var(--muted);font-size:11.5px">Phòng</label>
+          <select class="inp" style="width:150px"><option>P101 (đầy)</option><option selected>P102 (1/2)</option><option>P103 (trống)</option></select>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Thêm</button>
+          <span class="spacer"></span>
+          <span style="font-size:10.5px;color:var(--dim)"><i class="fas fa-key" style="color:var(--terracotta)"></i> Mật khẩu mặc định = 6 số cuối CCCD</span>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
+              <td><span class="tag done">Đã nộp</span></td>
+              <td><button class="btn btn-outline btn-sm"><i class="fas fa-key"></i></button></td>
+            </tr>
+            <tr>
+              <td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
+              <td><span class="tag warn">Chưa nộp</span></td>
+              <td><button class="btn btn-outline btn-sm"><i class="fas fa-key"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Sửa</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-arrows-alt-h"></i> Chuyển phòng</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-sign-out-alt"></i> Trả phòng</button>
+          <button class="btn btn-danger btn-sm"><i class="fas fa-user-slash"></i> Xóa hồ sơ</button>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Xóa hồ sơ chỉ khả dụng khi đã trả phòng (US-06).</div>
+      </div>
+
+      <!-- CONTRACTS -->
+      <div id="tab-contracts" hidden>
+        <div class="toolbar">
+          <input class="inp" placeholder="Tìm CCCD, SĐT, tên khách hoặc số phòng…" style="width:280px">
+          <select class="inp" style="width:190px">
+            <option>Tất cả hợp đồng (18)</option><option>Đang hiệu lực (14)</option><option>Sắp hết hạn ≤ 30 ngày (3)</option><option>Đã thanh lý (1)</option>
+          </select>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file"></i> Lập hợp đồng</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Tải lại</button>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="kpi green"><div class="lbl"><i class="fas fa-verified"></i> Hiệu lực</div><div class="val">14 <span style="font-size:11px;font-weight:400;color:var(--muted)">/ 18 HĐ</span></div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-hourglass-half"></i> Sắp hết</div><div class="val">03 <span style="font-size:11px;font-weight:400;color:var(--muted)">≤ 30 ngày</span></div></div>
+          <div class="kpi"><div class="lbl"><i class="fas fa-piggy-bank"></i> Tổng cọc</div><div class="val">48.500.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div></div>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Phòng</th><th>Đại diện</th><th>Bắt đầu</th><th>Kết thúc</th><th class="num">Còn</th><th class="num">Giá thuê</th><th class="num">Cọc</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>P101</b></td><td>Trần Văn B</td><td class="mono">01/09/2025</td><td class="mono">22/09/2026</td><td class="num due-red">12 ngày</td><td class="num">2.500.000</td><td class="num">5.000.000</td>
+              <td><span class="tag warn">Sắp hết hạn</span></td>
+            </tr>
+            <tr>
+              <td><b>P102</b></td><td>Trần Văn B</td><td class="mono">01/10/2025</td><td class="mono">01/10/2027</td><td class="num">1 năm 20 ngày</td><td class="num">2.000.000</td><td class="num">4.000.000</td>
+              <td><span class="tag rent">Đang hiệu lực</span></td>
+            </tr>
+            <tr>
+              <td><b>P103</b></td><td>—</td><td class="mono">01/06/2024</td><td class="mono">31/05/2025</td><td class="num">—</td><td class="num">1.800.000</td><td class="num">0</td>
+              <td><span class="tag bad">Đã thanh lý</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 3 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-outline btn-sm"><i class="fas fa-calendar-plus"></i> Gia hạn…</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-ban"></i> Chấm dứt…</button>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Cột "Còn" &lt; 30 ngày tô Terracotta: US-11.</div>
+      </div>
+
+      <!-- UTILITIES -->
+      <div id="tab-utils" hidden>
+        <div class="toolbar">
+          <label style="color:var(--muted);font-size:11.5px">Phòng</label>
+          <select class="inp" style="width:120px"><option>P101</option><option>P102</option></select>
+          <label style="color:var(--muted);font-size:11.5px">Tháng</label>
+          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
+          <span class="spacer"></span>
+          <span class="tag rent">Sẵn sàng chốt</span>
+        </div>
+        <div class="calc">
+          <div class="row">
+            <i class="fas fa-bolt" style="color:var(--amber)"></i> <span style="color:var(--muted)">Điện</span>
+            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" value="350" disabled>
+            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" value="425">
+            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" value="3500">
+            <span class="tot">262.500 đ</span>
+          </div>
+          <div class="row">
+            <i class="fas fa-tint" style="color:var(--dim)"></i> <span style="color:var(--muted)">Nước</span>
+            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" value="12" disabled>
+            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" value="15">
+            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" value="10000">
+            <span class="tot">30.000 đ</span>
+          </div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Lưu chỉ số</button>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Chỉ số cũ tự điền từ kỳ trước. Server tính tiền, preview chỉ để xem (US-12/13).</div>
+      </div>
+
+      <!-- INVOICES -->
+      <div id="tab-invoices" hidden>
+        <div class="toolbar">
+          <span style="color:var(--muted);font-weight:500;font-size:11.5px">Tháng</span>
+          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
+          <span style="color:var(--muted);font-weight:500;font-size:11.5px">Phòng</span>
+          <select class="inp" style="width:112px"><option>Tất cả</option><option>P101</option><option>P102</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file-invoice"></i> Lập hóa đơn tháng</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Phòng</th><th class="num">Tiền phòng</th><th class="num">Điện</th><th class="num">Nước</th><th class="num">Khác</th><th class="num">Tổng</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>P101</b></td><td class="num">2.500.000</td><td class="num">262.500</td><td class="num">30.000</td><td class="num">50.000</td><td class="num amount">2.842.500</td>
+              <td><span class="tag unpaid">Chưa thu</span></td>
+              <td><button class="btn btn-primary btn-sm"><i class="fas fa-hand-holding-usd"></i> Thu</button></td>
+            </tr>
+            <tr>
+              <td><b>P102</b></td><td class="num">2.000.000</td><td class="num">175.000</td><td class="num">20.000</td><td class="num">50.000</td><td class="num amount">2.245.000</td>
+              <td><span class="tag paid">Đã thu</span></td>
+              <td><button class="btn btn-outline btn-sm" disabled><i class="fas fa-hand-holding-usd"></i> Thu</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> Đã thu = bất biến (BR-11). Server tự tính mọi khoản, Client chỉ gửi Phòng + Tháng + Phí khác.</div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="tab-reports" hidden>
+        <div class="toolbar">
+          <label style="color:var(--muted);font-size:11.5px">Kỳ</label>
+          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem</button>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-file-csv"></i> Xuất CSV tạm trú</button>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="kpi green"><div class="lbl"><i class="fas fa-check-circle"></i> Đã thu 09/2026</div><div class="val">15.400.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-circle"></i> Còn nợ</div><div class="val">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div></div>
+          <div class="kpi"><div class="lbl"><i class="fas fa-percent"></i> Lấp đầy</div><div class="val">75%</div><div class="meter"><i style="width:75%"></i></div></div>
+        </div>
+        <div class="card barchart">
+          <div class="hdr"><i class="fas fa-chart-bar"></i> Đã thu theo tháng</div>
+          <div class="chartbar">
+            <div class="b" style="height:58%"><i>12,4Tr</i><b>05</b></div>
+            <div class="b" style="height:66%"><i>14,1Tr</i><b>06</b></div>
+            <div class="b" style="height:72%"><i>15,3Tr</i><b>07</b></div>
+            <div class="b" style="height:88%"><i>18,9Tr</i><b>08</b></div>
+            <div class="b on" style="height:72%"><i>15,4Tr</i><b>09</b></div>
+          </div>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Tháng</th><th class="num">Đã thu</th><th class="num">Còn nợ</th><th class="num">Tổng phải thu</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">09/2026</td><td class="num">15.400.000</td><td class="num due-red">4.800.000</td><td class="num">20.200.000</td></tr>
+            <tr><td class="mono">08/2026</td><td class="num">18.900.000</td><td class="num">0</td><td class="num">18.900.000</td></tr>
+            <tr style="font-weight:700"><td>Tổng</td><td class="num">34.300.000</td><td class="num due-red">4.800.000</td><td class="num">39.100.000</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> US-19: bảng nhiều tháng = Client gọi REPORT_SUMMARY từng tháng + cộng dòng tổng.</div>
+      </div>
+    </div>
+  </div>
+  <div class="statusstrip">
+    <div class="l"><i class="fas fa-shield-alt" style="color:var(--terracotta)"></i><span>Chủ trọ (Landlord)</span></div>
+    <div class="r"><span>.NET 8.0 CLR</span></div>
+  </div>
+</div>
+
+<!-- ====== POLICE SHELL ====== -->
+<div class="win" id="police">
+  <div class="titlebar">
+    <div class="title">
+      <i class="fas fa-user-shield"></i>
+      <span>Tra Cứu Lưu Trú .NET 8</span>
+    </div>
+    <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
+  </div>
+  <div class="app">
+    <div class="menustrip">
+      <div class="hscroll" style="display:flex;gap:6px">
+        <span class="mi"><i class="fas fa-search"></i> Tra cứu</span>
+        <span class="mi cur"><i class="fas fa-clipboard-list"></i> Lưu trú</span>
+        <span class="mi"><i class="fas fa-file-export"></i> Xuất báo cáo</span>
+        <span class="mi"><i class="fas fa-question-circle"></i> Trợ giúp</span>
+      </div>
+      <span style="color:var(--dim)"><i class="fas fa-user-shield"></i></span>
+    </div>
+    <div class="userbar">
+      <div class="usr">
+        <i class="fas fa-user-circle fa-lg"></i> <b id="pname">Lê Văn CA</b>
+        <span class="role police"><i class="fas fa-user-shield"></i> Công an phường</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+    </div>
+    <div class="headline">
+      <div class="l">
+        <span class="badge-module police">Module Lưu trú</span>
+        <h1 id="ptitle">Tra cứu công dân</h1>
+      </div>
+      <span class="vchip"><i class="fas fa-lock"></i> ReadOnly</span>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-ptab="citizens" onclick="loadPoliceTab('citizens')"><i class="fas fa-id-card"></i> Công dân</div>
+      <div class="tab" data-ptab="residence" onclick="loadPoliceTab('residence')"><i class="fas fa-home"></i> Tạm trú <span class="cnt">41</span></div>
+      <div class="tab" data-ptab="history" onclick="loadPoliceTab('history')"><i class="fas fa-history"></i> Biến động</div>
+    </div>
+    <div class="content">
+
+      <!-- PM-02/03: TRA CỨU CÔNG DÂN + PHÒNG -->
+      <div id="ptab-citizens">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Khu Ngũ Hành Sơn</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-users"></i> Người đang lưu trú</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi amber"><div class="lbl"><i class="fas fa-id-card"></i> Đã đăng ký tạm trú</div><div class="val">36</div><div class="sub">87,8%</div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Chưa đăng ký</div><div class="val">5</div><div class="sub">Cần kiểm tra</div></div>
+        </div>
+        <div class="toolbar">
+          <input class="inp" placeholder="Tìm theo CCCD, họ tên hoặc SĐT..." style="width:300px">
+          <select class="inp" style="width:160px"><option>Tất cả phòng</option><option>P101</option><option>P102</option><option>P103</option></select>
+          <select class="inp" style="width:170px"><option>Tất cả tạm trú</option><option>Đã đăng ký</option><option>Chưa đăng ký</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Tra cứu</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-file-export"></i> Xuất danh sách</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th class="num">Trạng thái tạm trú</th></tr></thead>
+          <tbody>
+            <tr><td><b>Trần Văn B</b></td><td class="mono">15/03/2004</td><td class="mono">0482 0301 2XXX</td><td>Quảng Nam</td><td><b>P102</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Lê Thị C</b></td><td class="mono">21/07/2002</td><td class="mono">0482 0455 9XXX</td><td>Huế</td><td><b>P105</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 41 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem hồ sơ</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-door-open"></i> Phòng đang ở</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Tải lại</button>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-02 / PM-03: tra cứu theo CCCD, họ tên (không phân biệt hoa thường), SĐT. Mọi lệnh ghi bị Server từ chối (BR-14).</div>
+      </div>
+
+      <!-- PM-04: BÁO CÁO TẠM TRÚ -->
+      <div id="ptab-residence" hidden>
+        <div class="toolbar">
+          <select class="inp" style="width:170px"><option>Tất cả phòng</option><option>P101</option><option>P102</option></select>
+          <select class="inp" style="width:180px"><option>Chỉ chưa đăng ký</option><option>Tất cả</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-file-csv"></i> CSV</button>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th>Ngày vào</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="mono">12/08/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="mono">03/09/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Đỗ Thị F</b></td><td class="mono">30/05/2004</td><td class="mono">0482 0612 4XXX</td><td>Bình Định</td><td><b>P201</b></td><td class="mono">19/06/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 5 chưa đăng ký <span class="sep">|</span> <span class="sel-txt">Chọn: Ngô Thị E</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-04: RESIDENCE_GET_ALL — công an chỉ đọc, cờ "đã đăng ký tạm trú" do Người quản lý cập nhật (MG-08.3).</div>
+      </div>
+
+      <!-- PM-05: LỊCH SỬ BIẾN ĐỘNG + XUẤT -->
+      <div id="ptab-history" hidden>
+        <div class="toolbar">
+          <input class="inp mono" type="date" value="2026-09-01" style="width:150px">
+          <span style="color:var(--dim)">→</span>
+          <input class="inp mono" type="date" value="2026-09-30" style="width:150px">
+          <select class="inp" style="width:190px"><option>Tất cả biến động</option><option>Vào</option><option>Ra</option><option>Chuyển phòng</option></select>
+          <select class="inp" style="width:140px"><option>Tất cả phòng</option><option>P102</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem trước</button>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file-export"></i> Xuất file</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Phòng</th><th>Biến động</th><th>Ngày vào</th><th>Ngày ra</th><th>Lý do</th></tr></thead>
+          <tbody>
+            <tr><td><b>Phạm D</b></td><td><b>P108</b></td><td><span class="tag rent">Vào</span></td><td class="mono">03/09/2026</td><td class="mono">—</td><td>Nhập học</td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td><b>P102</b></td><td><span class="tag rent">Vào</span></td><td class="mono">12/08/2026</td><td class="mono">—</td><td>Đi làm</td></tr>
+            <tr><td><b>Vũ G</b></td><td><b>P103</b></td><td><span class="tag unpaid">Ra</span></td><td class="mono">01/02/2026</td><td class="mono">28/08/2026</td><td>Hết hợp đồng</td></tr>
+            <tr><td><b>Hoàng H</b></td><td><b>P105 → P201</b></td><td><span class="tag avail">Chuyển phòng</span></td><td class="mono">15/09/2026</td><td class="mono">15/09/2026</td><td>Đổi phòng rộng hơn</td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 4 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Phạm D</span></span><span>Xem trước 10 dòng đầu trước khi xuất</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-05.2: EXPORT_RESIDENCE_HISTORY — CSV / Excel / PDF, chọn cột, kiểm tra ngày KT ≥ ngày BĐ, ghi log xuất file về Server.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="statusstrip">
+    <div class="l"><i class="fas fa-user-shield" style="color:#70A9FF"></i><span>Công an phường · Phường Ngũ Hành Sơn (Police · ReadOnly)</span></div>
+    <div class="r"><span>.NET 8.0 CLR</span></div>
+  </div>
+</div>
+
+<!-- ====== TENANT SHELL ====== -->
+<div class="win" id="tenant">
+  <div class="titlebar">
+    <div class="title">
+      <i class="fas fa-building"></i>
+      <span>Quản Lý Nhà Trọ .NET 8</span>
+    </div>
+    <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
+  </div>
+  <div class="app">
+    <div class="userbar">
+      <div class="usr">
+        <i class="fas fa-user-circle fa-lg"></i> <b>Trần Văn B</b>
+        <span class="role tenant"><i class="fas fa-home"></i> Phòng P102</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+    </div>
+    <div class="headline">
+      <div class="l">
+        <span class="badge-module">Chứng từ thu cước</span>
+        <h1>Hóa Đơn Của Tôi</h1>
+      </div>
+      <span class="vchip">ReadOnly</span>
+    </div>
+    <div class="tabs"><div class="tab on"><i class="fas fa-file-invoice"></i> Hóa đơn của tôi</div></div>
+    <div class="content">
+      <!-- profile + contract -->
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0">
+            <div style="width:36px;height:36px;border-radius:4px;background:#202730;border:1px solid #303945;
+                        color:var(--cream);display:flex;align-items:center;justify-content:center;
+                        font-weight:700;font-size:12px;font-family:'JetBrains Mono',Consolas,monospace">TB</div>
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:7px">
+                <b style="font-size:13px;color:var(--cream-light)">Trần Văn B</b>
+                <span class="tag avail">P.102</span>
+              </div>
+              <div style="font-size:10.5px;color:var(--dim)">Khu trọ Ngũ Hành Sơn · Tầng 1 · 0905 122 334</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="vchip">Hạn HĐ: 01/10/2027</span>
+            <span style="font-size:10px;color:var(--dim)"><i class="fas fa-lock"></i> Chỉ xem</span>
+          </div>
+        </div>
+      </div>
+      <!-- due alert -->
+      <div style="background:#1F1715;border:1px solid rgba(217,93,57,.40);border-radius:8px;padding:11px 13px;
+                  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0">
+          <div style="width:26px;height:26px;border-radius:4px;background:rgba(217,93,57,.20);
+                      border:1px solid rgba(217,93,57,.30);display:flex;align-items:center;justify-content:center;
+                      color:var(--terracotta);flex:none"><i class="fas fa-exclamation"></i></div>
+          <span style="font-size:11.5px;color:var(--cream)">Kỳ cước <b>09/2026</b> chưa hoàn tất thanh toán. Vui lòng thanh toán trước ngày
+            <b class="mono" style="color:var(--terracotta)">10/10/2026</b>.</span>
+        </div>
+        <span class="tag unpaid" style="flex:none">Quá hạn</span>
+      </div>
+      <!-- receipt -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
+        <div style="padding:11px 13px;background:#1A2027;border-bottom:1px solid var(--hairline);
+                    display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0">
+            <i class="fas fa-file-invoice-dollar" style="color:var(--muted)"></i>
+            <div>
+              <div style="font-size:11.5px;font-weight:600;color:var(--cream-light);text-transform:uppercase;letter-spacing:.04em">Chi tiết quyết toán cước tháng 09/2026</div>
+              <div class="mono" style="font-size:10px;color:var(--dim)">MÃ SỐ BẢNG KÊ: HD-202609-102</div>
+            </div>
+          </div>
+          <span class="tag unpaid" style="flex:none">Chưa thanh toán</span>
+        </div>
+        <div style="padding:10px 13px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
+            <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-door-closed" style="color:var(--dim);margin-right:7px"></i>Tiền thuê phòng cố định</span>
+            <span class="amount">2.000.000 đ</span>
+          </div>
+          <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-bolt" style="color:var(--amber);margin-right:7px"></i>Điện năng tiêu thụ</span>
+              <span class="amount">175.000 đ</span>
+            </div>
+            <div class="mono" style="font-size:10px;color:var(--dim);padding-left:20px;display:flex;justify-content:space-between">
+              <span>Chỉ số: 1.230 → 1.280 (50 kWh × 3.500 đ)</span><span>Đã chốt công tơ</span>
+            </div>
+          </div>
+          <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-tint" style="color:var(--dim);margin-right:7px"></i>Nước sinh hoạt</span>
+              <span class="amount">20.000 đ</span>
+            </div>
+            <div class="mono" style="font-size:10px;color:var(--dim);padding-left:20px;display:flex;justify-content:space-between">
+              <span>Khối lượng: 14 → 16 (2 m³ × 10.000 đ)</span><span>Đồng hồ nhánh</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
+            <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-wifi" style="color:var(--dim);margin-right:7px"></i>Dịch vụ quản lý &amp; tiện ích</span>
+            <span class="amount">50.000 đ</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+            <span style="font-size:11.5px;color:var(--dim)"><i class="fas fa-history" style="color:var(--dim);margin-right:7px"></i>Nợ tồn kỳ trước chuyển sang</span>
+            <span class="amount" style="color:var(--muted)">0 đ</span>
+          </div>
+        </div>
+        <div style="padding:12px 13px;background:#111519;border-top:2px solid #2B333E;display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Tổng cần thanh toán</div>
+            <div class="mono" style="font-size:22px;font-weight:700;color:var(--cream-light);letter-spacing:-.02em">2.245.000 <span style="font-size:12px;color:var(--muted);font-weight:400">đ</span></div>
+          </div>
+          <span class="tag unpaid">Hạn chót: 10/10/2026</span>
+        </div>
+      </div>
+      <!-- history -->
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Kỳ cước</th><th class="num">Tổng tiền</th><th>Thời điểm đóng</th><th class="num">Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">09/2026</td><td class="num amount">2.245.000</td><td class="mono">—</td><td class="num"><span class="tag unpaid">Chưa thanh toán</span></td></tr>
+            <tr><td class="mono">08/2026</td><td class="num amount">2.242.000</td><td class="mono">05/09/2026 (10:14)</td><td class="num"><span class="tag paid">Đã thanh toán</span></td></tr>
+            <tr><td class="mono">07/2026</td><td class="num amount">2.225.000</td><td class="mono">04/08/2026 (15:22)</td><td class="num"><span class="tag paid">Đã thanh toán</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 3 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: 09/2026</span></span><span>Đã đồng bộ với Server</span></div>
+      </div>
+      <div class="rowbn">
+        <button class="btn btn-primary btn-sm"><i class="fas fa-copy"></i> Sao chép nội dung chuyển khoản</button>
+        <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Đồng bộ F5</button>
+      </div>
+      <div class="note"><i class="fas fa-info-circle"></i> INVOICE_GET_MINE: Server suy phòng từ token. Không nút ghi. Bấm dòng để xem chi tiết.</div>
+    </div>
+  </div>
+  <div class="statusstrip">
+    <div class="l"><i class="fas fa-user" style="color:var(--sage)"></i><span>Người thuê · P102 (Tenant)</span></div>
+    <div class="r"><span>.NET 8.0 CLR</span></div>
+  </div>
+</div>
+
+<script src="js/bridge.js"></script>
+<script src="js/login.js"></script>
+<script src="js/landlord.js"></script>
+<script src="js/police.js"></script>
+<script src="js/tenant.js"></script>
+</body>
+</html>
