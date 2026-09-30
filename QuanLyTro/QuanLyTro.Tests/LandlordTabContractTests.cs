@@ -22,4 +22,23 @@ public sealed class LandlordTabContractTests
             Assert.IsTrue(js.Contains($"'{key}'"), $"landlord.js chưa xử lý tab {key}");
         }
     }
+
+    /// <summary>
+    /// InvoiceDto không có trường IsPaid — trạng thái nằm ở `status` (enum InvoiceStatus,
+    /// serialize thành chuỗi "Paid"/"Unpaid" bởi JsonStringEnumConverter). Đọc thẳng `i.isPaid`
+    /// khiến mọi hóa đơn luôn hiện "Chưa thanh toán".
+    /// </summary>
+    [TestMethod]
+    public void LandlordInvoiceRender_DerivesPaidStateFromStatusField()
+    {
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord.js"));
+        var dto = File.ReadAllText(Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..",
+            "QuanLyTro.Shared", "Models", "InvoiceDto.cs"));
+
+        Assert.IsTrue(dto.Contains("InvoiceStatus Status"),
+            "InvoiceDto đổi hình dạng — cập nhật landlord.js và test này.");
+        Assert.IsTrue(js.Contains("i.status === 'Paid'"),
+            "landlord.js phải suy trạng thái đã thu từ trường status, không phải isPaid.");
+    }
 }

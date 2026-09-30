@@ -43,12 +43,13 @@ function renderRooms(rows) {
 function renderInvoices(rows) {
   const body = document.querySelector('#tab-invoices tbody');
   if (!body) return;
+  const isPaid = i => i.isPaid === true || i.status === 'Paid' || i.status === 'paid' || i.status === 1;
   body.innerHTML = (rows || []).map(i => `
     <tr>
       <td><b>${i.roomNumber}</b></td>
       <td class="mono">${i.billingMonth}</td>
       <td class="num amount">${(i.totalAmount || 0).toLocaleString('vi-VN')}</td>
-      <td><span class="tag ${i.isPaid ? 'paid' : 'unpaid'}">${i.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></td>
+      <td><span class="tag ${isPaid(i) ? 'paid' : 'unpaid'}">${isPaid(i) ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></td>
     </tr>`).join('');
 }
 
