@@ -5,6 +5,7 @@ public enum UserRole
 {
     Landlord,
     Tenant,
+    Police,
 }
 
 /// <summary>

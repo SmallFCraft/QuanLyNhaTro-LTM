@@ -34,6 +34,9 @@ public static class ActionNames
     public const string ReportSummary = "REPORT_SUMMARY";
     public const string ExportResidence = "EXPORT_RESIDENCE";
 
+    public const string ResidenceHistoryGet = "RESIDENCE_HISTORY_GET";
+    public const string ExportResidenceHistory = "EXPORT_RESIDENCE_HISTORY";
+
     /// <summary>Toàn bộ tên action hợp lệ — dùng cho test và kiểm tra router.</summary>
     public static readonly IReadOnlyList<string> All =
     [
@@ -44,5 +47,6 @@ public static class ActionNames
         UtilityGetPrevious, UtilityRecord,
         InvoiceCreate, InvoiceGetAll, InvoicePay, InvoiceGetMine,
         ReportSummary, ExportResidence,
+        ResidenceHistoryGet, ExportResidenceHistory,
     ];
 }

@@ -48,4 +48,12 @@ public class ProtocolTests
         Assert.AreEqual(new DateOnly(2027, 9, 1), parsed.EndDate);
         Assert.AreEqual(2_000_000m, parsed.RentalPrice);
     }
+
+    [TestMethod]
+    public void ActionNames_ContainsPoliceActions_AndUserRoleHasPolice()
+    {
+        Assert.IsTrue(ActionNames.All.Contains(ActionNames.ResidenceHistoryGet));
+        Assert.IsTrue(ActionNames.All.Contains(ActionNames.ExportResidenceHistory));
+        Assert.IsTrue(Enum.IsDefined(typeof(UserRole), UserRole.Police));
+    }
 }
