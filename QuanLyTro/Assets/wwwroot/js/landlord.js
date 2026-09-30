@@ -1,11 +1,21 @@
 const LANDLORD_TITLES = {
-  'dash': 'Tổng quan vận hành cơ sở',
-  'rooms': 'Danh sách phòng trọ',
-  'tenants': 'Hồ sơ khách thuê',
-  'contracts': 'Hợp đồng & khách thuê',
-  'utils': 'Chốt chỉ số điện nước',
-  'invoices': 'Hóa đơn & thu tiền',
-  'reports': 'Thống kê doanh thu'
+  dash: 'Tổng quan vận hành cơ sở',
+  rooms: 'Danh sách phòng trọ',
+  tenants: 'Hồ sơ khách thuê',
+  contracts: 'Hợp đồng & khách thuê',
+  utils: 'Chốt chỉ số điện nước',
+  invoices: 'Hóa đơn & thu tiền',
+  reports: 'Thống kê doanh thu'
+};
+
+const LANDLORD_LOADERS = {
+  dash: () => loadDash(),
+  rooms: () => loadRooms(),
+  tenants: () => loadTenants(),
+  contracts: () => loadContracts(),
+  utils: () => loadUtils(),
+  invoices: () => loadInvoices(),
+  reports: () => loadReports()
 };
 
 async function loadLandlordTab(tabKey) {
@@ -17,47 +27,10 @@ async function loadLandlordTab(tabKey) {
   document.querySelectorAll('#landlord .tabs .tab').forEach(t => {
     t.classList.toggle('on', t.dataset.tab === tabKey);
   });
-
   try {
-    if (tabKey === 'rooms') renderRooms(await window.bridge.call('ROOM_GET_ALL', {}));
-    if (tabKey === 'invoices') renderInvoices(await window.bridge.call('INVOICE_GET_ALL', {}));
-    if (tabKey === 'reports') await loadReports();
+    const loader = LANDLORD_LOADERS[tabKey];
+    if (loader) await loader();
   } catch (err) {
-    alert(err.message);
+    toast(err.message, 'err');
   }
-}
-
-function renderRooms(rows) {
-  const body = document.querySelector('#tab-rooms tbody');
-  if (!body) return;
-  body.innerHTML = (rows || []).map(r => `
-    <tr>
-      <td><b>${r.roomNumber}</b></td>
-      <td class="num amount">${(r.price || 0).toLocaleString('vi-VN')}</td>
-      <td class="num">${r.maxOccupants}</td>
-      <td class="num">${r.currentOccupants ?? 0}</td>
-      <td><span class="tag ${r.status === 'Rented' ? 'rent' : 'avail'}">${r.status}</span></td>
-    </tr>`).join('');
-}
-
-function renderInvoices(rows) {
-  const body = document.querySelector('#tab-invoices tbody');
-  if (!body) return;
-  const isPaid = i => i.isPaid === true || i.status === 'Paid' || i.status === 'paid' || i.status === 1;
-  body.innerHTML = (rows || []).map(i => `
-    <tr>
-      <td><b>${i.roomNumber}</b></td>
-      <td class="mono">${i.billingMonth}</td>
-      <td class="num amount">${(i.totalAmount || 0).toLocaleString('vi-VN')}</td>
-      <td><span class="tag ${isPaid(i) ? 'paid' : 'unpaid'}">${isPaid(i) ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></td>
-    </tr>`).join('');
-}
-
-async function loadReports() {
-  const summary = await window.bridge.call('REPORT_SUMMARY', {});
-  // Đổ số liệu KPI vào #tab-reports; trường hợp null thì để trống
-  document.querySelectorAll('#tab-reports [data-kpi]').forEach(el => {
-    const key = el.dataset.kpi;
-    if (summary && summary[key] != null) el.textContent = summary[key].toLocaleString('vi-VN');
-  });
 }
