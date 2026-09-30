@@ -40,8 +40,8 @@ public sealed class AuthService(IUserRepository users, ITenantRepository tenants
         if (user is not null && PasswordHasher.Verify(request.Password, user.PasswordHash))
         {
             _failures.TryRemove(lockKey, out _);
-            var token = sessions.Create(user.Id, UserRole.Landlord);
-            return new LoginResult(token, user.FullName, UserRole.Landlord);
+            var token = sessions.Create(user.Id, user.Role);
+            return new LoginResult(token, user.FullName, user.Role);
         }
 
         var tenant = await tenants.FindByCccdAsync(username, ct);

@@ -4,13 +4,15 @@ using QuanLyTro.Shared.Models;
 
 namespace QuanLyTro.Server.Repositories;
 
-public sealed class ResidenceRepository(Database database)
+public class ResidenceRepository(Database database)
 {
     // ponytail: derive history from tenants + rooms because dedicated residence_history table is not in schema. Upgrade to dedicated audit table if event history tracking is added.
-    public async Task<List<ResidenceHistoryDto>> GetHistoryAsync(
+    /// <param name="limit">Trần số dòng; null = không giới hạn (đường xuất file).</param>
+    public virtual async Task<List<ResidenceHistoryDto>> GetHistoryAsync(
         DateTime from,
         DateTime to,
         string? roomNumber,
+        int? limit = null,
         CancellationToken ct = default)
     {
         const string sql = """
@@ -21,6 +23,7 @@ public sealed class ResidenceRepository(Database database)
             WHERE t.created_at >= @from AND t.created_at <= @to
               AND (@roomNumber IS NULL OR r.room_number = @roomNumber)
             ORDER BY t.created_at DESC
+            LIMIT @limit
             """;
 
         await using var connection = await database.OpenAsync(ct);
@@ -28,6 +31,8 @@ public sealed class ResidenceRepository(Database database)
         command.Parameters.AddWithValue("@from", from);
         command.Parameters.AddWithValue("@to", to);
         command.Parameters.AddWithValue("@roomNumber", (object?)roomNumber ?? DBNull.Value);
+        // MySQL LIMIT nhận tham số; 18446744073709551615 = "không giới hạn" của chính MySQL.
+        command.Parameters.AddWithValue("@limit", (object?)limit ?? ulong.MaxValue);
 
         await using var reader = await command.ExecuteReaderAsync(ct);
         var result = new List<ResidenceHistoryDto>();

@@ -37,6 +37,13 @@ public sealed class WebMessageBridge
             reqId = env.RequestId;
             var response = await _client.SendAsync<JsonElement, JsonElement>(env.Action, env.Data);
 
+            // Ràng buộc spec §3.2: token phiên sống trong C#, KHÔNG xuống JS.
+            // Giữ token cho các request sau, trả JS chỉ phần login.js cần (fullName, role).
+            if (env.Action == ActionNames.AuthLogin)
+            {
+                response = CaptureTokenAndStrip(response);
+            }
+
             var okPayload = JsonSerializer.Serialize(new
             {
                 requestId = reqId,
@@ -60,6 +67,50 @@ public sealed class WebMessageBridge
         {
             await PostErrorAsync(postBack, reqId, "Lỗi kết nối hoặc hệ thống: " + ex.Message);
         }
+    }
+
+    private JsonElement CaptureTokenAndStrip(JsonElement response)
+    {
+        string? token = null;
+        string? fullName = null;
+        JsonElement roleElement = default;
+
+        if (response.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in response.EnumerateObject())
+            {
+                if (prop.NameEquals("token") || string.Equals(prop.Name, "Token", StringComparison.OrdinalIgnoreCase))
+                {
+                    token = prop.Value.GetString();
+                }
+                else if (prop.NameEquals("fullName") || string.Equals(prop.Name, "FullName", StringComparison.OrdinalIgnoreCase))
+                {
+                    fullName = prop.Value.GetString();
+                }
+                else if (prop.NameEquals("role") || string.Equals(prop.Name, "Role", StringComparison.OrdinalIgnoreCase))
+                {
+                    roleElement = prop.Value;
+                }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(token) && _client is not null)
+        {
+            _client.Token = token;
+        }
+
+        object? roleVal = roleElement.ValueKind switch
+        {
+            JsonValueKind.String => roleElement.GetString(),
+            JsonValueKind.Number => roleElement.GetInt32(),
+            _ => null
+        };
+
+        return JsonSerializer.SerializeToElement(new
+        {
+            fullName,
+            role = roleVal
+        }, JsonDefaults.Options);
     }
 
     private static Task PostErrorAsync(Func<string, Task> postBack, string? requestId, string message)

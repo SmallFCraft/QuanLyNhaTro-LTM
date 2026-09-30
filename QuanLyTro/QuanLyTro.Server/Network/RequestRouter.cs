@@ -105,8 +105,8 @@ public sealed class RequestRouter
 
             [ActionNames.ResidenceHistoryGet] = (r, _, ct) =>
             {
-                var from = ReadDateTime(r.Data, "from", "fromDate");
-                var to = ReadDateTime(r.Data, "to", "toDate");
+                var from = ReadOptionalDateTime(r.Data, "from", "fromDate");
+                var to = ReadOptionalDateTime(r.Data, "to", "toDate");
                 var roomNumber = ReadString(r.Data, "roomNumber") ?? ReadString(r.Data, "room");
                 return Ok(_residence.GetHistoryAsync(from, to, roomNumber, ct));
             },
@@ -252,6 +252,25 @@ public sealed class RequestRouter
         }
 
         throw new BusinessRuleException("Thiếu ngày trong yêu cầu.");
+    }
+
+    /// <summary>Như <see cref="ReadDateTime"/> nhưng thiếu/để trống → null để service áp khoảng mặc định.</summary>
+    private static DateTime? ReadOptionalDateTime(JsonElement data, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var raw = ReadString(data, name);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+                ? date
+                : throw new BusinessRuleException("Ngày không hợp lệ.");
+        }
+
+        return null;
     }
 
     /// <summary>`JsonElement.TryGetProperty` phân biệt hoa thường; giao thức dùng camelCase nên quét tay.</summary>

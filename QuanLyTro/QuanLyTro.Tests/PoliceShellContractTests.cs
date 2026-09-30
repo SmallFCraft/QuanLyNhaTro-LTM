@@ -30,4 +30,26 @@ public sealed class PoliceShellContractTests
             Assert.IsFalse(Regex.IsMatch(policeBlock, $">{verb}<"), $"Shell công an có nút ghi: {verb}");
         }
     }
+
+    /// <summary>
+    /// C2 (spec §3.2): token phiên chỉ sống trong C#. Không file JS/HTML nào được đọc
+    /// `token` từ đối tượng người dùng trả về AUTH_LOGIN.
+    /// </summary>
+    [TestMethod]
+    public void FrontEnd_NeverReadsSessionToken()
+    {
+        var files = Directory.GetFiles(Path.Combine(Wwwroot, "js"), "*.js")
+            .Append(Path.Combine(Wwwroot, "index.html"));
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            Assert.IsFalse(
+                Regex.IsMatch(text, @"\b\w+\.(token|Token)\b"),
+                $"{Path.GetFileName(file)} đọc trường token — token phải ở lại phía C#.");
+            Assert.IsFalse(
+                Regex.IsMatch(text, @"localStorage|sessionStorage"),
+                $"{Path.GetFileName(file)} dùng storage trình duyệt — token không được lưu ở đó.");
+        }
+    }
 }

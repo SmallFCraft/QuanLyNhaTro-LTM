@@ -47,11 +47,7 @@ public partial class Form1 : Form
             var rawJson = args.TryGetWebMessageAsString();
             if (!string.IsNullOrEmpty(rawJson))
             {
-                await _bridge.DispatchAsync(rawJson, msg =>
-                {
-                    webView.Invoke(() => webView.CoreWebView2.PostWebMessageAsString(msg));
-                    return Task.CompletedTask;
-                });
+                await _bridge.DispatchAsync(rawJson, PostToPage);
             }
         };
 
@@ -59,13 +55,42 @@ public partial class Form1 : Form
         webView.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
     }
 
+    private Task PostToPage(string msg)
+    {
+        // Form/webView có thể đã bị huỷ khi phản hồi TCP về muộn → bỏ qua im lặng,
+        // không để exception trên luồng nền giết tiến trình.
+        try
+        {
+            if (IsDisposed || Disposing || !IsHandleCreated || webView.IsDisposed) return Task.CompletedTask;
+            webView.Invoke(() =>
+            {
+                if (webView.IsDisposed || webView.CoreWebView2 is null) return;
+                webView.CoreWebView2.PostWebMessageAsString(msg);
+            });
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException)
+        {
+            // Teardown đua với phản hồi — chấp nhận rơi gói tin.
+        }
+
+        return Task.CompletedTask;
+    }
+
     private void OnClientDisconnected(object? sender, EventArgs e)
     {
         if (IsDisposed) return;
-        BeginInvoke(() =>
+        try
         {
-            _ = webView.CoreWebView2?.ExecuteScriptAsync("alert('Mất kết nối máy chủ TCP. Vui lòng thử lại.');");
-        });
+            BeginInvoke(() =>
+            {
+                if (IsDisposed || webView.IsDisposed) return;
+                _ = webView.CoreWebView2?.ExecuteScriptAsync("alert('Mất kết nối máy chủ TCP. Vui lòng thử lại.');");
+            });
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException)
+        {
+            // Cửa sổ đang đóng — không cần thông báo.
+        }
     }
 
     private static (string Host, int Port) ReadServerEndpoint()

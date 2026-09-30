@@ -14,8 +14,27 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
+    role ENUM('Landlord', 'Tenant', 'Police') NOT NULL DEFAULT 'Landlord',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- statement
+
+-- Delta WebView2: DB cũ phải có cột `role` (CREATE TABLE IF NOT EXISTS bỏ qua bảng đã tồn tại).
+-- MySQL 8 không có "ADD COLUMN IF NOT EXISTS" → ALTER động, chỉ chạy khi cột thiếu.
+-- SchemaInitializer giữ MỘT connection cho toàn bộ script nên @role_col/@sql sống giữa các statement.
+-- ponytail: kiểm tra INFORMATION_SCHEMA thay vì dựng hệ thống migration; đổi khi cần >1 thay đổi.
+SET @role_col := (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role');
+-- statement
+SET @sql := IF(@role_col = 0,
+               'ALTER TABLE users ADD COLUMN role ENUM(''Landlord'', ''Tenant'', ''Police'') NOT NULL DEFAULT ''Landlord'' AFTER full_name',
+               'SELECT 1');
+-- statement
+PREPARE role_migration FROM @sql;
+-- statement
+EXECUTE role_migration;
+-- statement
+DEALLOCATE PREPARE role_migration;
 -- statement
 
 CREATE TABLE IF NOT EXISTS rooms (

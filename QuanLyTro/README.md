@@ -63,9 +63,19 @@ Kết quả in ra: `Database initialized.`
 ```bash
 # 1) Sinh hash (xem mục 4 để biết cách chạy đoạn C# này)
 #    → pbkdf2-sha256$210000$<salt>$<key>
-# 2) Chèn vào users bằng mysql CLI của Laragon:
-"E:/Apps/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe" -h 127.0.0.1 -P 3306 -u root quanly_phongtro_nhs \
-  -e "INSERT INTO users (username, password_hash, full_name) VALUES ('admin', '<HASH>', 'Chủ Trọ Demo') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), full_name = VALUES(full_name);"
+# 2) Chèn vào users bằng mysql CLI của Laragon.
+#    BẮT BUỘC --default-character-set=utf8mb4, nếu không CLI Windows dùng cp850 và
+#    tên tiếng Việt bị hỏng thành "Ch? Tr? Demo".
+"E:/Apps/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe" --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u root quanly_phongtro_nhs \
+  -e "INSERT INTO users (username, password_hash, full_name, role) VALUES ('admin', '<HASH>', 'Chủ Trọ Demo', 'Landlord') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), full_name = VALUES(full_name), role = 'Landlord';"
+```
+
+> **Muốn demo thêm vai Công an phường (BR-16)?** Sinh một hash khác (mật khẩu khác,
+> vẫn dùng lại `PasswordHasher` ở mục 4) rồi chạy INSERT kiểu y hệt:
+
+```bash
+"E:/Apps/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe" --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u root quanly_phongtro_nhs \
+  -e "INSERT INTO users (username, password_hash, full_name, role) VALUES ('police_nhs', '<POLICE_HASH>', 'Công An Phường', 'Police') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), full_name = VALUES(full_name), role = 'Police';"
 ```
 
 **Bước 4 — Chạy Server** (giữ terminal này mở):
@@ -111,6 +121,11 @@ Cửa sổ đăng nhập hiện ra → nhập tài khoản ở mục 4.
 > Đừng tự viết PBKDF2 tay hoặc dùng hash công cụ khác — định dạng `pbkdf2-sha256$iterations$salt$key` phải khớp `PasswordHasher.Verify` thì đăng nhập mới qua. Không nhúng hash thô nào vào tài liệu này.
 
 > Nếu chỉ muốn đổi mật khẩu admin đã tồn tại: chạy lại bước 3 với hash mới.
+
+> **Tài khoản demo Công an phường (BR-16, tuỳ chọn).** Cột `users.role` nhận `Landlord`,
+> `Tenant`, `Police`. Tạo thủ công y như admin, đổi `role` thành `'Police'` (ví dụ
+> `username=police_nhs`, mật khẩu tuỳ chọn). Sau khi đăng nhập, Client mở shell
+> read-only 3 tab. Repo vẫn không tự seed tài khoản nào.
 
 ---
 

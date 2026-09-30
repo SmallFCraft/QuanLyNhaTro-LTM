@@ -36,6 +36,21 @@ public sealed class AuthTests
     }
 
     [TestMethod]
+    public async Task AuthService_LogsInPolice_ReturnsPoliceRoleAndCreatesPoliceSession()
+    {
+        var hash = PasswordHasher.Hash("police-pass");
+        var (auth, sessions) = MakeService(
+            new UserRecord(2, hash, "Đại úy Lê Văn C", UserRole.Police), null);
+
+        var result = await auth.LoginAsync(new LoginRequest("police_nhs", "police-pass"));
+
+        Assert.AreEqual(UserRole.Police, result.Role, "C3: AuthService phải trả UserRole.Police cho tài khoản công an.");
+        Assert.AreEqual("Đại úy Lê Văn C", result.FullName);
+        Assert.IsTrue(sessions.TryGet(result.Token, out var s), "Session phải được tạo trong SessionStore.");
+        Assert.AreEqual((2, UserRole.Police), s, "Session role phải là Police, không phải Landlord.");
+    }
+
+    [TestMethod]
     public async Task AuthService_LogsInTenantByCccd()
     {
         var hash = PasswordHasher.Hash("123456");
