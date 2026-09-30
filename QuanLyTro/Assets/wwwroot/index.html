@@ -36,7 +36,7 @@
       <label><i class="fas fa-lock"></i> Mật khẩu</label>
       <input class="inp mono" type="password" id="lp" placeholder="••••••••">
       <label></label>
-      <button class="btn btn-primary" style="justify-content:center"><i class="fas fa-sign-in-alt"></i> Đăng nhập <kbd>F5</kbd></button>
+      <button type="submit" class="btn btn-primary" style="justify-content:center"><i class="fas fa-sign-in-alt"></i> Đăng nhập <kbd>F5</kbd></button>
     </form>
   </div>
 </div>
@@ -144,12 +144,12 @@
           <thead>
             <tr><th>Số phòng</th><th class="num">Giá/tháng</th><th class="num">Sức chứa</th><th class="num">Đang ở</th><th>Trạng thái</th><th>Mô tả</th><th></th></tr>
           </thead>
-          <tbody>
-            <tr><td><b>P101</b></td><td class="num">2.500.000</td><td class="num">2</td><td class="num due-red">2/2</td><td><span class="tag rent">Đang thuê</span></td><td>Tầng 1</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
-            <tr><td><b>P102</b></td><td class="num">2.000.000</td><td class="num">2</td><td class="num">1/2</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
-            <tr><td><b>P103</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">0/4</td><td><span class="tag avail">Phòng trống</span></td><td>Tầng trệt</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
-            <tr><td><b>P104</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">3/4</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
-            <tr><td><b>P201</b></td><td class="num">3.600.000</td><td class="num">2</td><td class="num">0/2</td><td><span class="tag warn">Bảo trì</span></td><td>Thay máy lạnh</td><td><button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></td></tr>
+          <tbody id="rooms-body">
+            <tr><td><b>P101</b></td><td class="num">2.500.000</td><td class="num">2</td><td class="num due-red">2/2</td><td><span class="tag rent">Đang thuê</span></td><td>Tầng 1</td><td><button class="btn btn-outline btn-sm" onclick="editRoom(1)"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled title="Chỉ xóa được phòng trống (BR-12)"><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P102</b></td><td class="num">2.000.000</td><td class="num">2</td><td class="num">1/2</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm" onclick="editRoom(2)"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P103</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">0/4</td><td><span class="tag avail">Phòng trống</span></td><td>Tầng trệt</td><td><button class="btn btn-outline btn-sm" onclick="editRoom(3)"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteRoom(3)"><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P104</b></td><td class="num">1.800.000</td><td class="num">4</td><td class="num">3/4</td><td><span class="tag rent">Đang thuê</span></td><td></td><td><button class="btn btn-outline btn-sm" onclick="editRoom(4)"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" disabled><i class="fas fa-trash"></i></button></td></tr>
+            <tr><td><b>P201</b></td><td class="num">3.600.000</td><td class="num">2</td><td class="num">0/2</td><td><span class="tag warn">Bảo trì</span></td><td>Thay máy lạnh</td><td><button class="btn btn-outline btn-sm" onclick="editRoom(5)"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteRoom(5)"><i class="fas fa-trash"></i></button></td></tr>
           </tbody>
         </table>
         <div class="tblfoot"><span>Tổng: 5 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
@@ -173,12 +173,12 @@
             <tr>
               <td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
               <td><span class="tag done">Đã nộp</span></td>
-              <td><button class="btn btn-outline btn-sm"><i class="fas fa-key"></i></button></td>
+              <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(1)"><i class="fas fa-key"></i></button></td>
             </tr>
             <tr>
               <td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
               <td><span class="tag warn">Chưa nộp</span></td>
-              <td><button class="btn btn-outline btn-sm"><i class="fas fa-key"></i></button></td>
+              <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(2)"><i class="fas fa-key"></i></button></td>
             </tr>
           </tbody>
         </table>
@@ -285,7 +285,7 @@
             <tr>
               <td><b>P101</b></td><td class="num">2.500.000</td><td class="num">262.500</td><td class="num">30.000</td><td class="num">50.000</td><td class="num amount">2.842.500</td>
               <td><span class="tag unpaid">Chưa thu</span></td>
-              <td><button class="btn btn-primary btn-sm"><i class="fas fa-hand-holding-usd"></i> Thu</button></td>
+              <td><button class="btn btn-primary btn-sm" onclick="payInvoice(1)"><i class="fas fa-hand-holding-usd"></i> Thu</button></td>
             </tr>
             <tr>
               <td><b>P102</b></td><td class="num">2.000.000</td><td class="num">175.000</td><td class="num">20.000</td><td class="num">50.000</td><td class="num amount">2.245.000</td>
@@ -603,7 +603,7 @@
       </div>
       <div class="rowbn">
         <button class="btn btn-primary btn-sm" onclick="copyTransfer()"><i class="fas fa-copy"></i> Sao chép nội dung chuyển khoản</button>
-        <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Đồng bộ F5</button>
+        <button class="btn btn-outline btn-sm" onclick="loadTenantInvoices()"><i class="fas fa-sync"></i> Đồng bộ F5</button>
       </div>
       <div class="note"><i class="fas fa-info-circle"></i> INVOICE_GET_MINE: Server suy phòng từ token. Không nút ghi. Bấm dòng để xem chi tiết.</div>
     </div>

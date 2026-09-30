@@ -13,13 +13,16 @@ public sealed class LandlordTabContractTests
     public void LandlordHtml_HasSevenTabContainers_AndJsReferencesEachTabKey()
     {
         var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord.js"));
+        // Tab 9 tách landlord.js thành thư mục landlord/: mỗi tab một file.
+        var keysInLandlordJs = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord.js"));
 
         string[] tabKeys = { "dash", "rooms", "tenants", "contracts", "utils", "invoices", "reports" };
         foreach (var key in tabKeys)
         {
             Assert.IsTrue(html.Contains($"id=\"tab-{key}\""), $"index.html thiếu tab-{key}");
-            Assert.IsTrue(js.Contains($"'{key}'"), $"landlord.js chưa xử lý tab {key}");
+            var declared = keysInLandlordJs.Contains($"'{key}'") || keysInLandlordJs.Contains($"{key}:");
+            Assert.IsTrue(declared,
+                $"landlord.js chưa khai báo tab {key} trong LANDLORD_TITLES/LANDLORD_LOADERS");
         }
     }
 
@@ -31,14 +34,17 @@ public sealed class LandlordTabContractTests
     [TestMethod]
     public void LandlordInvoiceRender_DerivesPaidStateFromStatusField()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord.js"));
+        // renderInvoices() chuyển sang landlord/invoices.js từ Task 9.
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "invoices.js"));
         var dto = File.ReadAllText(Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..",
             "QuanLyTro.Shared", "Models", "InvoiceDto.cs"));
 
         Assert.IsTrue(dto.Contains("InvoiceStatus Status"),
-            "InvoiceDto đổi hình dạng — cập nhật landlord.js và test này.");
-        Assert.IsTrue(js.Contains("i.status === 'Paid'"),
-            "landlord.js phải suy trạng thái đã thu từ trường status, không phải isPaid.");
+            "InvoiceDto đổi hình dạng — cập nhật invoices.js và test này.");
+        Assert.IsTrue(js.Contains("'Paid'"),
+            "invoices.js phải suy trạng thái đã thu từ trường status, không phải isPaid.");
+        Assert.IsFalse(js.Contains("i.isPaid"),
+            "invoices.js không được đọc isPaid — InvoiceDto không có trường đó.");
     }
 }
