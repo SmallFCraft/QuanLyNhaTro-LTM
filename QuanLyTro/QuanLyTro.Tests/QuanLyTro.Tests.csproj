@@ -20,4 +20,10 @@
     <ProjectReference Include="..\QuanLyTro.Server\QuanLyTro.Server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\Assets\wwwroot\**" Link="Assets\wwwroot\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

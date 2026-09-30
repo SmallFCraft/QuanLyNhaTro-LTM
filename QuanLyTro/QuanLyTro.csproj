@@ -23,7 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <ProjectReference Include="QuanLyTro.Shared\QuanLyTro.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\wwwroot\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
