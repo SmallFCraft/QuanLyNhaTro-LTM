@@ -11,7 +11,7 @@
   body{
     background:var(--canvas);color:var(--cream);
     font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:12.5px;line-height:1.45;
-    display:flex;flex-direction:column;align-items:center;gap:36px;padding:32px 16px;
+    display:flex;flex-direction:column;min-height:100vh;
     -webkit-font-smoothing:antialiased
   }
   .mono{font-family:'JetBrains Mono','SF Mono',Consolas,monospace}
@@ -23,7 +23,7 @@
 
   /* ===== window chrome ===== */
   .win{max-width:1000px;width:100%;margin:0 auto;border-radius:8px;overflow:hidden;
-       border:1px solid var(--hairline);box-shadow:0 0 0 1px var(--hair-strong),0 16px 32px -8px rgba(0,0,0,.8)}
+       border:1px solid var(--hairline)}
   .titlebar{
     height:32px;background:var(--canvas);color:var(--cream);
     padding:0 12px;display:flex;align-items:center;justify-content:space-between;
@@ -31,12 +31,7 @@
   }
   .titlebar .title{display:flex;align-items:center;gap:8px;min-width:0}
   .titlebar .title i{color:var(--terracotta);font-size:13px}
-  .titlebar .win-ctrl{display:flex;gap:2px}
-  .titlebar .win-ctrl span{
-    width:22px;height:22px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
-    color:var(--dim);font-size:10px;cursor:default
-  }
-  .titlebar .win-ctrl .x{color:var(--danger)}
+  /* win-ctrl removed — host WinForms window provides native controls */
 
   /* ===== login ===== */
   .login-body{padding:36px 24px 32px;text-align:center;background:var(--card)}
