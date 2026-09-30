@@ -40,16 +40,16 @@ public class SanityTests
         // Tránh tái diễn: form thêm phòng cũ từng crash ArgumentOutOfRangeException vì
         // combo trạng thái không được nạp item nào. UI giờ là WebView2 (Assets/wwwroot),
         // nên khóa contract của modal thêm/sửa phòng thay vì dựng WinForms control.
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "rooms.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "rooms.js"));
 
         Assert.IsTrue(js.Contains("'Available'"), "Modal thiếu trạng thái Trống");
         Assert.IsTrue(js.Contains("'Rented'"), "Modal thiếu trạng thái Đang thuê");
         Assert.IsTrue(js.Contains("'Maintenance'"), "Modal thiếu trạng thái Bảo trì");
 
         // Bộ lọc trên thanh công cụ phải có đủ 3 lựa chọn + mặc định "Tất cả".
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
         var selectStart = html.IndexOf("id=\"room-status\"", System.StringComparison.Ordinal);
-        Assert.IsTrue(selectStart >= 0, "index.html thiếu bộ lọc #room-status");
+        Assert.IsTrue(selectStart >= 0, "landlord/index.html thiếu bộ lọc #room-status");
         var selectTag = html[selectStart..html.IndexOf("</select>", selectStart, System.StringComparison.Ordinal)];
         Assert.AreEqual(3, selectTag.Split("value=\"Available\"").Length - 1
                          + selectTag.Split("value=\"Rented\"").Length - 1

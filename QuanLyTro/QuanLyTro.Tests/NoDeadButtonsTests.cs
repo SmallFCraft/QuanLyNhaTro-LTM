@@ -13,14 +13,21 @@ public sealed class NoDeadButtonsTests
     [TestMethod]
     public void EveryButton_EitherHasHandlerOrIsDisabled()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var htmlFiles = Directory.GetFiles(Wwwroot, "*.html", SearchOption.AllDirectories);
+        Assert.IsTrue(htmlFiles.Length >= 4, "Phải quét ít nhất 4 trang (auth, landlord, police, tenant).");
+
         var dead = new List<string>();
-        foreach (Match m in Regex.Matches(html, "<button\\b[^>]*>"))
+        foreach (var file in htmlFiles)
         {
-            var tag = m.Value;
-            if (tag.Contains("onclick") || tag.Contains("type=\"submit\"") || tag.Contains("disabled"))
-                continue;
-            dead.Add(Regex.Replace(tag, "\\s+", " "));
+            var html = File.ReadAllText(file);
+            var relative = Path.GetRelativePath(Wwwroot, file);
+            foreach (Match m in Regex.Matches(html, "<button\\b[^>]*>"))
+            {
+                var tag = m.Value;
+                if (tag.Contains("onclick") || tag.Contains("type=\"submit\"") || tag.Contains("disabled"))
+                    continue;
+                dead.Add($"{relative}: {Regex.Replace(tag, "\\s+", " ")}");
+            }
         }
         Assert.AreEqual(0, dead.Count,
             "Nút không có handler cũng không disabled:\n" + string.Join("\n", dead));

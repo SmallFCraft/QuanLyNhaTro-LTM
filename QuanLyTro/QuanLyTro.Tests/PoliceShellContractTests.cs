@@ -78,15 +78,23 @@ public sealed class PoliceShellContractTests
     [TestMethod]
     public void PoliceJs_UsesDocumentElementIds_AndNoWriteActions()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "police.js"));
-        Assert.IsTrue(js.Contains("document.getElementById('p-search')"), "police.js phải đọc #p-search bằng getElementById");
-        Assert.IsTrue(js.Contains("document.getElementById('p-from')"), "police.js phải đọc #p-from bằng getElementById");
-        Assert.IsTrue(js.Contains("document.getElementById('p-to')"), "police.js phải đọc #p-to bằng getElementById");
+        // Tìm kiếm ở tab Công dân, khoảng ngày ở tab Biến động.
+        var citizens = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "citizens.js"));
+        var history = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "history.js"));
+        Assert.IsTrue(citizens.Contains("document.getElementById('p-search')"), "citizens.js phải đọc #p-search bằng getElementById");
+        Assert.IsTrue(history.Contains("document.getElementById('p-from')"), "history.js phải đọc #p-from bằng getElementById");
+        Assert.IsTrue(history.Contains("document.getElementById('p-to')"), "history.js phải đọc #p-to bằng getElementById");
 
-        // BR-16: shell công an không gọi bất kỳ action ghi nào
-        foreach (var action in ForbiddenWriteActions)
+        // BR-16: shell công an không gọi bất kỳ action ghi nào — quét mọi script của module.
+        var policeJs = Directory.GetFiles(Path.Combine(Wwwroot, "police", "js"), "*.js");
+        foreach (var file in policeJs)
         {
-            Assert.IsFalse(js.Contains(action), $"police.js vi phạm BR-16 — chứa action ghi: {action}");
+            var js = File.ReadAllText(file);
+            foreach (var action in ForbiddenWriteActions)
+            {
+                Assert.IsFalse(js.Contains(action),
+                    $"{Path.GetFileName(file)} vi phạm BR-16 — chứa action ghi: {action}");
+            }
         }
     }
 
@@ -98,9 +106,9 @@ public sealed class PoliceShellContractTests
     public void CitizensTab_ExportButton_ExportsCitizensNotHistory()
     {
         var html = File.ReadAllText(PoliceHtml);
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "police.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "citizens.js"));
 
-        Assert.IsTrue(js.Contains("function exportCitizens"), "police.js thiếu exportCitizens()");
+        Assert.IsTrue(js.Contains("function exportCitizens"), "citizens.js thiếu exportCitizens()");
         Assert.IsTrue(html.Contains("onclick=\"exportCitizens()\""),
             "police/index.html chưa nối nút Xuất danh sách sang exportCitizens()");
 

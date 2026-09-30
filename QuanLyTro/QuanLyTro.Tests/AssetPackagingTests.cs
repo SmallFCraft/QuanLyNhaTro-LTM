@@ -12,9 +12,12 @@ public sealed class AssetPackagingTests
     [TestMethod]
     public void Wwwroot_ContainsEntryPointAndBridge()
     {
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "index.html")), "Thiếu index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "js", "bridge.js")), "Thiếu bridge.js");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "css", "style.css")), "Thiếu style.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "index.html")), "Thiếu auth/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "index.html")), "Thiếu landlord/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "index.html")), "Thiếu police/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "index.html")), "Thiếu tenant/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "js", "bridge.js")), "Thiếu shared/js/bridge.js");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "css", "base.css")), "Thiếu shared/css/base.css");
     }
 
     [TestMethod]

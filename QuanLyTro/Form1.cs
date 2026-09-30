@@ -51,7 +51,7 @@ public partial class Form1 : Form
             }
         };
 
-        var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot", "index.html");
+        var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot", "auth", "index.html");
         webView.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
     }
 
