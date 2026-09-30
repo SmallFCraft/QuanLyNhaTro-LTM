@@ -158,6 +158,21 @@ public sealed class WebMessageBridgeTests
         Assert.AreEqual(JsonValueKind.Null, root.GetProperty("data").ValueKind, "data phải là null trên JSON, không văng InvalidOperationException");
     }
 
+    [TestMethod]
+    public async Task DispatchAsync_UiLogout_ClearsClientToken()
+    {
+        var client = new TcpClientService { Token = "test_token" };
+        var bridge = new WebMessageBridge(client);
+        string? responseJson = null;
+
+        await bridge.DispatchAsync(
+            """{"requestId":"r_out","action":"UI_LOGOUT","data":{}}""",
+            msg => { responseJson = msg; return Task.CompletedTask; });
+
+        Assert.IsNull(client.Token, "UI_LOGOUT phải xóa token");
+        StringAssert.Contains(responseJson, "\"success\":true");
+    }
+
     /// <summary>
     /// Mô phỏng đầy đủ luồng thực tế của người dùng:
     /// 1. Đăng nhập admin qua AUTH_LOGIN (bridge lưu token nội bộ)

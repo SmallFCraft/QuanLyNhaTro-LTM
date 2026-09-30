@@ -36,6 +36,15 @@ public sealed class WebMessageBridge
 
             reqId = env.RequestId;
 
+            // Action cục bộ: đăng xuất chỉ xóa token phiên trong C#, KHÔNG gửi lên TCP Server.
+            if (env.Action == "UI_LOGOUT")
+            {
+                _client.Token = null;
+                var ok = JsonSerializer.Serialize(new { requestId = reqId, success = true, data = (object?)null, error = (string?)null }, JsonDefaults.Options);
+                await postBack(ok);
+                return;
+            }
+
             // JS có thể không gửi trường `data`, gửi null, hoặc gửi giá trị không phải object.
             // JsonElement ở trạng thái Undefined/Null làm JsonSerializer.SerializeToElement ném
             // InvalidOperationException ("Operation is not valid due to the current state..."),

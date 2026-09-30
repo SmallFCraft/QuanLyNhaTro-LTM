@@ -1,0 +1,9 @@
+:root{
+  --canvas:#0B0F12; --base:#101417; --card:#181C1F; --panel:#1A1F24;
+  --active:#21262B; --field:#15191D; --overlay:#262A2E; --hover:#1F252A;
+  --hairline:#262A2E; --hair-subtle:#21272C; --hair-strong:#3A444E; --input-line:#2C3237;
+  --cream:#F4EFEA; --cream-light:#FAF8F5; --muted:#A89988; --dim:#767E88; --ph:#555D66;
+  --terracotta:#D95D39; --terracotta-hi:#EA6944; --terracotta-lo:#B84524; --tint:#FFB5A0;
+  --sage:#8BD7A3; --sage-line:#2E4A35; --amber:#E0AF68; --amber-line:#483A24;
+  --danger:#FFB4AB; --danger-bg:#32191B; --danger-line:#3E2925;
+}
