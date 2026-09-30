@@ -48,6 +48,14 @@ public sealed class AssetPackagingTests
     }
 
     [TestMethod]
+    public void Wwwroot_ContainsTenantModule()
+    {
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "index.html")), "Thiếu tenant/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "tenant.css")), "Thiếu tenant/tenant.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "js", "tenant.js")), "Thiếu tenant/js/tenant.js");
+    }
+
+    [TestMethod]
     public void Wwwroot_ContainsPoliceModule()
     {
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "index.html")), "Thiếu police/index.html");

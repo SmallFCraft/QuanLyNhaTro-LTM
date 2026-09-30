@@ -13,9 +13,9 @@ public sealed class TenantShellContractTests
     [TestMethod]
     public void TenantShell_HasSingleTab_AndNoWriteButtons()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "tenant", "index.html"));
         var start = html.IndexOf("id=\"tenant\"", System.StringComparison.Ordinal);
-        Assert.IsTrue(start >= 0, "index.html thiếu cửa sổ #tenant");
+        Assert.IsTrue(start >= 0, "tenant/index.html thiếu cửa sổ #tenant");
 
         var tenantBlock = html.Substring(start, html.Length - start);
         Assert.AreEqual(1, Regex.Matches(tenantBlock, "class=\"tab on\"").Count,
@@ -30,7 +30,7 @@ public sealed class TenantShellContractTests
     [TestMethod]
     public void TenantJs_RendersReceiptDetailAndHistoryFromServer()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "tenant.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "tenant", "js", "tenant.js"));
         Assert.IsTrue(js.Contains("isPaid"), "tenant.js phải suy trạng thái đã thu");
         Assert.IsTrue(js.Contains("fmtDate"), "tenant.js phải định dạng ngày đóng tiền");
         // Chỉ đọc — không được có lệnh ghi nào
