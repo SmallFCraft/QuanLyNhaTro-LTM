@@ -47,4 +47,13 @@ public sealed class LandlordTabContractTests
         Assert.IsFalse(js.Contains("i.isPaid"),
             "invoices.js không được đọc isPaid — InvoiceDto không có trường đó.");
     }
+
+    [TestMethod]
+    public void Menustrip_HasWorkingNavigationHandlers()
+    {
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        // Menu item "Báo cáo" phải gọi loadLandlordTab('reports')
+        Assert.IsTrue(html.Contains("loadLandlordTab('reports')"),
+            "Menu item Báo cáo chưa có onclick nhảy tới tab reports");
+    }
 }

@@ -40,10 +40,10 @@
     <!-- menu strip -->
     <div class="menustrip">
       <div class="hscroll" style="display:flex;gap:6px">
-        <span class="mi"><i class="fas fa-cog"></i> Hệ thống</span>
-        <span class="mi cur"><i class="fas fa-th-large"></i> Quản lý</span>
-        <span class="mi"><i class="fas fa-chart-bar"></i> Báo cáo</span>
-        <span class="mi"><i class="fas fa-question-circle"></i> Trợ giúp</span>
+        <span class="mi" onclick="showInfoDialog()"><i class="fas fa-cog"></i> Hệ thống</span>
+        <span class="mi cur" onclick="toggleMenu(this)"><i class="fas fa-th-large"></i> Quản lý</span>
+        <span class="mi" onclick="loadLandlordTab('reports')"><i class="fas fa-chart-bar"></i> Báo cáo</span>
+        <span class="mi" onclick="showHelp()"><i class="fas fa-question-circle"></i> Trợ giúp</span>
       </div>
       <span style="color:var(--dim)"><i class="fas fa-user"></i></span>
     </div>
