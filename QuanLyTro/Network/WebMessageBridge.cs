@@ -35,7 +35,14 @@ public sealed class WebMessageBridge
             }
 
             reqId = env.RequestId;
-            var response = await _client.SendAsync<JsonElement, JsonElement>(env.Action, env.Data);
+
+            // JS có thể không gửi trường `data`, gửi null, hoặc gửi giá trị không phải object.
+            // JsonElement ở trạng thái Undefined/Null làm JsonSerializer.SerializeToElement ném
+            // InvalidOperationException ("Operation is not valid due to the current state..."),
+            // nên chuẩn hóa về object rỗng trước khi chuyển tiếp.
+            var payload = NormalizeData(env.Data);
+
+            var response = await _client.SendAsync<JsonElement, JsonElement>(env.Action, payload);
 
             // Ràng buộc spec §3.2: token phiên sống trong C#, KHÔNG xuống JS.
             // Giữ token cho các request sau, trả JS chỉ phần login.js cần (fullName, role).
@@ -111,6 +118,19 @@ public sealed class WebMessageBridge
             fullName,
             role = roleVal
         }, JsonDefaults.Options);
+    }
+
+    private static JsonElement NormalizeData(JsonElement data)
+    {
+        // Undefined / Null làm SerializeToElement ném InvalidOperationException
+        // ("Operation is not valid due to the current state of the object.").
+        // Chuẩn hóa về object rỗng `{}` để luôn serialize an toàn.
+        if (data.ValueKind == JsonValueKind.Undefined || data.ValueKind == JsonValueKind.Null)
+        {
+            return JsonSerializer.SerializeToElement(new { }, JsonDefaults.Options);
+        }
+
+        return data;
     }
 
     private static Task PostErrorAsync(Func<string, Task> postBack, string? requestId, string message)
