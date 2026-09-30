@@ -51,11 +51,18 @@ public sealed class WebMessageBridge
                 response = CaptureTokenAndStrip(response);
             }
 
+            // Khi Server trả về Data = null (vd UTILITY_GET_PREVIOUS cho phòng chưa có chỉ số kỳ trước):
+            // TcpClientService.SendAsync trả về default(JsonElement) có ValueKind == Undefined.
+            // JsonSerializer.Serialize gặp thuộc tính JsonElement(Undefined) sẽ ném:
+            // "Operation is not valid due to the current state of the object."
+            // Chuẩn hóa: nếu Undefined thì đưa về null để serialize ra "data": null an toàn cho JS.
+            object? safeData = response.ValueKind == JsonValueKind.Undefined ? null : response;
+
             var okPayload = JsonSerializer.Serialize(new
             {
                 requestId = reqId,
                 success = true,
-                data = response,
+                data = safeData,
                 error = (string?)null
             }, JsonDefaults.Options);
 
