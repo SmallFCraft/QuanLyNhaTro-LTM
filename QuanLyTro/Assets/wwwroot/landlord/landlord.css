@@ -158,3 +158,56 @@
 .chartbar .b i{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:9.5px;
   color:var(--muted);font-family:'JetBrains Mono',Consolas,monospace;font-style:normal}
 .barchart{margin-bottom:26px}
+
+/* ===== responsive: điện thoại dọc ===== */
+@media (max-width: 640px) {
+  .win {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+  .content {
+    padding: 10px;
+  }
+  .tabs {
+    margin: 8px 10px 0;
+  }
+  .userbar {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .headline {
+    padding: 10px 10px 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .kpis {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+  .duo {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .toolbar {
+    gap: 6px;
+    padding: 6px;
+  }
+  .toolbar .inp,
+  .toolbar select.inp {
+    width: 100% !important;
+  }
+  .toolbar .spacer,
+  .toolbar .divider {
+    display: none;
+  }
+  .calc .row {
+    gap: 6px;
+  }
+  .calc .row .tot {
+    width: 100%;
+    margin-left: 0;
+    text-align: right;
+  }
+}

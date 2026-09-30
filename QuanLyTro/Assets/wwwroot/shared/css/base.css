@@ -40,7 +40,7 @@ kbd{font-family:'JetBrains Mono',Consolas,monospace;font-size:9.5px;color:var(--
   background:var(--field);border:1px solid #2B3036;border-radius:3px;padding:0 4px}
 
 /* data grid */
-.tblwrap{background:#14181C;border:1px solid #262D33;border-radius:8px;overflow:hidden}
+.tblwrap{background:#14181C;border:1px solid #262D33;border-radius:8px;overflow-x:auto}
 table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
 .tbl th{
   text-align:left;padding:8px 10px;font-size:9.5px;font-weight:700;letter-spacing:.06em;
@@ -78,8 +78,8 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
 /* modal + toast */
 .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;
   align-items:center;justify-content:center;z-index:50}
-.modal{background:#181C1F;border:1px solid #262A2E;border-radius:8px;min-width:380px;max-width:520px;
-  max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.modal{background:#181C1F;border:1px solid #262A2E;border-radius:8px;min-width:min(380px,calc(100vw - 24px));max-width:min(520px,calc(100vw - 24px));
+  max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.55);margin:12px}
 .modal-hdr{padding:12px 14px;border-bottom:1px solid #21272C;font-size:13px;font-weight:600;
   color:#FAF8F5;background:#14191D}
 .modal-body{padding:14px}
@@ -89,6 +89,19 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
 .modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;
   padding-top:12px;border-top:1px solid #21272C}
 .toast{position:fixed;right:16px;bottom:16px;padding:10px 14px;border-radius:6px;font-size:12px;
-  background:#1A1F24;border:1px solid #262A2E;color:#F4EFEA;z-index:60;max-width:380px}
+  background:#1A1F24;border:1px solid #262A2E;color:#F4EFEA;z-index:60;max-width:min(380px,calc(100vw - 32px))}
 .toast.ok{border-color:rgba(139,215,163,.5);color:#8BD7A3}
 .toast.err{border-color:rgba(217,93,57,.5);color:#D95D39}
+
+/* ===== responsive: điện thoại dọc ===== */
+@media (max-width:640px){
+  .modal-back{padding:12px;align-items:flex-start}
+  .modal{margin:0;max-height:calc(100vh - 24px)}
+  .toast{left:16px;right:16px;max-width:none}
+  .statusstrip{padding:0 10px}
+  .statusstrip .r{display:none}
+}
+
+/* Ngăn vỡ chữ menustrip và tags trên màn hẹp */
+.menustrip .mi{white-space:nowrap;flex-shrink:0}
+.tbl th,.tbl td{white-space:nowrap}
