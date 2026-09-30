@@ -84,4 +84,28 @@ public sealed class PoliceShellContractTests
             Assert.IsFalse(js.Contains(action), $"police.js vi phạm BR-16 — chứa action ghi: {action}");
         }
     }
+
+    /// <summary>
+    /// Nút "Xuất danh sách" ở tab Công dân phải xuất danh sách công dân đang lọc,
+    /// không phải lịch sử biến động (nút đó nằm ở tab Biến động).
+    /// </summary>
+    [TestMethod]
+    public void CitizensTab_ExportButton_ExportsCitizensNotHistory()
+    {
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "police.js"));
+
+        Assert.IsTrue(js.Contains("function exportCitizens"), "police.js thiếu exportCitizens()");
+        Assert.IsTrue(html.Contains("onclick=\"exportCitizens()\""),
+            "index.html chưa nối nút Xuất danh sách sang exportCitizens()");
+
+        // Không được để nút Xuất danh sách gọi nhầm export lịch sử: tab Công dân phải
+        // đứng trước tab Biến động trong DOM, và nút export đầu tiên phải là exportCitizens.
+        var citizens = html.IndexOf("id=\"ptab-citizens\"", System.StringComparison.Ordinal);
+        var history = html.IndexOf("id=\"ptab-history\"", System.StringComparison.Ordinal);
+        Assert.IsTrue(citizens >= 0 && history > citizens, "thứ tự tab công an đã đổi");
+        var firstExport = html.IndexOf("onclick=\"export", citizens, System.StringComparison.Ordinal);
+        Assert.IsTrue(firstExport > 0 && firstExport < history,
+            "nút export đầu tiên trong vùng Công dân phải là exportCitizens()");
+    }
 }

@@ -104,6 +104,43 @@ async function loadHistory() {
     </tr>`).join('') || `<tr><td colspan="6">Không có biến động nào</td></tr>`;
 }
 
+async function exportCitizens() {
+  const q = searchKey();
+  const list = q ? (policeCache || []).filter(t =>
+    (t.fullName || '').toLowerCase().includes(q) ||
+    (t.idCard || '').toLowerCase().includes(q) ||
+    (t.phone || '').includes(q)) : (policeCache || []);
+
+  if (list.length === 0) {
+    toast('Không có bản ghi nào để xuất.', 'info');
+    return;
+  }
+
+  const header = ['Họ tên', 'Ngày sinh', 'CCCD', 'Quê quán', 'Số phòng', 'Trạng thái'];
+  const rows = list.map(t => [
+    t.fullName || '',
+    fmtDateOnly(t.dateOfBirth),
+    t.idCard || '',
+    t.hometown || '',
+    t.roomNumber || '',
+    t.isTemporaryRegistered ? 'Đã đăng ký' : 'Chưa đăng ký'
+  ]);
+
+  const csv = '﻿' + [header, ...rows]
+    .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `DanhSachCongDan_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast(`Đã xuất ${list.length} công dân ra file CSV`, 'ok');
+}
+
 async function exportHistory() {
   const { from, to } = historyRange();
   const payload = {

@@ -61,7 +61,7 @@ function buildContractFilter() {
     ['Active', `Đang hiệu lực (${count.Active})`],
     ['Expiring', `Sắp hết hạn ≤ ${EXPIRING_DAYS} ngày (${count.Expiring})`],
     ['Closed', `Đã thanh lý (${count.Closed})`]
-  ].map(([v, label]) => `<option value="${v}">${esc(label)}</option>`).join('');
+  ].map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join('');
   contractFilter = 'All';
   sel.value = 'All';
 }
