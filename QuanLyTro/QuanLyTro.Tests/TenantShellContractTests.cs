@@ -26,4 +26,14 @@ public sealed class TenantShellContractTests
             Assert.IsFalse(Regex.IsMatch(tenantBlock, $">{verb}<"), $"Shell khách thuê có nút ghi: {verb}");
         }
     }
+
+    [TestMethod]
+    public void TenantJs_RendersReceiptDetailAndHistoryFromServer()
+    {
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "tenant.js"));
+        Assert.IsTrue(js.Contains("isPaid"), "tenant.js phải suy trạng thái đã thu");
+        Assert.IsTrue(js.Contains("fmtDate"), "tenant.js phải định dạng ngày đóng tiền");
+        // Chỉ đọc — không được có lệnh ghi nào
+        Assert.IsFalse(js.Contains("INVOICE_PAY"), "shell khách thuê không được có thao tác ghi");
+    }
 }
