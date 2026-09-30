@@ -12,7 +12,7 @@ public sealed class TenantsContractsContractTests
     [TestMethod]
     public void TenantsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "tenants.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "tenants.js"));
         foreach (var a in new[] { "TENANT_GET_BY_ROOM", "TENANT_ADD", "TENANT_UPDATE",
                                   "TENANT_CHECKOUT", "TENANT_DELETE" })
         {
@@ -23,7 +23,7 @@ public sealed class TenantsContractsContractTests
     [TestMethod]
     public void ContractsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "contracts.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "contracts.js"));
         foreach (var a in new[] { "CONTRACT_GET_ALL", "CONTRACT_CREATE",
                                   "CONTRACT_RENEW", "CONTRACT_TERMINATE" })
         {

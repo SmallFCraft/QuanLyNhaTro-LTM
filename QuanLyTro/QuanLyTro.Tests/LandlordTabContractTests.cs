@@ -12,9 +12,9 @@ public sealed class LandlordTabContractTests
     [TestMethod]
     public void LandlordHtml_HasSevenTabContainers_AndJsReferencesEachTabKey()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
-        // Tab 9 tách landlord.js thành thư mục landlord/: mỗi tab một file.
-        var keysInLandlordJs = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord.js"));
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
+        // landlord.js thành landlord/js/main.js: mỗi tab một file.
+        var keysInLandlordJs = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "main.js"));
 
         string[] tabKeys = { "dash", "rooms", "tenants", "contracts", "utils", "invoices", "reports" };
         foreach (var key in tabKeys)
@@ -22,7 +22,7 @@ public sealed class LandlordTabContractTests
             Assert.IsTrue(html.Contains($"id=\"tab-{key}\""), $"index.html thiếu tab-{key}");
             var declared = keysInLandlordJs.Contains($"'{key}'") || keysInLandlordJs.Contains($"{key}:");
             Assert.IsTrue(declared,
-                $"landlord.js chưa khai báo tab {key} trong LANDLORD_TITLES/LANDLORD_LOADERS");
+                $"landlord/js/main.js chưa khai báo tab {key} trong LANDLORD_TITLES/LANDLORD_LOADERS");
         }
     }
 
@@ -34,8 +34,8 @@ public sealed class LandlordTabContractTests
     [TestMethod]
     public void LandlordInvoiceRender_DerivesPaidStateFromStatusField()
     {
-        // renderInvoices() chuyển sang landlord/invoices.js từ Task 9.
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "invoices.js"));
+        // renderInvoices() nằm ở landlord/js/invoices.js.
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "invoices.js"));
         var dto = File.ReadAllText(Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..",
             "QuanLyTro.Shared", "Models", "InvoiceDto.cs"));
@@ -51,7 +51,7 @@ public sealed class LandlordTabContractTests
     [TestMethod]
     public void Menustrip_HasWorkingNavigationHandlers()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
         // Menu item "Báo cáo" phải gọi loadLandlordTab('reports')
         Assert.IsTrue(html.Contains("loadLandlordTab('reports')"),
             "Menu item Báo cáo chưa có onclick nhảy tới tab reports");

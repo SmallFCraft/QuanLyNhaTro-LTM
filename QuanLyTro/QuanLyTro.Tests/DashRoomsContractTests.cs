@@ -12,7 +12,7 @@ public sealed class DashRoomsContractTests
     [TestMethod]
     public void RoomsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "rooms.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "rooms.js"));
         foreach (var action in new[] { "ROOM_GET_ALL", "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE" })
         {
             Assert.IsTrue(js.Contains(action), $"rooms.js thiếu {action}");
@@ -24,7 +24,7 @@ public sealed class DashRoomsContractTests
     [TestMethod]
     public void DashJs_LoadsSummaryAndLists()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "landlord", "dash.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "dash.js"));
         Assert.IsTrue(js.Contains("REPORT_SUMMARY"), "dash.js chưa tải số liệu tổng quan");
         Assert.IsTrue(js.Contains("INVOICE_GET_ALL"), "dash.js chưa tải danh sách còn nợ");
         Assert.IsTrue(js.Contains("CONTRACT_GET_ALL"), "dash.js chưa tải danh sách HĐ sắp hết hạn");
@@ -33,8 +33,8 @@ public sealed class DashRoomsContractTests
     [TestMethod]
     public void IndexHtml_LoadsLandlordSubScripts()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
-        Assert.IsTrue(html.Contains("js/landlord/rooms.js"), "index.html chưa nạp rooms.js");
-        Assert.IsTrue(html.Contains("js/landlord/dash.js"), "index.html chưa nạp dash.js");
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
+        Assert.IsTrue(html.Contains("js/rooms.js"), "landlord/index.html chưa nạp js/rooms.js");
+        Assert.IsTrue(html.Contains("js/dash.js"), "landlord/index.html chưa nạp js/dash.js");
     }
 }

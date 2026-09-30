@@ -33,4 +33,17 @@ public sealed class AssetPackagingTests
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "auth.css")), "Thiếu auth/auth.css");
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "auth.js")), "Thiếu auth/auth.js");
     }
+
+    [TestMethod]
+    public void Wwwroot_ContainsLandlordModule()
+    {
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "index.html")), "Thiếu landlord/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "landlord.css")), "Thiếu landlord/landlord.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "js", "main.js")), "Thiếu landlord/js/main.js");
+        foreach (var tab in new[] { "dash", "rooms", "tenants", "contracts", "utils", "invoices", "reports" })
+        {
+            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "js", tab + ".js")),
+                $"Thiếu landlord/js/{tab}.js");
+        }
+    }
 }
