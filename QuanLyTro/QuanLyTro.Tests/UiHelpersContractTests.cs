@@ -92,30 +92,36 @@ public sealed class UiHelpersContractTests
     [TestMethod]
     public void ActorPages_LoadScriptsInOrder_WithoutDuplicates()
     {
-        // bridge + ui là script bắt buộc của mọi trang; own là script riêng đầu tiên.
-        var pages = new (string Actor, string Own)[]
+        // Danh sách script đầy đủ của từng trang, theo đúng thứ tự nạp.
+        var pages = new (string Actor, string[] Scripts)[]
         {
-            ("auth", "auth.js"),
-            ("landlord", "js/main.js"),
-            ("police", "js/main.js"),
-            ("tenant", "js/tenant.js"),
+            ("auth", new[] { "../shared/js/bridge.js", "../shared/js/ui.js", "auth.js" }),
+            ("landlord", new[]
+            {
+                "../shared/js/bridge.js", "../shared/js/ui.js", "js/main.js", "js/dash.js",
+                "js/rooms.js", "js/tenants.js", "js/contracts.js", "js/utils.js",
+                "js/invoices.js", "js/reports.js",
+            }),
+            ("police", new[]
+            {
+                "../shared/js/bridge.js", "../shared/js/ui.js", "js/main.js",
+                "js/citizens.js", "js/residence.js", "js/history.js",
+            }),
+            ("tenant", new[] { "../shared/js/bridge.js", "../shared/js/ui.js", "js/tenant.js" }),
         };
-        foreach (var (actor, own) in pages)
+        foreach (var (actor, scripts) in pages)
         {
             var html = File.ReadAllText(Path.Combine(Wwwroot, actor, "index.html"));
-            var bridgeTag = "<script src=\"../shared/js/bridge.js\"></script>";
-            var uiTag = "<script src=\"../shared/js/ui.js\"></script>";
-            var ownTag = $"<script src=\"{own}\"></script>";
-            foreach (var tag in new[] { bridgeTag, uiTag, ownTag })
+            var last = -1;
+            foreach (var src in scripts)
             {
+                var tag = $"<script src=\"{src}\"></script>";
                 Assert.AreEqual(1, html.Split(new[] { tag }, System.StringSplitOptions.None).Length - 1,
                     $"{actor}/index.html phải nạp đúng 1 lần: {tag}");
+                var at = html.IndexOf(tag, System.StringComparison.Ordinal);
+                Assert.IsTrue(at > last, $"{actor}/index.html nạp sai thứ tự: {tag}");
+                last = at;
             }
-            var b = html.IndexOf(bridgeTag, System.StringComparison.Ordinal);
-            var u = html.IndexOf(uiTag, System.StringComparison.Ordinal);
-            var o = html.IndexOf(ownTag, System.StringComparison.Ordinal);
-            Assert.IsTrue(b >= 0 && u > b && o > u,
-                $"{actor}/index.html nạp sai thứ tự (bridge → ui → {own})");
         }
     }
 }
