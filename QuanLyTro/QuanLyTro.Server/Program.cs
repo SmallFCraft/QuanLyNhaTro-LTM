@@ -43,6 +43,7 @@ internal class Program
             new UtilityService(new UtilityRepository(database)),
             new InvoiceService(new InvoiceRepository(database)),
             new ReportService(new ReportRepository(database)),
+            new ResidenceService(new ResidenceRepository(database)),
             sessions);
 
         Console.WriteLine($"QuanLyTro Server (.NET 8) - TCP Port {options.Port}");

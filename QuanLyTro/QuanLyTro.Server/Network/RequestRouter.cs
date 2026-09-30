@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
+using MySqlConnector;
+using QuanLyTro.Server.Data;
 using QuanLyTro.Server.Security;
 using QuanLyTro.Server.Services;
 using QuanLyTro.Shared.Models;
@@ -24,6 +26,7 @@ public sealed class RequestRouter
     private readonly UtilityService _utilities;
     private readonly InvoiceService _invoices;
     private readonly ReportService _reports;
+    private readonly ResidenceService _residence;
     private readonly SessionStore _sessions;
     private readonly Dictionary<string, Handler> _handlers;
 
@@ -35,6 +38,7 @@ public sealed class RequestRouter
         UtilityService utilities,
         InvoiceService invoices,
         ReportService reports,
+        ResidenceService residence,
         SessionStore sessions)
     {
         _auth = auth;
@@ -44,6 +48,7 @@ public sealed class RequestRouter
         _utilities = utilities;
         _invoices = invoices;
         _reports = reports;
+        _residence = residence;
         _sessions = sessions;
 
         _handlers = new Dictionary<string, Handler>(StringComparer.Ordinal)
@@ -97,6 +102,16 @@ public sealed class RequestRouter
             [ActionNames.ReportSummary] = (r, _, ct) =>
                 Ok(_reports.GetSummaryAsync(ReadString(r.Data, "billingMonth") ?? string.Empty, ct)),
             [ActionNames.ExportResidence] = (_, _, ct) => Ok(_reports.ExportResidenceAsync(ct)),
+
+            [ActionNames.ResidenceHistoryGet] = (r, _, ct) =>
+            {
+                var from = ReadDateTime(r.Data, "from", "fromDate");
+                var to = ReadDateTime(r.Data, "to", "toDate");
+                var roomNumber = ReadString(r.Data, "roomNumber") ?? ReadString(r.Data, "room");
+                return Ok(_residence.GetHistoryAsync(from, to, roomNumber, ct));
+            },
+            [ActionNames.ExportResidenceHistory] = (r, _, ct) =>
+                Ok(_residence.ExportHistoryAsync(r.GetData<ExportHistoryRequest>(), ct)),
         };
     }
 
@@ -144,6 +159,13 @@ public sealed class RequestRouter
         {
             // AuthService: sai thông tin đăng nhập hoặc tài khoản đang tạm khóa.
             return ResponsePacket.Fail(ex.Message);
+        }
+        catch (MySqlException ex)
+        {
+            // Lỗi hạ tầng DB phải nói rõ nguyên nhân: "Lỗi hệ thống" chung khiến người dùng
+            // bấm thử lại vô ích trong khi thứ cần bật là MySQL.
+            Console.Error.WriteLine($"[{request.Action}] MySQL {ex.Number}: {ex.Message}");
+            return ResponsePacket.Fail(Database.DescribeFailure(ex.Number, ex.Message));
         }
         catch (Exception ex)
         {
@@ -211,6 +233,25 @@ public sealed class RequestRouter
         return DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
             ? date
             : throw new BusinessRuleException("Ngày không hợp lệ.");
+    }
+
+    /// <summary>Đọc ngày dạng chuỗi ISO (yyyy-MM-dd) theo tên đầu tiên có mặt.</summary>
+    private static DateTime ReadDateTime(JsonElement data, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var raw = ReadString(data, name);
+            if (raw is null)
+            {
+                continue;
+            }
+
+            return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+                ? date
+                : throw new BusinessRuleException("Ngày không hợp lệ.");
+        }
+
+        throw new BusinessRuleException("Thiếu ngày trong yêu cầu.");
     }
 
     /// <summary>`JsonElement.TryGetProperty` phân biệt hoa thường; giao thức dùng camelCase nên quét tay.</summary>

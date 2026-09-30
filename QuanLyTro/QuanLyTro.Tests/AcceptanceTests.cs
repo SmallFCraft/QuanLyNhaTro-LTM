@@ -394,6 +394,7 @@ public sealed class AcceptanceTests
         new UtilityService(new UtilityRepository(Db)),
         new InvoiceService(new InvoiceRepository(Db)),
         new ReportService(new ReportRepository(Db)),
+        new ResidenceService(new ResidenceRepository(Db)),
         sessions);
 
     private static TenantDto TenantDto(string cccd, string fullName, int roomId) =>

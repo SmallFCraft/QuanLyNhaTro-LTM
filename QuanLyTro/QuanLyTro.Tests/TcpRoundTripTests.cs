@@ -73,6 +73,21 @@ public sealed class TcpRoundTripTests
     }
 
     [TestMethod]
+    public async Task TcpRoundTrip_DbDown_ExplainsHowToFix()
+    {
+        var login = await LoginAsync(LandlordUser, LandlordPassword);
+
+        // RoomRepository thật + chuỗi kết nối tới cổng đóng → MySqlException 1042.
+        var response = await SendAsync(
+            RequestPacket.Create(ActionNames.RoomGetAll, login.Token, new { }));
+
+        Assert.IsFalse(response.Success);
+        StringAssert.Contains(response.Message, "MySQL", "Client phải được nói rõ lỗi do cơ sở dữ liệu.");
+        StringAssert.Contains(response.Message, "Laragon");
+        Assert.IsFalse(response.Message.Contains("MySqlConnector"), "Không lộ type/stack trace ra Client.");
+    }
+
+    [TestMethod]
     public async Task TcpRoundTrip_UnauthenticatedProtectedActionIsRejected()
     {
         var response = await SendAsync(RequestPacket.Create(ActionNames.RoomGetAll, null, new { }));
@@ -156,7 +171,9 @@ public sealed class TcpRoundTripTests
 
     private static RequestRouter MakeRouter()
     {
-        var database = new Database("Server=127.0.0.1;Database=unused_for_router_tests;User Id=root;Password=;");
+        // Cổng 1 luôn đóng trên Windows → MySqlErrorCode.UnableToConnectToHost, không phụ thuộc
+        // việc Laragon có đang chạy lúc test hay không.
+        var database = new Database("Server=127.0.0.1;Port=1;Database=unused_for_router_tests;User Id=root;Password=;");
         var sessions = new SessionStore();
         var auth = new AuthService(new StubUserRepository(), new StubTenantRepository(), sessions);
 
@@ -168,6 +185,7 @@ public sealed class TcpRoundTripTests
             new UtilityService(new UtilityRepository(database)),
             new InvoiceService(new InvoiceRepository(database)),
             new ReportService(new StubReportRepository()),
+            new ResidenceService(new ResidenceRepository(database)),
             sessions);
     }
 
