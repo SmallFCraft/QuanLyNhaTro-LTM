@@ -286,3 +286,33 @@
   .chartbar .b i{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:9.5px;
     color:var(--muted);font-family:'JetBrains Mono',Consolas,monospace;font-style:normal}
   .barchart{margin-bottom:26px}
+
+/* ===== modal + toast (dung chung moi shell) ===== */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;
+  align-items:center;justify-content:center;z-index:50}
+.modal{background:#181C1F;border:1px solid #262A2E;border-radius:8px;min-width:380px;max-width:520px;
+  max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.modal-hdr{padding:12px 14px;border-bottom:1px solid #21272C;font-size:13px;font-weight:600;
+  color:#FAF8F5;background:#14191D}
+.modal-body{padding:14px}
+.modal-row{margin-bottom:10px}
+.modal-row label{display:block;font-size:11px;color:#A89988;margin-bottom:4px}
+.modal-row .inp{width:100%}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;
+  padding-top:12px;border-top:1px solid #21272C}
+.toast{position:fixed;right:16px;bottom:16px;padding:10px 14px;border-radius:6px;font-size:12px;
+  background:#1A1F24;border:1px solid #262A2E;color:#F4EFEA;z-index:60;max-width:380px}
+.toast.ok{border-color:rgba(139,215,163,.5);color:#8BD7A3}
+.toast.err{border-color:rgba(217,93,57,.5);color:#D95D39}
+
+/* ===== modal + toast (dung chung moi shell) ===== */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;
+  align-items:center;justify-content:center;z-index:50}
+.modal{background:#181C1F;border:1px solid #262A2E;border-radius:8px;min-width:380px;max-width:520px;
+  max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.modal-hdr{padding:12px 14px;border-bottom:1px solid #21272C;font-size:13px;font-weight:600;
+  color:#FAF8F5;background:#14191D}
+.modal-body{padding:14px}
+.modal-row{margin-bottom:10px}
+.modal-row label{display:block;font-size:11px;color:#A89988;margin-bottom:4px}
+.modal-row .inp{width:100

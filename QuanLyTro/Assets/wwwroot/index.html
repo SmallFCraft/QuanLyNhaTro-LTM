@@ -92,10 +92,10 @@
       <!-- DASHBOARD -->
       <div id="tab-dash">
         <div class="kpis">
-          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Thuê 18 · Trống 6</div></div>
-          <div class="kpi green"><div class="lbl"><i class="fas fa-door-open"></i> Phòng trống</div><div class="val">6</div><div class="sub">Tỷ lệ lấp đầy 75%</div></div>
-          <div class="kpi"><div class="lbl"><i class="fas fa-user-friends"></i> Người đang ở</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
-          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Còn nợ 09/2026</div><div class="val">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div><div class="sub">3 phòng chưa thu</div></div>
+          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val" id="kpi-total-rooms">24</div><div class="sub">Thuê 18 · Trống 6</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-door-open"></i> Phòng trống</div><div class="val" id="kpi-available">6</div><div class="sub">Tỷ lệ lấp đầy 75%</div></div>
+          <div class="kpi"><div class="lbl"><i class="fas fa-user-friends"></i> Người đang ở</div><div class="val" id="kpi-tenants">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Còn nợ 09/2026</div><div class="val" id="kpi-unpaid">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div><div class="sub">3 phòng chưa thu</div></div>
         </div>
         <div class="duo">
           <div class="card">
@@ -103,7 +103,7 @@
             <div class="tblwrap">
             <table class="tbl">
               <thead><tr><th>Phòng</th><th>Kỳ</th><th class="num">Còn nợ</th><th>Đại diện</th></tr></thead>
-              <tbody>
+              <tbody id="dash-overdue-rows">
                 <tr><td><b>P102</b></td><td class="mono">09/2026</td><td class="num due-red">2.417.000</td><td>Trần Văn B</td></tr>
                 <tr><td><b>P105</b></td><td class="mono">08–09/2026</td><td class="num due-red">4.812.500</td><td>Lê Thị C</td></tr>
                 <tr><td><b>P108</b></td><td class="mono">09/2026</td><td class="num due-red">2.918.000</td><td>Phạm D</td></tr>
@@ -116,7 +116,7 @@
             <div class="tblwrap">
             <table class="tbl">
               <thead><tr><th>Phòng</th><th>Đại diện</th><th>Hết hạn</th><th class="num">Còn</th></tr></thead>
-              <tbody>
+              <tbody id="dash-expiring-rows">
                 <tr><td><b>P201</b></td><td>Trần Văn B</td><td class="mono">22/09/2026</td><td class="num due-red">12 ngày</td></tr>
                 <tr><td><b>P108</b></td><td>Phạm D</td><td class="mono">05/10/2026</td><td class="num due-red">25 ngày</td></tr>
               </tbody>
@@ -130,14 +130,14 @@
       <!-- ROOMS -->
       <div id="tab-rooms" hidden>
         <div class="toolbar">
-          <input class="inp" placeholder="Tìm phòng…" style="width:170px">
-          <select class="inp"><option>Tất cả trạng thái</option><option>Trống</option><option>Đang thuê</option><option>Bảo trì</option></select>
+          <input class="inp" id="room-search" placeholder="Tìm phòng…" style="width:170px" oninput="renderRooms(_roomsCache)">
+          <select class="inp" id="room-status" onchange="renderRooms(_roomsCache)"><option value="">Tất cả trạng thái</option><option value="Available">Trống</option><option value="Rented">Đang thuê</option><option value="Maintenance">Bảo trì</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-plus"></i> Thêm (F1)</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Sửa (F2)</button>
-          <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Xóa</button>
+          <button class="btn btn-outline btn-sm" onclick="addRoom()"><i class="fas fa-plus"></i> Thêm (F1)</button>
+          <button class="btn btn-outline btn-sm" disabled title="Chức năng sửa trên từng dòng"><i class="fas fa-edit"></i> Sửa (F2)</button>
+          <button class="btn btn-danger btn-sm" disabled title="Chức năng xóa trên từng dòng (chỉ phòng trống)"><i class="fas fa-trash"></i> Xóa</button>
           <span class="divider"></span>
-          <button class="btn btn-ghost btn-sm"><i class="fas fa-sync"></i> F5</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadRooms()"><i class="fas fa-sync"></i> F5</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -161,15 +161,15 @@
       <div id="tab-tenants" hidden>
         <div class="toolbar">
           <label style="color:var(--muted);font-size:11.5px">Phòng</label>
-          <select class="inp" style="width:150px"><option>P101 (đầy)</option><option selected>P102 (1/2)</option><option>P103 (trống)</option></select>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Thêm</button>
+          <select class="inp" id="tenant-room" style="width:150px" onchange="loadTenants()"></select>
+          <button class="btn btn-primary btn-sm" onclick="addTenant()"><i class="fas fa-user-plus"></i> Thêm</button>
           <span class="spacer"></span>
           <span style="font-size:10.5px;color:var(--dim)"><i class="fas fa-key" style="color:var(--terracotta)"></i> Mật khẩu mặc định = 6 số cuối CCCD</span>
         </div>
         <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
-          <tbody>
+          <tbody id="tenants-body">
             <tr>
               <td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
               <td><span class="tag done">Đã nộp</span></td>
@@ -185,10 +185,10 @@
         <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
         <div class="rowbn">
-          <button class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Sửa</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-arrows-alt-h"></i> Chuyển phòng</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-sign-out-alt"></i> Trả phòng</button>
-          <button class="btn btn-danger btn-sm"><i class="fas fa-user-slash"></i> Xóa hồ sơ</button>
+          <button class="btn btn-outline btn-sm" onclick="editTenant(selectedTenantId())"><i class="fas fa-edit"></i> Sửa</button>
+          <button class="btn btn-outline btn-sm" onclick="moveTenant(selectedTenantId())"><i class="fas fa-arrows-alt-h"></i> Chuyển phòng</button>
+          <button class="btn btn-outline btn-sm" onclick="checkoutTenant(selectedTenantId())"><i class="fas fa-sign-out-alt"></i> Trả phòng</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTenant(selectedTenantId())"><i class="fas fa-user-slash"></i> Xóa hồ sơ</button>
         </div>
         <div class="note"><i class="fas fa-info-circle"></i> Xóa hồ sơ chỉ khả dụng khi đã trả phòng (US-06).</div>
       </div>
@@ -201,8 +201,8 @@
             <option>Tất cả hợp đồng (18)</option><option>Đang hiệu lực (14)</option><option>Sắp hết hạn ≤ 30 ngày (3)</option><option>Đã thanh lý (1)</option>
           </select>
           <span class="spacer"></span>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-file"></i> Lập hợp đồng</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Tải lại</button>
+          <button class="btn btn-primary btn-sm" onclick="createContract()"><i class="fas fa-file"></i> Lập hợp đồng</button>
+          <button class="btn btn-outline btn-sm" onclick="loadContracts()"><i class="fas fa-sync"></i> Tải lại</button>
         </div>
         <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
           <div class="kpi green"><div class="lbl"><i class="fas fa-verified"></i> Hiệu lực</div><div class="val">14 <span style="font-size:11px;font-weight:400;color:var(--muted)">/ 18 HĐ</span></div></div>
@@ -212,7 +212,7 @@
         <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>Phòng</th><th>Đại diện</th><th>Bắt đầu</th><th>Kết thúc</th><th class="num">Còn</th><th class="num">Giá thuê</th><th class="num">Cọc</th><th>Trạng thái</th></tr></thead>
-          <tbody>
+          <tbody id="contracts-body">
             <tr>
               <td><b>P101</b></td><td>Trần Văn B</td><td class="mono">01/09/2025</td><td class="mono">22/09/2026</td><td class="num due-red">12 ngày</td><td class="num">2.500.000</td><td class="num">5.000.000</td>
               <td><span class="tag warn">Sắp hết hạn</span></td>
@@ -230,8 +230,8 @@
         <div class="tblfoot"><span>Tổng: 3 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
         <div class="rowbn">
-          <button class="btn btn-outline btn-sm"><i class="fas fa-calendar-plus"></i> Gia hạn…</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-ban"></i> Chấm dứt…</button>
+          <button class="btn btn-outline btn-sm" onclick="renewContract(selectedContractId())"><i class="fas fa-calendar-plus"></i> Gia hạn…</button>
+          <button class="btn btn-outline btn-sm" onclick="terminateContract(selectedContractId())"><i class="fas fa-ban"></i> Chấm dứt…</button>
         </div>
         <div class="note"><i class="fas fa-info-circle"></i> Cột "Còn" &lt; 30 ngày tô Terracotta: US-11.</div>
       </div>
@@ -240,30 +240,30 @@
       <div id="tab-utils" hidden>
         <div class="toolbar">
           <label style="color:var(--muted);font-size:11.5px">Phòng</label>
-          <select class="inp" style="width:120px"><option>P101</option><option>P102</option></select>
+          <select class="inp" id="util-room" style="width:120px" onchange="loadUtils()"></select>
           <label style="color:var(--muted);font-size:11.5px">Tháng</label>
-          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
+          <select class="inp" id="util-month" style="width:112px" onchange="loadUtils()"><option>09/2026</option><option>08/2026</option></select>
           <span class="spacer"></span>
           <span class="tag rent">Sẵn sàng chốt</span>
         </div>
         <div class="calc">
           <div class="row">
             <i class="fas fa-bolt" style="color:var(--amber)"></i> <span style="color:var(--muted)">Điện</span>
-            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" value="350" disabled>
-            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" value="425">
-            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" value="3500">
+            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-elec-old" value="350" disabled>
+            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" id="util-elec-new" value="425" oninput="recalcUtils()">
+            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" id="util-elec-rate" value="3500" oninput="recalcUtils()">
             <span class="tot">262.500 đ</span>
           </div>
           <div class="row">
             <i class="fas fa-tint" style="color:var(--dim)"></i> <span style="color:var(--muted)">Nước</span>
-            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" value="12" disabled>
-            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" value="15">
-            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" value="10000">
+            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-water-old" value="12" disabled>
+            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" id="util-water-new" value="15" oninput="recalcUtils()">
+            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" id="util-water-rate" value="10000" oninput="recalcUtils()">
             <span class="tot">30.000 đ</span>
           </div>
         </div>
         <div class="rowbn">
-          <button class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Lưu chỉ số</button>
+          <button class="btn btn-primary btn-sm" onclick="saveUtility()"><i class="fas fa-save"></i> Lưu chỉ số</button>
         </div>
         <div class="note"><i class="fas fa-info-circle"></i> Chỉ số cũ tự điền từ kỳ trước. Server tính tiền, preview chỉ để xem (US-12/13).</div>
       </div>
@@ -272,16 +272,16 @@
       <div id="tab-invoices" hidden>
         <div class="toolbar">
           <span style="color:var(--muted);font-weight:500;font-size:11.5px">Tháng</span>
-          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
+          <select class="inp" id="inv-month" style="width:112px" onchange="loadInvoices()"><option>09/2026</option><option>08/2026</option></select>
           <span style="color:var(--muted);font-weight:500;font-size:11.5px">Phòng</span>
-          <select class="inp" style="width:112px"><option>Tất cả</option><option>P101</option><option>P102</option></select>
+          <select class="inp" id="inv-room" style="width:112px" onchange="loadInvoices()"><option value="">Tất cả</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-file-invoice"></i> Lập hóa đơn tháng</button>
+          <button class="btn btn-primary btn-sm" onclick="createInvoice()"><i class="fas fa-file-invoice"></i> Lập hóa đơn tháng</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>Phòng</th><th class="num">Tiền phòng</th><th class="num">Điện</th><th class="num">Nước</th><th class="num">Khác</th><th class="num">Tổng</th><th>Trạng thái</th><th></th></tr></thead>
-          <tbody>
+          <tbody id="invoices-body">
             <tr>
               <td><b>P101</b></td><td class="num">2.500.000</td><td class="num">262.500</td><td class="num">30.000</td><td class="num">50.000</td><td class="num amount">2.842.500</td>
               <td><span class="tag unpaid">Chưa thu</span></td>
@@ -303,10 +303,10 @@
       <div id="tab-reports" hidden>
         <div class="toolbar">
           <label style="color:var(--muted);font-size:11.5px">Kỳ</label>
-          <select class="inp" style="width:112px"><option>09/2026</option><option>08/2026</option></select>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem</button>
+          <select class="inp" id="rep-month" style="width:112px" onchange="loadReports()"><option>09/2026</option><option>08/2026</option></select>
+          <button class="btn btn-outline btn-sm" onclick="loadReports()"><i class="fas fa-eye"></i> Xem</button>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-file-csv"></i> Xuất CSV tạm trú</button>
+          <button class="btn btn-outline btn-sm" onclick="exportResidence()"><i class="fas fa-file-csv"></i> Xuất CSV tạm trú</button>
         </div>
         <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
           <div class="kpi green"><div class="lbl"><i class="fas fa-check-circle"></i> Đã thu 09/2026</div><div class="val">15.400.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div></div>
@@ -392,12 +392,12 @@
           <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Chưa đăng ký</div><div class="val">5</div><div class="sub">Cần kiểm tra</div></div>
         </div>
         <div class="toolbar">
-          <input class="inp" placeholder="Tìm theo CCCD, họ tên hoặc SĐT..." style="width:300px">
+          <input class="inp" id="p-search" placeholder="Tìm theo CCCD, họ tên hoặc SĐT..." style="width:300px" oninput="loadPoliceTab('citizens')">
           <select class="inp" style="width:160px"><option>Tất cả phòng</option><option>P101</option><option>P102</option><option>P103</option></select>
           <select class="inp" style="width:170px"><option>Tất cả tạm trú</option><option>Đã đăng ký</option><option>Chưa đăng ký</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Tra cứu</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-file-export"></i> Xuất danh sách</button>
+          <button class="btn btn-primary btn-sm" onclick="loadPoliceTab('citizens')"><i class="fas fa-search"></i> Tra cứu</button>
+          <button class="btn btn-outline btn-sm" onclick="exportHistory()"><i class="fas fa-file-export"></i> Xuất danh sách</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -412,9 +412,9 @@
         <div class="tblfoot"><span>Tổng: 41 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
         <div class="rowbn">
-          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem hồ sơ</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-door-open"></i> Phòng đang ở</button>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Tải lại</button>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: mở khung xem chi tiết công dân"><i class="fas fa-eye"></i> Xem hồ sơ</button>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: lọc theo phòng đã chọn"><i class="fas fa-door-open"></i> Phòng đang ở</button>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: nạp lại trang công dân từ Server"><i class="fas fa-sync"></i> Tải lại</button>
         </div>
         <div class="note"><i class="fas fa-info-circle"></i> PM-02 / PM-03: tra cứu theo CCCD, họ tên (không phân biệt hoa thường), SĐT. Mọi lệnh ghi bị Server từ chối (BR-14).</div>
       </div>
@@ -425,8 +425,8 @@
           <select class="inp" style="width:170px"><option>Tất cả phòng</option><option>P101</option><option>P102</option></select>
           <select class="inp" style="width:180px"><option>Chỉ chưa đăng ký</option><option>Tất cả</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-file-csv"></i> CSV</button>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra CSV"><i class="fas fa-file-csv"></i> CSV</button>
+          <button class="btn btn-primary btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra Excel"><i class="fas fa-file-excel"></i> Excel</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -445,14 +445,14 @@
       <!-- PM-05: LỊCH SỬ BIẾN ĐỘNG + XUẤT -->
       <div id="ptab-history" hidden>
         <div class="toolbar">
-          <input class="inp mono" type="date" value="2026-09-01" style="width:150px">
+          <input class="inp mono" id="p-from" type="date" value="2026-09-01" style="width:150px">
           <span style="color:var(--dim)">→</span>
-          <input class="inp mono" type="date" value="2026-09-30" style="width:150px">
+          <input class="inp mono" id="p-to" type="date" value="2026-09-30" style="width:150px">
           <select class="inp" style="width:190px"><option>Tất cả biến động</option><option>Vào</option><option>Ra</option><option>Chuyển phòng</option></select>
           <select class="inp" style="width:140px"><option>Tất cả phòng</option><option>P102</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem trước</button>
-          <button class="btn btn-primary btn-sm"><i class="fas fa-file-export"></i> Xuất file</button>
+          <button class="btn btn-outline btn-sm" onclick="loadHistory()"><i class="fas fa-eye"></i> Xem trước</button>
+          <button class="btn btn-primary btn-sm" onclick="exportHistory()"><i class="fas fa-file-export"></i> Xuất file</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -552,12 +552,12 @@
         <div style="padding:10px 13px">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
             <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-door-closed" style="color:var(--dim);margin-right:7px"></i>Tiền thuê phòng cố định</span>
-            <span class="amount">2.000.000 đ</span>
+            <span class="amount" id="rc-room">2.000.000 đ</span>
           </div>
           <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-bolt" style="color:var(--amber);margin-right:7px"></i>Điện năng tiêu thụ</span>
-              <span class="amount">175.000 đ</span>
+              <span class="amount" id="rc-elec">175.000 đ</span>
             </div>
             <div class="mono" style="font-size:10px;color:var(--dim);padding-left:20px;display:flex;justify-content:space-between">
               <span>Chỉ số: 1.230 → 1.280 (50 kWh × 3.500 đ)</span><span>Đã chốt công tơ</span>
@@ -566,7 +566,7 @@
           <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-tint" style="color:var(--dim);margin-right:7px"></i>Nước sinh hoạt</span>
-              <span class="amount">20.000 đ</span>
+              <span class="amount" id="rc-water">20.000 đ</span>
             </div>
             <div class="mono" style="font-size:10px;color:var(--dim);padding-left:20px;display:flex;justify-content:space-between">
               <span>Khối lượng: 14 → 16 (2 m³ × 10.000 đ)</span><span>Đồng hồ nhánh</span>
@@ -574,7 +574,7 @@
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
             <span style="font-size:11.5px;color:var(--cream)"><i class="fas fa-wifi" style="color:var(--dim);margin-right:7px"></i>Dịch vụ quản lý &amp; tiện ích</span>
-            <span class="amount">50.000 đ</span>
+            <span class="amount" id="rc-other">50.000 đ</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
             <span style="font-size:11.5px;color:var(--dim)"><i class="fas fa-history" style="color:var(--dim);margin-right:7px"></i>Nợ tồn kỳ trước chuyển sang</span>
@@ -584,7 +584,7 @@
         <div style="padding:12px 13px;background:#111519;border-top:2px solid #2B333E;display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
           <div>
             <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Tổng cần thanh toán</div>
-            <div class="mono" style="font-size:22px;font-weight:700;color:var(--cream-light);letter-spacing:-.02em">2.245.000 <span style="font-size:12px;color:var(--muted);font-weight:400">đ</span></div>
+            <div class="mono" style="font-size:22px;font-weight:700;color:var(--cream-light);letter-spacing:-.02em"><span id="rc-total">2.245.000</span> <span style="font-size:12px;color:var(--muted);font-weight:400">đ</span></div>
           </div>
           <span class="tag unpaid">Hạn chót: 10/10/2026</span>
         </div>
@@ -593,7 +593,7 @@
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>Kỳ cước</th><th class="num">Tổng tiền</th><th>Thời điểm đóng</th><th class="num">Trạng thái</th></tr></thead>
-          <tbody>
+          <tbody id="tenant-history-body">
             <tr><td class="mono">09/2026</td><td class="num amount">2.245.000</td><td class="mono">—</td><td class="num"><span class="tag unpaid">Chưa thanh toán</span></td></tr>
             <tr><td class="mono">08/2026</td><td class="num amount">2.242.000</td><td class="mono">05/09/2026 (10:14)</td><td class="num"><span class="tag paid">Đã thanh toán</span></td></tr>
             <tr><td class="mono">07/2026</td><td class="num amount">2.225.000</td><td class="mono">04/08/2026 (15:22)</td><td class="num"><span class="tag paid">Đã thanh toán</span></td></tr>
@@ -602,7 +602,7 @@
         <div class="tblfoot"><span>Tổng: 3 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: 09/2026</span></span><span>Đã đồng bộ với Server</span></div>
       </div>
       <div class="rowbn">
-        <button class="btn btn-primary btn-sm"><i class="fas fa-copy"></i> Sao chép nội dung chuyển khoản</button>
+        <button class="btn btn-primary btn-sm" onclick="copyTransfer()"><i class="fas fa-copy"></i> Sao chép nội dung chuyển khoản</button>
         <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Đồng bộ F5</button>
       </div>
       <div class="note"><i class="fas fa-info-circle"></i> INVOICE_GET_MINE: Server suy phòng từ token. Không nút ghi. Bấm dòng để xem chi tiết.</div>
@@ -614,9 +614,19 @@
   </div>
 </div>
 
+<div id="modal-root"></div>
+
 <script src="js/bridge.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/login.js"></script>
 <script src="js/landlord.js"></script>
+<script src="js/landlord/dash.js"></script>
+<script src="js/landlord/rooms.js"></script>
+<script src="js/landlord/tenants.js"></script>
+<script src="js/landlord/contracts.js"></script>
+<script src="js/landlord/utils.js"></script>
+<script src="js/landlord/invoices.js"></script>
+<script src="js/landlord/reports.js"></script>
 <script src="js/police.js"></script>
 <script src="js/tenant.js"></script>
 </body>
