@@ -46,4 +46,17 @@ public sealed class AssetPackagingTests
                 $"Thiếu landlord/js/{tab}.js");
         }
     }
+
+    [TestMethod]
+    public void Wwwroot_ContainsPoliceModule()
+    {
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "index.html")), "Thiếu police/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "police.css")), "Thiếu police/police.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "js", "main.js")), "Thiếu police/js/main.js");
+        foreach (var tab in new[] { "citizens", "residence", "history" })
+        {
+            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "js", tab + ".js")),
+                $"Thiếu police/js/{tab}.js");
+        }
+    }
 }

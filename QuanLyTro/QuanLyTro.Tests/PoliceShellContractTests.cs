@@ -10,12 +10,24 @@ public sealed class PoliceShellContractTests
     private static string Wwwroot =>
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot");
 
+    private static string PoliceHtml => Path.Combine(Wwwroot, "police", "index.html");
+
+    /// <summary>Mọi action ghi mà Công an phường tuyệt đối không được gọi (BR-16).</summary>
+    private static readonly string[] ForbiddenWriteActions =
+    {
+        "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE",
+        "TENANT_ADD", "TENANT_UPDATE", "TENANT_CHECKOUT", "TENANT_DELETE",
+        "CONTRACT_CREATE", "CONTRACT_TERMINATE", "CONTRACT_RENEW",
+        "UTILITY_RECORD",
+        "INVOICE_CREATE", "INVOICE_PAY"
+    };
+
     [TestMethod]
     public void PoliceShell_HasThreeTabs_AndNoWriteButtons()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(PoliceHtml);
         var start = html.IndexOf("id=\"police\"", System.StringComparison.Ordinal);
-        Assert.IsTrue(start >= 0, "index.html thiếu cửa sổ #police");
+        Assert.IsTrue(start >= 0, "police/index.html thiếu cửa sổ #police");
 
         var policeBlock = html.Substring(start, html.Length - start);
         string[] tabKeys = { "citizens", "residence", "history" };
@@ -38,8 +50,9 @@ public sealed class PoliceShellContractTests
     [TestMethod]
     public void FrontEnd_NeverReadsSessionToken()
     {
-        var files = Directory.GetFiles(Path.Combine(Wwwroot, "js"), "*.js")
-            .Append(Path.Combine(Wwwroot, "index.html"));
+        // Quét đệ quy toàn bộ wwwroot: module mới thêm vào không được lọt lưới.
+        var files = Directory.EnumerateFiles(Wwwroot, "*.*", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith(".js") || f.EndsWith(".html"));
 
         foreach (var file in files)
         {
@@ -56,7 +69,7 @@ public sealed class PoliceShellContractTests
     [TestMethod]
     public void PoliceJs_SearchInputAndDateRangeAreAddressableById()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(PoliceHtml);
         Assert.IsTrue(html.Contains("id=\"p-search\""), "ô tìm kiếm công an cần id để JS đọc");
         Assert.IsTrue(html.Contains("id=\"p-from\""), "ô ngày bắt đầu cần id");
         Assert.IsTrue(html.Contains("id=\"p-to\""), "ô ngày kết thúc cần id");
@@ -71,15 +84,7 @@ public sealed class PoliceShellContractTests
         Assert.IsTrue(js.Contains("document.getElementById('p-to')"), "police.js phải đọc #p-to bằng getElementById");
 
         // BR-16: shell công an không gọi bất kỳ action ghi nào
-        var forbiddenWriteActions = new[]
-        {
-            "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE",
-            "TENANT_ADD", "TENANT_UPDATE", "TENANT_CHECKOUT", "TENANT_DELETE",
-            "CONTRACT_CREATE", "CONTRACT_TERMINATE", "CONTRACT_RENEW",
-            "UTILITY_RECORD",
-            "INVOICE_CREATE", "INVOICE_PAY"
-        };
-        foreach (var action in forbiddenWriteActions)
+        foreach (var action in ForbiddenWriteActions)
         {
             Assert.IsFalse(js.Contains(action), $"police.js vi phạm BR-16 — chứa action ghi: {action}");
         }
@@ -92,12 +97,12 @@ public sealed class PoliceShellContractTests
     [TestMethod]
     public void CitizensTab_ExportButton_ExportsCitizensNotHistory()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "index.html"));
+        var html = File.ReadAllText(PoliceHtml);
         var js = File.ReadAllText(Path.Combine(Wwwroot, "js", "police.js"));
 
         Assert.IsTrue(js.Contains("function exportCitizens"), "police.js thiếu exportCitizens()");
         Assert.IsTrue(html.Contains("onclick=\"exportCitizens()\""),
-            "index.html chưa nối nút Xuất danh sách sang exportCitizens()");
+            "police/index.html chưa nối nút Xuất danh sách sang exportCitizens()");
 
         // Không được để nút Xuất danh sách gọi nhầm export lịch sử: tab Công dân phải
         // đứng trước tab Biến động trong DOM, và nút export đầu tiên phải là exportCitizens.
