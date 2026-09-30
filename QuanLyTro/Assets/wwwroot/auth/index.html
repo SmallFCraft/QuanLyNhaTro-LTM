@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập · Quản Lý Phòng Trọ Ngũ Hành Sơn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../shared/css/tokens.css">
+<link rel="stylesheet" href="../shared/css/base.css">
+<link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-body">
+    <div class="app-icon"><i class="fas fa-warehouse"></i></div>
+    <div class="app-name">Ký Túc Xá &amp; Nhà Trọ Số</div>
+    <div class="app-sub">Phường Ngũ Hành Sơn · TP. Đà Nẵng</div>
+    <form onsubmit="doLogin();return false">
+      <div class="roleseg" style="grid-column:1/-1">
+        <label><input type="radio" name="role" value="LANDLORD" checked><i class="fas fa-shield-alt"></i><span>Chủ trọ / Quản lý</span></label>
+        <label><input type="radio" name="role" value="POLICE"><i class="fas fa-user-shield"></i><span>Công an phường</span></label>
+        <label><input type="radio" name="role" value="TENANT"><i class="fas fa-user"></i><span>Khách thuê phòng</span></label>
+      </div>
+      <label id="lblAcc"><i class="fas fa-user"></i> Tài khoản</label>
+      <input class="inp mono" id="lu" placeholder="admin (chủ trọ) / caphuong (công an) / CCCD (người thuê)">
+      <label><i class="fas fa-lock"></i> Mật khẩu</label>
+      <input class="inp mono" type="password" id="lp" placeholder="••••••••">
+      <label></label>
+      <button type="submit" class="btn btn-primary" style="justify-content:center"><i class="fas fa-sign-in-alt"></i> Đăng nhập <kbd>F5</kbd></button>
+    </form>
+  </div>
+</div>
+
+<script src="../shared/js/bridge.js"></script>
+<script src="../shared/js/ui.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

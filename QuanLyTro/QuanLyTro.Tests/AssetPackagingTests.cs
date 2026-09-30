@@ -25,4 +25,12 @@ public sealed class AssetPackagingTests
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "js", "bridge.js")), "Thiếu shared bridge.js");
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "js", "ui.js")), "Thiếu shared ui.js");
     }
+
+    [TestMethod]
+    public void Wwwroot_ContainsAuthModule()
+    {
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "index.html")), "Thiếu auth/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "auth.css")), "Thiếu auth/auth.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "auth.js")), "Thiếu auth/auth.js");
+    }
 }

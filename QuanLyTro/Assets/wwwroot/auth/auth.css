@@ -1,0 +1,107 @@
+/* auth.css — login screen layout extracted from style.css */
+body {
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  max-width: 480px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--hairline);
+  background: var(--card);
+}
+
+.login-body {
+  padding: 36px 24px 32px;
+  text-align: center;
+  background: var(--card);
+}
+
+.login-body .app-icon {
+  font-size: 32px;
+  color: var(--terracotta);
+  margin-bottom: 8px;
+}
+
+.login-body .app-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--cream-light);
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+.login-body .app-sub {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.login-body form {
+  display: inline-grid;
+  grid-template-columns: 120px 280px;
+  gap: 10px;
+  text-align: left;
+  align-items: center;
+}
+
+.login-body form label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: right;
+}
+
+.roleseg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px;
+  background: var(--base);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  grid-column: 1 / -1;
+}
+
+.roleseg label {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--dim) !important;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  text-align: center !important;
+}
+
+.roleseg input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.roleseg label:hover {
+  color: var(--cream) !important;
+}
+
+.roleseg input:checked + span {
+  color: var(--cream-light);
+}
+
+.roleseg label:has(input:checked) {
+  background: var(--overlay);
+  border-color: #3D4349;
+  color: var(--cream-light) !important;
+}
