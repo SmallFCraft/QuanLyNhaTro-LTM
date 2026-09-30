@@ -42,8 +42,6 @@
   }
   .titlebar .title{display:flex;align-items:center;gap:8px;min-width:0}
   .titlebar .title i{color:var(--terracotta);font-size:13px}
-  .titlebar .ver{font-family:'JetBrains Mono',Consolas,monospace;font-size:9px;color:var(--dim);
-    background:var(--card);border:1px solid var(--hairline);border-radius:4px;padding:1px 5px}
   .titlebar .win-ctrl{display:flex;gap:2px}
   .titlebar .win-ctrl span{
     width:22px;height:22px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
@@ -66,7 +64,7 @@
   .inp:focus{border-color:var(--terracotta);outline:0;box-shadow:0 0 0 1px var(--terracotta),0 0 0 4px rgba(217,93,57,.12)}
   select.inp{height:32px;padding:4px 8px}
   /* role segmented control (from ng_nh_p template) */
-  .roleseg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px;background:var(--base);
+  .roleseg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px;background:var(--base);
     border:1px solid var(--hairline);border-radius:6px;margin-bottom:6px;grid-column:1/-1}
   .roleseg label{display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 10px;border-radius:4px;
     cursor:pointer;color:var(--dim);font-size:12px;font-weight:500;border:1px solid transparent}
@@ -99,6 +97,7 @@
     text-transform:uppercase;letter-spacing:.05em;
     background:rgba(217,93,57,.12);color:var(--tint);border:1px solid rgba(217,93,57,.35)}
   .userbar .role.tenant{background:rgba(139,215,163,.12);color:var(--sage);border-color:rgba(139,215,163,.35)}
+  .userbar .role.police{background:rgba(112,169,255,.14);color:#70A9FF;border-color:rgba(112,169,255,.35)}
 
   /* screen headline (MODULE badge row) */
   .headline{
@@ -112,6 +111,9 @@
     font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     padding:2px 6px;border-radius:4px;background:rgba(217,93,57,.15);color:var(--terracotta);
     border:1px solid rgba(217,93,57,.30);white-space:nowrap
+  }
+  .badge-module.police{
+    background:rgba(112,169,255,.15);color:#70A9FF;border-color:rgba(112,169,255,.35)
   }
   .headline .vchip{font-family:'JetBrains Mono',Consolas,monospace;font-size:9.5px;color:var(--dim);
     background:var(--card);border:1px solid var(--hairline);border-radius:4px;padding:2px 6px;white-space:nowrap}
@@ -223,11 +225,8 @@
   }
   .tbl tbody tr:nth-child(even) td{background:#161B1F}
   .tbl tbody tr:hover td{background:#1A2026}
-  .tbl tbody tr.sel td{background:var(--active);
-    border-left:0}
-  .tbl tbody tr.sel td:first-child{border-left:3px solid var(--terracotta);padding-left:7px}
+  .tbl tbody tr.sel td{background:var(--active)}
   .tbl tbody tr.sel td:first-child b{color:var(--terracotta)}
-  .tbl tbody tr.sel td:last-child{border-right:1px solid var(--hair-subtle)}
   .tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',Consolas,monospace}
   .tbl .empty td{color:var(--dim);font-style:italic;text-align:center;padding:24px}
   .tblfoot{
@@ -303,13 +302,12 @@
 <body>
 
 <!-- ====== LOGIN ====== -->
-<div class="preview-label">Đăng nhập: chung 2 vai (role selector)</div>
+<div class="preview-label">Đăng nhập: chung 3 vai (role selector)</div>
 <div class="win" id="login">
   <div class="titlebar">
     <div class="title">
       <i class="fas fa-building"></i>
       <span>Quản Lý Phòng Trọ .NET 8</span>
-      <span class="ver">TcpClient: Async</span>
     </div>
     <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
   </div>
@@ -320,10 +318,11 @@
     <form onsubmit="doLogin();return false">
       <div class="roleseg" style="grid-column:1/-1">
         <label><input type="radio" name="role" value="LANDLORD" checked onchange="roleSwitch()"><i class="fas fa-shield-alt"></i><span>Chủ trọ / Quản lý</span></label>
+        <label><input type="radio" name="role" value="POLICE" onchange="roleSwitch()"><i class="fas fa-user-shield"></i><span>Công an phường</span></label>
         <label><input type="radio" name="role" value="TENANT" onchange="roleSwitch()"><i class="fas fa-user"></i><span>Khách thuê phòng</span></label>
       </div>
       <label id="lblAcc"><i class="fas fa-user"></i> Tài khoản</label>
-      <input class="inp mono" id="lu" placeholder="admin (chủ trọ) hoặc CCCD (người thuê)">
+      <input class="inp mono" id="lu" placeholder="admin (chủ trọ) / caphuong (công an) / CCCD (người thuê)">
       <label><i class="fas fa-lock"></i> Mật khẩu</label>
       <input class="inp mono" type="password" id="lp" placeholder="••••••••">
       <label></label>
@@ -339,7 +338,6 @@
     <div class="title">
       <i class="fas fa-building"></i>
       <span>Quản Lý Nhà Trọ .NET 8</span>
-      <span class="ver">TcpClient: Async</span>
     </div>
     <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
   </div>
@@ -370,7 +368,6 @@
         <span class="badge-module">Module</span>
         <h1 id="modtitle">Tổng quan vận hành cơ sở</h1>
       </div>
-      <span class="vchip">v8.0.4-rtm</span>
     </div>
     <div class="tabs">
       <div class="tab on" data-tab="dash" onclick="showTab(this)"><i class="fas fa-th-large"></i> Tổng quan</div>
@@ -644,7 +641,6 @@
     <div class="title">
       <i class="fas fa-building"></i>
       <span>Quản Lý Nhà Trọ .NET 8</span>
-      <span class="ver">TcpClient: Async</span>
     </div>
     <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
   </div>
@@ -776,6 +772,149 @@
   </div>
 </div>
 
+<!-- ====== POLICE SHELL ====== -->
+<div class="preview-label">Công an phường: 3 tab, chỉ đọc + xuất file (role = Police)</div>
+<div class="win" id="police">
+  <div class="titlebar">
+    <div class="title">
+      <i class="fas fa-user-shield"></i>
+      <span>Tra Cứu Lưu Trú .NET 8</span>
+    </div>
+    <div class="win-ctrl"><span><i class="fas fa-minus"></i></span><span><i class="far fa-square"></i></span><span class="x"><i class="fas fa-times"></i></span></div>
+  </div>
+  <div class="app">
+    <div class="menustrip">
+      <div class="hscroll" style="display:flex;gap:6px">
+        <span class="mi"><i class="fas fa-search"></i> Tra cứu</span>
+        <span class="mi cur"><i class="fas fa-clipboard-list"></i> Lưu trú</span>
+        <span class="mi"><i class="fas fa-file-export"></i> Xuất báo cáo</span>
+        <span class="mi"><i class="fas fa-question-circle"></i> Trợ giúp</span>
+      </div>
+      <span style="color:var(--dim)"><i class="fas fa-user-shield"></i></span>
+    </div>
+    <div class="userbar">
+      <div class="usr">
+        <i class="fas fa-user-circle fa-lg"></i> <b>Lê Văn CA</b>
+        <span class="role police"><i class="fas fa-user-shield"></i> Công an phường</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+    </div>
+    <div class="headline">
+      <div class="l">
+        <span class="badge-module police">Module Lưu trú</span>
+        <h1 id="ptitle">Tra cứu công dân</h1>
+      </div>
+      <span class="vchip"><i class="fas fa-lock"></i> ReadOnly</span>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-ptab="citizens" onclick="showPoliceTab(this)"><i class="fas fa-id-card"></i> Công dân</div>
+      <div class="tab" data-ptab="residence" onclick="showPoliceTab(this)"><i class="fas fa-home"></i> Tạm trú <span class="cnt">41</span></div>
+      <div class="tab" data-ptab="history" onclick="showPoliceTab(this)"><i class="fas fa-history"></i> Biến động</div>
+    </div>
+    <div class="content">
+
+      <!-- PM-02/03: TRA CỨU CÔNG DÂN + PHÒNG -->
+      <div id="ptab-citizens">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Khu Ngũ Hành Sơn</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-users"></i> Người đang lưu trú</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi amber"><div class="lbl"><i class="fas fa-id-card"></i> Đã đăng ký tạm trú</div><div class="val">36</div><div class="sub">87,8%</div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Chưa đăng ký</div><div class="val">5</div><div class="sub">Cần kiểm tra</div></div>
+        </div>
+        <div class="toolbar">
+          <input class="inp" placeholder="Tìm theo CCCD, họ tên hoặc SĐT..." style="width:300px">
+          <select class="inp" style="width:160px"><option>Tất cả phòng</option><option>P101</option><option>P102</option><option>P103</option></select>
+          <select class="inp" style="width:170px"><option>Tất cả tạm trú</option><option>Đã đăng ký</option><option>Chưa đăng ký</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Tra cứu</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-file-export"></i> Xuất danh sách</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th class="num">Trạng thái tạm trú</th></tr></thead>
+          <tbody>
+            <tr><td><b>Trần Văn B</b></td><td class="mono">15/03/2004</td><td class="mono">0482 0301 2XXX</td><td>Quảng Nam</td><td><b>P102</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Lê Thị C</b></td><td class="mono">21/07/2002</td><td class="mono">0482 0455 9XXX</td><td>Huế</td><td><b>P105</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 41 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem hồ sơ</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-door-open"></i> Phòng đang ở</button>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-sync"></i> Tải lại</button>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-02 / PM-03: tra cứu theo CCCD, họ tên (không phân biệt hoa thường), SĐT. Mọi lệnh ghi bị Server từ chối (BR-14).</div>
+      </div>
+
+      <!-- PM-04: BÁO CÁO TẠM TRÚ -->
+      <div id="ptab-residence" hidden>
+        <div class="toolbar">
+          <select class="inp" style="width:170px"><option>Tất cả phòng</option><option>P101</option><option>P102</option></select>
+          <select class="inp" style="width:180px"><option>Chỉ chưa đăng ký</option><option>Tất cả</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-file-csv"></i> CSV</button>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th>Ngày vào</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="mono">12/08/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="mono">03/09/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Đỗ Thị F</b></td><td class="mono">30/05/2004</td><td class="mono">0482 0612 4XXX</td><td>Bình Định</td><td><b>P201</b></td><td class="mono">19/06/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 5 chưa đăng ký <span class="sep">|</span> <span class="sel-txt">Chọn: Ngô Thị E</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-04: RESIDENCE_GET_ALL — công an chỉ đọc, cờ "đã đăng ký tạm trú" do Người quản lý cập nhật (MG-08.3).</div>
+      </div>
+
+      <!-- PM-05: LỊCH SỬ BIẾN ĐỘNG + XUẤT -->
+      <div id="ptab-history" hidden>
+        <div class="toolbar">
+          <input class="inp mono" type="date" value="2026-09-01" style="width:150px">
+          <span style="color:var(--dim)">→</span>
+          <input class="inp mono" type="date" value="2026-09-30" style="width:150px">
+          <select class="inp" style="width:190px"><option>Tất cả biến động</option><option>Vào</option><option>Ra</option><option>Chuyển phòng</option></select>
+          <select class="inp" style="width:140px"><option>Tất cả phòng</option><option>P102</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Xem trước</button>
+          <button class="btn btn-primary btn-sm"><i class="fas fa-file-export"></i> Xuất file</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Phòng</th><th>Biến động</th><th>Ngày vào</th><th>Ngày ra</th><th>Lý do</th></tr></thead>
+          <tbody>
+            <tr><td><b>Phạm D</b></td><td><b>P108</b></td><td><span class="tag rent">Vào</span></td><td class="mono">03/09/2026</td><td class="mono">—</td><td>Nhập học</td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td><b>P102</b></td><td><span class="tag rent">Vào</span></td><td class="mono">12/08/2026</td><td class="mono">—</td><td>Đi làm</td></tr>
+            <tr><td><b>Vũ G</b></td><td><b>P103</b></td><td><span class="tag unpaid">Ra</span></td><td class="mono">01/02/2026</td><td class="mono">28/08/2026</td><td>Hết hợp đồng</td></tr>
+            <tr><td><b>Hoàng H</b></td><td><b>P105 → P201</b></td><td><span class="tag avail">Chuyển phòng</span></td><td class="mono">15/09/2026</td><td class="mono">15/09/2026</td><td>Đổi phòng rộng hơn</td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 4 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Phạm D</span></span><span>Xem trước 10 dòng đầu trước khi xuất</span></div>
+        </div>
+        <div class="note"><i class="fas fa-info-circle"></i> PM-05.2: EXPORT_RESIDENCE_HISTORY — CSV / Excel / PDF, chọn cột, kiểm tra ngày KT ≥ ngày BĐ, ghi log xuất file về Server.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="statusstrip">
+    <div class="l"><i class="fas fa-user-shield" style="color:#70A9FF"></i><span>Công an phường · Phường Ngũ Hành Sơn (Police · ReadOnly)</span></div>
+    <div class="r"><span>.NET 8.0 CLR</span></div>
+  </div>
+</div>
+
+<script>
+function showPoliceTab(el){
+  document.querySelectorAll('#police .tabs .tab').forEach(t=>t.classList.toggle('on',t===el));
+  const titles={citizens:'Tra cứu công dân',residence:'Báo cáo lưu trú & tạm trú',history:'Lịch sử biến động lưu trú'};
+  document.getElementById('ptitle').textContent=titles[el.dataset.ptab]||'';
+  ['citizens','residence','history'].forEach(k=>{document.getElementById('ptab-'+k).hidden = k!==el.dataset.ptab});
+}
+</script>
 <script>
 function showTab(el){
   document.querySelectorAll('#landlord .tabs .tab').forEach(t=>t.classList.toggle('on',t===el));
@@ -791,13 +930,14 @@ function roleSwitch(){
   const lbl=document.getElementById('lblAcc');
   const inp=document.getElementById('lu');
   if(r==='TENANT'){lbl.innerHTML='<i class="fas fa-id-card"></i> CCCD';inp.placeholder='Số CCCD (ví dụ 048203012345)';}
-  else{lbl.innerHTML='<i class="fas fa-user"></i> Tài khoản';inp.placeholder='admin (chủ trọ) hoặc CCCD (người thuê)';}
+  else if(r==='POLICE'){lbl.innerHTML='<i class="fas fa-user-shield"></i> Tài khoản';inp.placeholder='caphuong (công an phường)';}
+  else{lbl.innerHTML='<i class="fas fa-user"></i> Tài khoản';inp.placeholder='admin (chủ trọ) hoặc manager';}
 }
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
-  if(!u){alert('Nhập tài khoản (admin / CCCD)');return}
+  if(!u){alert('Nhập tài khoản');return}
   const r=document.querySelector('input[name=role]:checked').value;
-  const id=r==='LANDLORD'?'landlord':'tenant';
+  const id=r==='LANDLORD'?'landlord':(r==='POLICE'?'police':'tenant');
   document.getElementById(id).scrollIntoView({behavior:'smooth'});
 }
 function logout(){alert('Đăng xuất → quay về màn hình đăng nhập')}

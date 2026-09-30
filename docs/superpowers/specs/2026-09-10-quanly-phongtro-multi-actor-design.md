@@ -10,7 +10,7 @@
 
 - Trạng thái code: Task 1–2 của plan đã xong thật (4 project, Shared đủ DTO + 18 action, protocol tests PASS, build OK với SDK 10.0.401). Task 3–11 chưa có code → thời điểm tốt để chèn phân vai mà không phải đập code cũ.
 - Quyết định của người phụ trách (2026-09-10):
-  1. **2 tác nhân:** Chủ trọ (Landlord) + người thuê (Tenant). Không làm vai công an phường — xuất tạm trú vẫn là chức năng của chủ trọ.
+  1. **2 tác nhân:** Chủ trọ (Landlord) + người thuê (Tenant). Không làm vai công an phường — xuất tạm trú vẫn là chức năng của chủ trọ. *(Quyết định này đã bị đảo ngày 2026-09-30 — xem [2026-09-30-police-webview2-design.md](2026-09-30-police-webview2-design.md): công an phường là tác nhân thứ 3, có màn hình riêng.)*
   2. **Mục tiêu:** Báo cáo môn học + demo bảo vệ theo hướng đa tác nhân.
   3. **Plan cũ được giữ**, vá + bổ sung; không viết lại toàn bộ.
   4. **Vá gap rẻ:** thêm `TENANT_DELETE`, `CONTRACT_RENEW`, `CONTRACT_GET_ALL`, lọc hóa đơn theo phòng, khóa tài khoản 5 lần sai. `SEARCH_FAST` (US-20) ghi rõ deferred.
@@ -91,7 +91,7 @@ Packet đầy đủ luôn 1 dòng, kết thúc `\n` (giữ nguyên framing).
 
 ## 5. UI CLIENT (WinForms)
 
-**Token giao diện:** toàn bộ lấy từ [`DESIGN.md`](../../../DESIGN.md). Bản mẫu trực quan: `docs/superpowers/mockups/wireframe-quanly-phongtro.html`. Xem SRS §5.1 để biết quy tắc ánh xạ sang C#.
+**Token giao diện:** toàn bộ lấy từ [`DESIGN.md`](../../../DESIGN.md). Bản mẫu trực quan: `docs/superpowers/mockups/giaodien.html`. Xem SRS §5.1 để biết quy tắc ánh xạ sang C#.
 
 - `Form1` (shell): đăng nhập chung cho cả 2 vai, rồi `Role` quyết định `TabControl`.
   - **Landlord — 7 tab:** Tổng quan · Phòng · Người thuê · Hợp đồng · Điện nước · Hóa đơn · Thống kê.

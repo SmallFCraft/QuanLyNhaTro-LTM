@@ -6,7 +6,9 @@
 
 web
 
-Sản phẩm giao là ứng dụng desktop **WinForms** (.NET 8, `net8.0-windows`), không phải web app. Giá trị `web` ở trên là giá trị hợp lệ gần nhất của Impeccable: enum chỉ có `web` / `ios` / `android` / `adaptive`, và WinForms không render design language của iOS/Android nên hai nhánh native đó không áp dụng. HTML/CSS chỉ tồn tại ở wireframe mockup tham chiếu, không phải bề mặt người dùng cuối — mọi kiểm tra responsive/breakpoint của web không áp dụng cho sản phẩm.
+Sản phẩm giao là ứng dụng desktop **WinForms** (.NET 8, `net8.0-windows`) có nhúng webview, không phải web app thuần. Giá trị `web` ở trên là giá trị hợp lệ gần nhất của Impeccable: enum chỉ có `web` / `ios` / `android` / `adaptive`, và WinForms không render design language của iOS/Android nên hai nhánh native đó không áp dụng.
+
+Tầng trình bày là **HTML/CSS nạp qua `Microsoft.Web.WebView2`** (xem [spec delta](docs/superpowers/specs/2026-09-30-police-webview2-design.md) §3), đặt trong khung cửa sổ WinForms. Khung cửa sổ, thanh tiêu đề và thanh trạng thái vẫn là control native. Toàn bộ logic nghiệp vụ và I/O mạng vẫn nằm ở C#.
 
 ## Stack
 
@@ -14,7 +16,7 @@ Sản phẩm giao là ứng dụng desktop **WinForms** (.NET 8, `net8.0-windows
 - Server / Shared / Tests: `net8.0`; test bằng MSTest.
 - Vận chuyển: TCP socket tự viết, JSON một dòng kết thúc `\n`, packet ≤ 1 MiB, Server console cổng 8888.
 - Lưu trữ: MySQL 8.0 qua Laragon cổng 3306 (chỉ Server chạm DB).
-- Mockup: HTML/CSS tĩnh phục vụ qua `python -m http.server` (`.claude/launch.json`), không phải sản phẩm.
+- Mockup: HTML/CSS tĩnh phục vụ qua `python -m http.server` (`.claude/launch.json`). Đây là bản thiết kế chuẩn của tầng trình bày — tài liệu mới [2026-09-30-police-webview2-design.md](docs/superpowers/specs/2026-09-30-police-webview2-design.md) chọn phương án WebView2. **Trạng thái code hiện tại vẫn là WinForms native (`ScreenTheme.cs`), chưa chuyển sang WebView2.**
 
 ## Users
 
@@ -50,7 +52,7 @@ Tên hiển thị: "Quản Lý Phòng Trọ Ngũ Hành Sơn". Tiếng Việt to�
 ## Evidence on Hand
 
 - [DESIGN.md](DESIGN.md) — hệ thống thiết kế chuẩn (Terracotta &amp; Slate) từ Stitch; nguồn duy nhất cho token màu/chữ/component.
-- [docs/superpowers/mockups/wireframe-quanly-phongtro.html](docs/superpowers/mockups/wireframe-quanly-phongtro.html) — wireframe HTML 3 màn (đăng nhập, chủ trọ 7 tab, người thuê 1 tab) đã áp design system.
+- [docs/superpowers/mockups/giaodien.html](docs/superpowers/mockups/giaodien.html) — bản mẫu giao diện đã áp design system: đăng nhập 3 vai, chủ trọ 7 tab, công an phường 3 tab, người thuê 1 tab.
 - [BAO_CAO_USER_STORY.md](BAO_CAO_USER_STORY.md) — báo cáo môn học, 23 US gốc + 13 BR.
 - [docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md](docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md) — SRS 18 action.
 - [docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md](docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md) — delta 2 tác nhân, 22 action.

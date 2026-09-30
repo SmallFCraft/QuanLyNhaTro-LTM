@@ -237,7 +237,7 @@ QuanLyTro/
 
 Mọi màn hình WinForms phải lấy token từ **[DESIGN.md](../../../DESIGN.md)** — nguồn chân lý duy nhất về màu, chữ, component. Không tự đặt màu mới trong code.
 
-- **Bản mẫu trực quan:** `docs/superpowers/mockups/wireframe-quanly-phongtro.html` — 3 màn (đăng nhập, chủ trọ 7 tab, người thuê 1 tab).
+- **Bản mẫu trực quan:** `docs/superpowers/mockups/giaodien.html` — đăng nhập 3 vai, chủ trọ 7 tab, công an phường 3 tab, người thuê 1 tab.
 - **Phong cách:** Terracotta & Slate Institutional — nền tối nhiều tầng, viền hairline 1px, phẳng không đổ bóng, góc bo 4px (component) / 8px (card), **không dùng pill**.
 - **Ánh xạ C#:** dùng `ColorTranslator.FromHtml` với đúng mã hex trong DESIGN.md; font `Segoe UI 9pt` cho chữ thường và `Consolas 9.5pt` cho số liệu/tiền tệ (thay cho Inter/JetBrains Mono của bản web).
 - **Trạng thái dòng đang chọn:** nền `#21262B` + dải trái 3px `#D95D39` (đặc trưng của hệ thống, không phải lỗi thẩm mỹ).
