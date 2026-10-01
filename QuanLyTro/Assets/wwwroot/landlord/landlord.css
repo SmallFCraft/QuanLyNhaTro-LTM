@@ -1,8 +1,8 @@
 /* landlord.css — khung màn hình Chủ trọ. Tokens: ../shared/css/tokens.css, reset/component: base.css */
 
 /* ===== window chrome ===== */
-.win{max-width:1200px;width:100%;margin:0 auto;border-radius:8px;overflow:hidden;
-     border:1px solid var(--hairline)}
+.win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
+.app{background:var(--base);flex:1;display:flex;flex-direction:column}
 
 /* ===== app shell ===== */
 .app{background:var(--base)}
