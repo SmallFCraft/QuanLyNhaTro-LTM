@@ -90,7 +90,6 @@
             </div>
           </div>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Dashboard: REPORT_SUMMARY + CONTRACT_GET_ALL + INVOICE_GET_ALL: tải 1 lần khi mở tab.</div>
       </div>
 
       <!-- ROOMS -->
@@ -120,7 +119,6 @@
         </table>
         <div class="tblfoot"><span>Tổng: 5 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Chỉ xóa được phòng trống (BR-12). Số người = đếm trực tiếp từ tenants.</div>
       </div>
 
       <!-- TENANTS -->
@@ -156,7 +154,6 @@
           <button class="btn btn-outline btn-sm" onclick="checkoutTenant(selectedTenantId())"><i class="fas fa-sign-out-alt"></i> Trả phòng</button>
           <button class="btn btn-danger btn-sm" onclick="deleteTenant(selectedTenantId())"><i class="fas fa-user-slash"></i> Xóa hồ sơ</button>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Xóa hồ sơ chỉ khả dụng khi đã trả phòng (US-06).</div>
       </div>
 
       <!-- CONTRACTS -->
@@ -199,7 +196,6 @@
           <button class="btn btn-outline btn-sm" onclick="renewContract(selectedContractId())"><i class="fas fa-calendar-plus"></i> Gia hạn…</button>
           <button class="btn btn-outline btn-sm" onclick="terminateContract(selectedContractId())"><i class="fas fa-ban"></i> Chấm dứt…</button>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Cột "Còn" &lt; 30 ngày tô Terracotta: US-11.</div>
       </div>
 
       <!-- UTILITIES -->
@@ -231,7 +227,6 @@
         <div class="rowbn">
           <button class="btn btn-primary btn-sm" onclick="saveUtility()"><i class="fas fa-save"></i> Lưu chỉ số</button>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Chỉ số cũ tự điền từ kỳ trước. Server tính tiền, preview chỉ để xem (US-12/13).</div>
       </div>
 
       <!-- INVOICES -->
@@ -262,7 +257,6 @@
         </table>
         <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> Đã thu = bất biến (BR-11). Server tự tính mọi khoản, Client chỉ gửi Phòng + Tháng + Phí khác.</div>
       </div>
 
       <!-- REPORTS -->
@@ -299,7 +293,6 @@
           </tbody>
         </table>
         </div>
-        <div class="note"><i class="fas fa-info-circle"></i> US-19: bảng nhiều tháng = Client gọi REPORT_SUMMARY từng tháng + cộng dòng tổng.</div>
       </div>
     </div>
   </div>

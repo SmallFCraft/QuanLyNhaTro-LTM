@@ -112,9 +112,6 @@
 .tblfoot .sel-txt{color:#70A9FF;font-weight:500}
 .tblfoot .sep{margin:0 4px;color:#252C33}
 .rowbn{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
-.note{margin-top:10px;font-size:12px;color:var(--dim);padding:8px 11px;background:#12161A;
-  border:1px solid var(--hair-subtle);border-radius:4px}
-.note i{margin-right:5px;color:#70A9FF}
 
 .statusstrip{
   height:22px;padding:0 12px;background:#0B0E11;border-top:1px solid #1C2227;

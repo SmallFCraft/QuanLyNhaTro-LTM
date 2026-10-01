@@ -60,9 +60,6 @@
 .amount{font-family:'JetBrains Mono',Consolas,monospace;font-variant-numeric:tabular-nums;color:var(--cream-light);font-weight:600}
 .rowbn{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
 
-.note{margin-top:10px;font-size:12px;color:var(--dim);padding:8px 11px;background:#12161A;
-  border:1px solid var(--hair-subtle);border-radius:4px}
-.note i{margin-right:5px;color:var(--sage)}
 
 .statusstrip{
   height:22px;padding:0 12px;background:#0B0E11;border-top:1px solid #1C2227;

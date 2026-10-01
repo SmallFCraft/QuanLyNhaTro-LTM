@@ -123,9 +123,6 @@
 .due-red{color:var(--terracotta);font-weight:600;font-family:'JetBrains Mono',Consolas,monospace}
 .amount{font-family:'JetBrains Mono',Consolas,monospace;font-variant-numeric:tabular-nums;color:var(--cream-light);font-weight:600}
 .rowbn{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
-.note{margin-top:10px;font-size:12px;color:var(--dim);padding:8px 11px;background:#12161A;
-  border:1px solid var(--hair-subtle);border-radius:4px}
-.note i{margin-right:5px;color:var(--terracotta)}
 
 .calc{
   background:var(--card);border:1px solid var(--hairline);border-radius:8px;padding:14px 16px;margin-bottom:12px;
