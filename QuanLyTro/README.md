@@ -98,34 +98,30 @@ Cửa sổ đăng nhập hiện ra → nhập tài khoản ở mục 4.
 
 ## 4. Tài khoản demo
 
+Bộ dữ liệu mẫu tạo bằng `dotnet run --project "QuanLyTro/QuanLyTro.Server" -- --seed-demo`.
+Mật khẩu **trùng tên đăng nhập** cho mọi tài khoản:
+
 | Vai | Đăng nhập | Mật khẩu |
 |---|---|---|
-| Chủ trọ (Landlord) | `admin` | `admin-pass` |
-| Người thuê (Tenant) | số CCCD | mặc định **6 số cuối CCCD** (chủ trọ để trống ô mật khẩu khi thêm hồ sơ) |
+| Chủ trọ (Landlord) | `landlord` | `landlord` |
+| Công an phường (Police) | `police` | `police` |
+| Người thuê (Tenant) | `100000000001` (CCCD) | `100000000001` |
 
-### Sự thật về seed admin (quan trọng)
+Dữ liệu mẫu: 3 phòng (`P201` đang cho thuê, `P202`/`P203` trống), 1 người thuê,
+1 hợp đồng Active, 1 kỳ chỉ số điện nước và 1 hóa đơn `Unpaid` 2.245.000 đ cho kỳ hiện tại.
+Seeder idempotent (chạy lại chỉ ghi đè dòng mẫu) và nằm trong dải id 7001-7009.
 
-`schema.sql` chỉ tạo **cấu trúc bảng**, **không** chèn sẵn tài khoản `admin`. Database Laragon hiện tại có `admin/admin-pass` là do được **đặt tay trong lúc kiểm thử E2E**, không phải hành vi tự động khi khởi tạo. Vì vậy máy mới cài cần tạo tài khoản thủ công như bước 3.
+### Tài khoản khác trong DB cục bộ
 
-**Cách tạo đúng, an toàn** (dùng lại `PasswordHasher` của Server, không tự băm):
+`schema.sql` chỉ tạo **cấu trúc bảng**, **không** chèn sẵn tài khoản. Lệnh `--seed-demo`
+là cách chính thức tạo dữ liệu mẫu.
 
-1. Tạo project console tạm dùng `QuanLyTro.Server` làm tham chiếu (hoặc chạy trong LINQPad/`dotnet script`) và in hash:
+> Đừng tự viết PBKDF2 tay hoặc dùng hash từ công cụ khác — định dạng
+> `pbkdf2-sha256$iterations$salt$key` phải khớp `PasswordHasher.Verify` thì đăng nhập mới qua.
+> `DemoSeeder` dùng chính `PasswordHasher` nên không thể lệch định dạng.
 
-   ```csharp
-   Console.WriteLine(QuanLyTro.Server.Security.PasswordHasher.Hash("admin-pass"));
-   // → pbkdf2-sha256$210000$<salt>$<key>
-   ```
-
-2. Dán hash đó vào lệnh bước 3 (thay `<HASH>`). Lệnh `INSERT ... ON DUPLICATE KEY UPDATE` chạy lại chỉ đặt lại mật khẩu — không tạo trùng.
-
-> Đừng tự viết PBKDF2 tay hoặc dùng hash công cụ khác — định dạng `pbkdf2-sha256$iterations$salt$key` phải khớp `PasswordHasher.Verify` thì đăng nhập mới qua. Không nhúng hash thô nào vào tài liệu này.
-
-> Nếu chỉ muốn đổi mật khẩu admin đã tồn tại: chạy lại bước 3 với hash mới.
-
-> **Tài khoản demo Công an phường (BR-16, tuỳ chọn).** Cột `users.role` nhận `Landlord`,
-> `Tenant`, `Police`. Tạo thủ công y như admin, đổi `role` thành `'Police'` (ví dụ
-> `username=police_nhs`, mật khẩu tuỳ chọn). Sau khi đăng nhập, Client mở shell
-> read-only 3 tab. Repo vẫn không tự seed tài khoản nào.
+> Người thuê tự tạo qua UI (không dùng seeder) mặc định có mật khẩu là **6 số cuối CCCD**
+> khi chủ trọ để trống ô mật khẩu.
 
 ---
 

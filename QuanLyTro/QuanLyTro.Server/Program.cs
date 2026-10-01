@@ -34,6 +34,13 @@ internal class Program
             return 0;
         }
 
+        if (args.Contains("--seed-demo"))
+        {
+            await DemoSeeder.SeedAsync(database);
+            Console.WriteLine("Demo data seeded.");
+            return 0;
+        }
+
         var sessions = new SessionStore();
         var router = new RequestRouter(
             new AuthService(new UserRepository(database), new TenantAuthRepository(database), sessions),
