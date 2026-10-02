@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
-    role ENUM('Landlord', 'Tenant', 'Police') NOT NULL DEFAULT 'Landlord',
+    role ENUM('Landlord', 'Manager', 'Police', 'Tenant') NOT NULL DEFAULT 'Landlord',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
@@ -27,7 +27,7 @@ SET @role_col := (SELECT COUNT(*) FROM information_schema.columns
                   WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role');
 -- statement
 SET @sql := IF(@role_col = 0,
-               'ALTER TABLE users ADD COLUMN role ENUM(''Landlord'', ''Tenant'', ''Police'') NOT NULL DEFAULT ''Landlord'' AFTER full_name',
+               'ALTER TABLE users ADD COLUMN role ENUM(''Landlord'', ''Manager'', ''Police'', ''Tenant'') NOT NULL DEFAULT ''Landlord'' AFTER full_name',
                'SELECT 1');
 -- statement
 PREPARE role_migration FROM @sql;
@@ -35,6 +35,21 @@ PREPARE role_migration FROM @sql;
 EXECUTE role_migration;
 -- statement
 DEALLOCATE PREPARE role_migration;
+-- statement
+
+-- Delta RBAC: bảng ma trận quyền động theo vai trò. Chủ trọ (Landlord) KHÔNG lưu ở đây —
+-- quyền của Chủ trọ bypass cứng trong code để không bao giờ tự khóa mình khỏi hệ thống.
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role VARCHAR(20) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (role, action)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- statement
+
+-- Delta RBAC: thêm vai `Manager` vào ENUM. MODIFY COLUMN idempotent — chạy lại vô hại.
+ALTER TABLE users MODIFY COLUMN role ENUM('Landlord', 'Manager', 'Police', 'Tenant')
+  NOT NULL DEFAULT 'Landlord';
 -- statement
 
 CREATE TABLE IF NOT EXISTS rooms (

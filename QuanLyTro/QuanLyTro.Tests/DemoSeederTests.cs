@@ -20,6 +20,19 @@ public sealed class DemoSeederTests
     public Task SeedAsync() => DemoSeeder.SeedAsync(Db);
 
     [TestMethod]
+    public async Task Seed_CreatesManagerAccount_WithPasswordMatchingUsername()
+    {
+        var account = await new QuanLyTro.Server.Repositories.UserRepository(Db)
+            .FindByUsernameAsync(DemoSeeder.ManagerUsername);
+
+        Assert.IsNotNull(account, "Thiếu tài khoản demo manager");
+        Assert.AreEqual("Manager", account.Role.ToString(), "Sai vai cho manager");
+        Assert.IsTrue(
+            QuanLyTro.Server.Security.PasswordHasher.Verify(DemoSeeder.ManagerUsername, account.PasswordHash),
+            "Mật khẩu của manager phải bằng chính tên đăng nhập.");
+    }
+
+    [TestMethod]
     public async Task Seed_CreatesLandlordAndPoliceAccounts_WithPasswordMatchingUsername()
     {
         foreach (var (username, role) in new[]

@@ -1,5 +1,6 @@
 using MySqlConnector;
 using QuanLyTro.Server.Security;
+using QuanLyTro.Shared.Protocol;
 
 namespace QuanLyTro.Server.Data;
 
@@ -18,6 +19,7 @@ public static class DemoSeeder
 {
     public const string LandlordUsername = "landlord";
     public const string PoliceUsername = "police";
+    public const string ManagerUsername = "manager";
     public const string TenantIdCard = "100000000001";
 
     private const int RoomId = 7001;
@@ -28,12 +30,19 @@ public static class DemoSeeder
 
     public static async Task SeedAsync(Database database, CancellationToken ct = default)
     {
+        // Luôn bảo đảm DB schema và enum mới nhất đã được áp dụng trước khi gieo dữ liệu.
+        await new SchemaInitializer(database).InitializeAsync(ct);
+
         await using var connection = await database.OpenAsync(ct);
         var month = DateTime.UtcNow.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
 
         // users: username là khóa tự nhiên (UNIQUE), để id tự tăng — không tranh id với dữ liệu sẵn có.
         await UpsertUserAsync(connection, LandlordUsername, "Chủ Trọ Demo", "Landlord", ct);
         await UpsertUserAsync(connection, PoliceUsername, "Công An Phường Demo", "Police", ct);
+        await UpsertUserAsync(connection, ManagerUsername, "Quản Lý Demo", "Manager", ct);
+
+        // Gieo quyền mặc định vào role_permissions (Manager / Police / Tenant).
+        await SeedDefaultPermissionsAsync(connection, ct);
 
         // Phòng cho thuê có người ở (kèm 2 phòng trống để màn Quản lý phòng có dữ liệu).
         await ExecuteAsync(connection, """
@@ -109,6 +118,29 @@ public static class DemoSeeder
             ("@hash", PasswordHasher.Hash(username)),
             ("@fullName", fullName),
             ("@role", role));
+    }
+
+    private static async Task SeedDefaultPermissionsAsync(MySqlConnection connection, CancellationToken ct)
+    {
+        const string checkSql = "SELECT COUNT(*) FROM role_permissions";
+        await using (var checkCmd = new MySqlCommand(checkSql, connection))
+        {
+            var count = Convert.ToInt64(await checkCmd.ExecuteScalarAsync(ct));
+            if (count > 0)
+            {
+                // Đã có dữ liệu quyền (có thể do Chủ trọ đã tùy chỉnh) — không ghi đè.
+                return;
+            }
+        }
+
+        const string insertSql = "INSERT IGNORE INTO role_permissions (role, action) VALUES (@role, @action)";
+        foreach (var (role, actions) in DefaultRolePermissions.All)
+        {
+            foreach (var action in actions)
+            {
+                await ExecuteAsync(connection, insertSql, ct, ("@role", role), ("@action", action));
+            }
+        }
     }
 
     private static async Task ExecuteAsync(
