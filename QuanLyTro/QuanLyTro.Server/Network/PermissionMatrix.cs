@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using QuanLyTro.Shared.Models;
 using QuanLyTro.Shared.Protocol;
 
@@ -16,12 +15,14 @@ namespace QuanLyTro.Server.Network;
 /// </summary>
 public static class PermissionMatrix
 {
-    private static readonly ConcurrentDictionary<string, HashSet<UserRole>> Allowed = new(StringComparer.Ordinal);
-
-    static PermissionMatrix()
-    {
-        ResetToDefaults();
-    }
+    // Hoán đổi NGUYÊN TỬ cả bảng, không sửa từng phần tử: `ApplyMatrix` chạy trong lúc các phiên
+    // Manager/Police/Tenant đang gọi IsAllowed. Nếu xóa-rồi-nạp tại chỗ, cửa sổ giữa 2 bước sẽ
+    // từ chối oan mọi request của họ (bảng rỗng tạm thời).
+    private static IReadOnlyDictionary<string, HashSet<UserRole>> _allowed =
+        Build(DefaultRolePermissions.All.ToDictionary(
+            kv => kv.Key,
+            kv => (List<string>)kv.Value.ToList(),
+            StringComparer.OrdinalIgnoreCase));
 
     /// <summary>Kiểm tra vai trò có được phép thực hiện hành động này không.</summary>
     public static bool IsAllowed(string action, UserRole role)
@@ -38,7 +39,8 @@ public static class PermissionMatrix
         }
 
         // Các vai trò khác: tra cứu bộ đệm động
-        return Allowed.TryGetValue(action, out var roles) && roles.Contains(role);
+        var snapshot = Volatile.Read(ref _allowed);
+        return snapshot.TryGetValue(action, out var roles) && roles.Contains(role);
     }
 
     /// <summary>Action có tồn tại trong danh mục hệ thống không.</summary>
@@ -47,14 +49,25 @@ public static class PermissionMatrix
     /// <summary>
     /// Áp dụng ma trận quyền động mới từ CSDL (gọi khi khởi động Server hoặc khi Chủ trọ cập nhật phân quyền).
     /// </summary>
-    public static void ApplyMatrix(IReadOnlyDictionary<string, List<string>> roleActions)
+    public static void ApplyMatrix(IReadOnlyDictionary<string, List<string>> roleActions) =>
+        // Hoán đổi nguyên tử con trỏ bảng quyền — luồng TCP đang đọc không bao giờ thấy bảng rỗng.
+        Volatile.Write(ref _allowed, Build(roleActions));
+
+    /// <summary>Khôi phục quyền mặc định từ code (dùng khi khởi động hoặc reset test).</summary>
+    public static void ResetToDefaults() =>
+        Volatile.Write(ref _allowed, Build(DefaultRolePermissions.All.ToDictionary(
+            kv => kv.Key,
+            kv => (List<string>)kv.Value.ToList(),
+            StringComparer.OrdinalIgnoreCase)));
+
+    private static Dictionary<string, HashSet<UserRole>> Build(IReadOnlyDictionary<string, List<string>> roleActions)
     {
-        var next = new Dictionary<string, HashSet<UserRole>>(StringComparer.Ordinal);
+        var next = new Dictionary<string, HashSet<UserRole>>(StringComparer.Ordinal)
+        {
+            // Đăng nhập ai cũng phải gọi được, không phụ thuộc cấu hình phân quyền.
+            [ActionNames.AuthLogin] = [UserRole.Landlord, UserRole.Manager, UserRole.Police, UserRole.Tenant],
+        };
 
-        // Nạp AUTH_LOGIN
-        next[ActionNames.AuthLogin] = [UserRole.Landlord, UserRole.Manager, UserRole.Police, UserRole.Tenant];
-
-        // Khởi tạo các action từ danh sách quyền của từng role
         foreach (var (roleName, actions) in roleActions)
         {
             if (!Enum.TryParse<UserRole>(roleName, ignoreCase: true, out var role))
@@ -73,22 +86,6 @@ public static class PermissionMatrix
             }
         }
 
-        // Hoán đổi an toàn vào ConcurrentDictionary
-        Allowed.Clear();
-        foreach (var (action, roles) in next)
-        {
-            Allowed[action] = roles;
-        }
-    }
-
-    /// <summary>Khôi phục quyền mặc định từ code (dùng khi khởi động hoặc reset test).</summary>
-    public static void ResetToDefaults()
-    {
-        var dict = DefaultRolePermissions.All.ToDictionary(
-            kv => kv.Key,
-            kv => kv.Value.ToList(),
-            StringComparer.OrdinalIgnoreCase);
-
-        ApplyMatrix(dict);
+        return next;
     }
 }
