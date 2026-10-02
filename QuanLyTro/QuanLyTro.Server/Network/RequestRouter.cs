@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using MySqlConnector;
 using QuanLyTro.Server.Data;
+using QuanLyTro.Server.Repositories;
 using QuanLyTro.Server.Security;
 using QuanLyTro.Server.Services;
 using QuanLyTro.Shared.Models;
@@ -28,6 +29,7 @@ public sealed class RequestRouter
     private readonly ReportService _reports;
     private readonly ResidenceService _residence;
     private readonly SessionStore _sessions;
+    private readonly IPermissionRepository? _permissions;
     private readonly Dictionary<string, Handler> _handlers;
 
     public RequestRouter(
@@ -39,7 +41,8 @@ public sealed class RequestRouter
         InvoiceService invoices,
         ReportService reports,
         ResidenceService residence,
-        SessionStore sessions)
+        SessionStore sessions,
+        IPermissionRepository? permissions = null)
     {
         _auth = auth;
         _rooms = rooms;
@@ -50,6 +53,7 @@ public sealed class RequestRouter
         _reports = reports;
         _residence = residence;
         _sessions = sessions;
+        _permissions = permissions;
 
         _handlers = new Dictionary<string, Handler>(StringComparer.Ordinal)
         {
@@ -112,6 +116,9 @@ public sealed class RequestRouter
             },
             [ActionNames.ExportResidenceHistory] = (r, _, ct) =>
                 Ok(_residence.ExportHistoryAsync(r.GetData<ExportHistoryRequest>(), ct)),
+
+            [ActionNames.PermissionGetMatrix] = (_, _, ct) => GetPermissionMatrixAsync(ct),
+            [ActionNames.PermissionUpdateRole] = (r, s, ct) => UpdateRolePermissionsAsync(r, s, ct),
         };
     }
 
@@ -202,6 +209,66 @@ public sealed class RequestRouter
             ?? throw new BusinessRuleException("Dữ liệu người thuê không hợp lệ.");
 
         return (tenant, ReadString(data, "plainPassword"));
+    }
+
+    /// <summary>
+    /// Ma trận quyền động hiện tại + danh mục action có thể gán (màn Phân quyền của Chủ trọ).
+    /// Chỉ Chủ trọ gọi được — PermissionMatrix đã chặn ở tầng trên.
+    /// </summary>
+    private async Task<ResponsePacket> GetPermissionMatrixAsync(CancellationToken ct)
+    {
+        if (_permissions is null)
+        {
+            throw new BusinessRuleException("Server chưa cấu hình kho phân quyền.");
+        }
+
+        var roleActions = await _permissions.GetAllAsync(ct);
+        return ResponsePacket.Ok(new RolePermissionsMatrixDto(roleActions, [.. DefaultRolePermissions.Catalog]));
+    }
+
+    /// <summary>
+    /// Chủ trọ cập nhật quyền cho một vai trò. Ghi CSDL rồi nạp lại cache ngay — mọi phiên
+    /// đang mở của vai trò đó chịu hiệu lực tức thì, không cần khởi động lại Server.
+    /// </summary>
+    private async Task<ResponsePacket> UpdateRolePermissionsAsync(RequestPacket request, Session session, CancellationToken ct)
+    {
+        if (session.Role != UserRole.Landlord)
+        {
+            throw new UnauthorizedAccessException("Chỉ Chủ trọ mới có quyền điều chỉnh phân quyền.");
+        }
+
+        if (_permissions is null)
+        {
+            throw new BusinessRuleException("Server chưa cấu hình kho phân quyền.");
+        }
+
+        var payload = request.GetData<UpdateRolePermissionsRequest>();
+        if (string.IsNullOrWhiteSpace(payload.Role))
+        {
+            throw new BusinessRuleException("Thiếu vai trò cần cập nhật phân quyền.");
+        }
+
+        if (!DefaultRolePermissions.All.Keys.Contains(payload.Role, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new BusinessRuleException($"Không thể phân quyền cho vai trò '{payload.Role}'.");
+        }
+
+        // Chỉ nhận action có thật trong danh mục — chặn Client gửi tên bịa để tự mở quyền.
+        var known = DefaultRolePermissions.Catalog.Select(c => c.Action).ToHashSet(StringComparer.Ordinal);
+        var requested = payload.Actions ?? [];
+        var rejected = requested.Where(a => !known.Contains(a)).ToList();
+        if (rejected.Count > 0)
+        {
+            throw new BusinessRuleException($"Hành động không hợp lệ: {string.Join(", ", rejected)}");
+        }
+
+        await _permissions.UpdateRoleActionsAsync(payload.Role, requested, ct);
+
+        // Nạp lại cache ngay lập tức.
+        var matrix = await _permissions.GetAllAsync(ct);
+        PermissionMatrix.ApplyMatrix(matrix);
+
+        return ResponsePacket.Ok(new { message = $"Đã cập nhật phân quyền cho vai trò {payload.Role}." });
     }
 
     private static int ReadId(JsonElement data, params string[] names) =>

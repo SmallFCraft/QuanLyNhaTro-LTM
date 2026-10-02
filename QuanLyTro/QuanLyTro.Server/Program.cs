@@ -42,6 +42,19 @@ internal class Program
         }
 
         var sessions = new SessionStore();
+        var permissions = new PermissionRepository(database);
+
+        // Nạp ma trận quyền động từ CSDL vào cache. DB lỗi/chưa seed không được làm sập Server —
+        // PermissionMatrix đã có sẵn quyền mặc định từ code nên cứ chạy tiếp.
+        try
+        {
+            PermissionMatrix.ApplyMatrix(await permissions.GetAllAsync());
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Không nạp được phân quyền từ CSDL, dùng quyền mặc định: {ex.Message}");
+        }
+
         var router = new RequestRouter(
             new AuthService(new UserRepository(database), new TenantAuthRepository(database), sessions),
             new RoomService(new RoomRepository(database)),
@@ -51,7 +64,8 @@ internal class Program
             new InvoiceService(new InvoiceRepository(database)),
             new ReportService(new ReportRepository(database)),
             new ResidenceService(new ResidenceRepository(database)),
-            sessions);
+            sessions,
+            permissions);
 
         Console.WriteLine($"QuanLyTro Server (.NET 8) - TCP Port {options.Port}");
 
