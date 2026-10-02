@@ -37,6 +37,10 @@ public static class ActionNames
     public const string ResidenceHistoryGet = "RESIDENCE_HISTORY_GET";
     public const string ExportResidenceHistory = "EXPORT_RESIDENCE_HISTORY";
 
+    // Quản lý phân quyền động — CHỈ Chủ trọ (Landlord) được gọi.
+    public const string PermissionGetMatrix = "PERMISSION_GET_MATRIX";
+    public const string PermissionUpdateRole = "PERMISSION_UPDATE_ROLE";
+
     /// <summary>Toàn bộ tên action hợp lệ — dùng cho test và kiểm tra router.</summary>
     public static readonly IReadOnlyList<string> All =
     [
@@ -48,5 +52,6 @@ public static class ActionNames
         InvoiceCreate, InvoiceGetAll, InvoicePay, InvoiceGetMine,
         ReportSummary, ExportResidence,
         ResidenceHistoryGet, ExportResidenceHistory,
+        PermissionGetMatrix, PermissionUpdateRole,
     ];
 }

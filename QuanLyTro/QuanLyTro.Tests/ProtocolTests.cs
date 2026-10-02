@@ -56,4 +56,17 @@ public class ProtocolTests
         Assert.IsTrue(ActionNames.All.Contains(ActionNames.ExportResidenceHistory));
         Assert.IsTrue(Enum.IsDefined(typeof(UserRole), UserRole.Police));
     }
+
+    [TestMethod]
+    public void ActionNames_ContainsNewPermissionActions()
+    {
+        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PermissionGetMatrix);
+        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PermissionUpdateRole);
+    }
+
+    [TestMethod]
+    public void UserRole_ContainsManager()
+    {
+        Assert.AreEqual(3, (int)UserRole.Manager);
+    }
 }

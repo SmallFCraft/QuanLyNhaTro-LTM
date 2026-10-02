@@ -6,7 +6,15 @@ public enum UserRole
     Landlord,
     Tenant,
     Police,
+    Manager,
 }
+
+public sealed record RolePermissionItemDto(string Action, string Description, string Group);
+public sealed record RolePermissionsMatrixDto(
+    Dictionary<string, List<string>> RoleActions,
+    List<RolePermissionItemDto> AvailableActions
+);
+public sealed record UpdateRolePermissionsRequest(string Role, List<string> Actions);
 
 /// <summary>
 /// Payload đăng nhập: { Username, Password }
