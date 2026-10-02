@@ -76,4 +76,58 @@ public sealed class PermissionMatrixTests
             }
         }
     }
+
+    [TestMethod]
+    public void Manager_HasOperationalPermissions_ButNotPermissionAdmin()
+    {
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomGetAll, UserRole.Manager));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.InvoicePay, UserRole.Manager));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ContractCreate, UserRole.Manager));
+
+        // Quản lý KHÔNG được phép quản lý phân quyền (chỉ Chủ trọ tối cao mới được)
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.PermissionGetMatrix, UserRole.Manager));
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.PermissionUpdateRole, UserRole.Manager));
+
+        // Quản lý không xem hóa đơn cá nhân của người thuê
+        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetMine, UserRole.Manager));
+    }
+
+    [TestMethod]
+    public void Landlord_HasAllPermissions_IncludingPermissionAdmin()
+    {
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.PermissionGetMatrix, UserRole.Landlord));
+        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.PermissionUpdateRole, UserRole.Landlord));
+    }
+
+    [TestMethod]
+    public void PermissionMatrix_SupportsDynamicReload_AllowsRevokingAndGranting()
+    {
+        try
+        {
+            // Ban đầu Manager được thêm phòng
+            Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
+
+            // Thu hồi quyền RoomAdd của Manager
+            var updated = DefaultRolePermissions.All.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Key.Equals("Manager", StringComparison.OrdinalIgnoreCase)
+                    ? kv.Value.Where(a => a != ActionNames.RoomAdd).ToList()
+                    : kv.Value.ToList(),
+                StringComparer.OrdinalIgnoreCase);
+
+            PermissionMatrix.ApplyMatrix(updated);
+
+            // Giờ Manager bị từ chối RoomAdd
+            Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
+
+            // Nhưng Landlord vẫn luôn được phép (bypass cứng trong code)
+            Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Landlord));
+        }
+        finally
+        {
+            // Khôi phục lại ma trận mặc định
+            PermissionMatrix.ResetToDefaults();
+        }
+    }
 }
