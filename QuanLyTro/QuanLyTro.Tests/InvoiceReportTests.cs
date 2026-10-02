@@ -163,10 +163,15 @@ public sealed class InvoiceServiceTests
         var repo = new StubInvoiceRepo { Items = [Invoice()] };
         var service = new InvoiceService(repo);
 
-        var mine = await service.GetMineAsync(5);
+        var mine = await service.GetMineAsync(5, page: 2, pageSize: 3);
 
-        Assert.AreEqual(1, mine.Count);
+        Assert.AreEqual(1, mine.Items.Count);
+        Assert.AreEqual(1, mine.TotalCount);
+        Assert.AreEqual(2, mine.Page);
+        Assert.AreEqual(3, mine.PageSize);
         Assert.AreEqual(5, repo.LastTenantId);
+        Assert.AreEqual(2, repo.LastPage);
+        Assert.AreEqual(3, repo.LastPageSize);
     }
 }
 
@@ -231,6 +236,8 @@ file sealed class StubInvoiceRepo : IInvoiceRepository
     public string? LastMonth { get; private set; }
     public int? LastRoomId { get; private set; }
     public int? LastTenantId { get; private set; }
+    public int? LastPage { get; private set; }
+    public int? LastPageSize { get; private set; }
 
     public Task<ContractDto?> GetActiveContractAsync(int roomId, CancellationToken ct = default) =>
         Task.FromResult(Contract);
@@ -260,10 +267,13 @@ file sealed class StubInvoiceRepo : IInvoiceRepository
         return Task.FromResult(Items);
     }
 
-    public Task<List<InvoiceDto>> GetByTenantAsync(int tenantId, CancellationToken ct = default)
+    public Task<InvoiceMinePageDto> GetByTenantAsync(
+        int tenantId, int page, int pageSize, CancellationToken ct = default)
     {
         LastTenantId = tenantId;
-        return Task.FromResult(Items);
+        LastPage = page;
+        LastPageSize = pageSize;
+        return Task.FromResult(new InvoiceMinePageDto(Items, Items.Count, page, pageSize));
     }
 }
 

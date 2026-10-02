@@ -70,9 +70,10 @@ public sealed class InvoiceService(IInvoiceRepository invoices)
         return true;
     }
 
-    /// <summary>BR-14: server suy phòng từ tenantId trong phiên, client không gửi roomId.</summary>
-    public Task<List<InvoiceDto>> GetMineAsync(int tenantId, CancellationToken ct = default) =>
-        invoices.GetByTenantAsync(tenantId, ct);
+    /// <summary>BR-14: server suy phòng từ tenantId trong phiên, client không gửi roomId. Hỗ trợ phân trang server-side.</summary>
+    public Task<InvoiceMinePageDto> GetMineAsync(
+        int tenantId, int page = 1, int pageSize = 10, CancellationToken ct = default) =>
+        invoices.GetByTenantAsync(tenantId, page, pageSize, ct);
 
     /// <summary>Tháng hóa đơn là chuỗi `yyyy-MM` — dùng chung với UtilityService.</summary>
     public static string NormalizeMonth(string? month)

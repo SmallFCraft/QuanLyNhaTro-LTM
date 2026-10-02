@@ -13,7 +13,7 @@ public interface IInvoiceRepository
     Task<InvoiceDto?> GetByIdAsync(int invoiceId, CancellationToken ct = default);
     Task<bool> MarkPaidAsync(int invoiceId, CancellationToken ct = default);
     Task<List<InvoiceDto>> GetAllAsync(string billingMonth, int? roomId, CancellationToken ct = default);
-    Task<List<InvoiceDto>> GetByTenantAsync(int tenantId, CancellationToken ct = default);
+    Task<InvoiceMinePageDto> GetByTenantAsync(int tenantId, int page, int pageSize, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -194,9 +194,31 @@ public sealed class InvoiceRepository(Database database) : IInvoiceRepository
         return invoices;
     }
 
-    /// <summary>BR-14: suy phòng từ chính tenantId, không nhận roomId từ client.</summary>
-    public async Task<List<InvoiceDto>> GetByTenantAsync(int tenantId, CancellationToken ct = default)
+    /// <summary>BR-14: suy phòng từ chính tenantId, không nhận roomId từ client. Phân trang server-side.</summary>
+    public async Task<InvoiceMinePageDto> GetByTenantAsync(
+        int tenantId, int page, int pageSize, CancellationToken ct = default)
     {
+        var safePage = page < 1 ? 1 : page;
+        var safePageSize = pageSize switch
+        {
+            < 1 => 10,
+            > 50 => 50,
+            _ => pageSize
+        };
+        var offset = (safePage - 1) * safePageSize;
+
+        await using var connection = await database.OpenAsync(ct);
+
+        const string countSql = """
+            SELECT COUNT(*)
+            FROM invoices i
+            JOIN tenants t ON t.room_id = i.room_id
+            WHERE t.id = @tenantId
+            """;
+        await using var countCmd = new MySqlCommand(countSql, connection);
+        countCmd.Parameters.AddWithValue("@tenantId", tenantId);
+        var totalCount = Convert.ToInt32(await countCmd.ExecuteScalarAsync(ct));
+
         const string sql = """
             SELECT i.id, i.room_id, i.contract_id, i.billing_month, i.room_amount, i.electricity_amount,
                    i.water_amount, i.other_fees, i.total_amount, i.status, i.paid_at
@@ -204,11 +226,13 @@ public sealed class InvoiceRepository(Database database) : IInvoiceRepository
             JOIN tenants t ON t.room_id = i.room_id
             WHERE t.id = @tenantId
             ORDER BY i.billing_month DESC
+            LIMIT @limit OFFSET @offset
             """;
 
-        await using var connection = await database.OpenAsync(ct);
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@tenantId", tenantId);
+        command.Parameters.AddWithValue("@limit", safePageSize);
+        command.Parameters.AddWithValue("@offset", offset);
 
         await using var reader = await command.ExecuteReaderAsync(ct);
         var invoices = new List<InvoiceDto>();
@@ -217,7 +241,7 @@ public sealed class InvoiceRepository(Database database) : IInvoiceRepository
             invoices.Add(Map(reader));
         }
 
-        return invoices;
+        return new InvoiceMinePageDto(invoices, totalCount, safePage, safePageSize);
     }
 
     private static InvoiceDto Map(MySqlDataReader reader) => new(

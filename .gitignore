@@ -14,3 +14,6 @@ TestResults/
 # SKILLS/MCP/...
 .impeccable/
 .stitch_property_management_winforms_client/
+
+# Local credentials
+credentials.txt

@@ -100,8 +100,13 @@ public sealed class RequestRouter
                 ReadOptionalId(r.Data, "roomId"),
                 ct)),
             [ActionNames.InvoicePay] = (r, _, ct) => Ok(_invoices.PayAsync(ReadId(r.Data, "invoiceId", "id"), ct)),
-            // BR-14: tenantId lấy TỪ PHIÊN, không bao giờ từ dữ liệu client gửi.
-            [ActionNames.InvoiceGetMine] = (_, s, ct) => Ok(_invoices.GetMineAsync(s.UserId, ct)),
+            // BR-14: tenantId lấy TỪ PHIÊN, không bao giờ từ dữ liệu client gửi. Hỗ trợ phân trang page/pageSize.
+            [ActionNames.InvoiceGetMine] = (r, s, ct) =>
+            {
+                var page = ReadOptionalId(r.Data, "page") ?? 1;
+                var pageSize = ReadOptionalId(r.Data, "pageSize") ?? 10;
+                return Ok(_invoices.GetMineAsync(s.UserId, page, pageSize, ct));
+            },
 
             [ActionNames.ReportSummary] = (r, _, ct) =>
                 Ok(_reports.GetSummaryAsync(ReadString(r.Data, "billingMonth") ?? string.Empty, ct)),

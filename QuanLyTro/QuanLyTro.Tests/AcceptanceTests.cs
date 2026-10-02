@@ -225,11 +225,45 @@ public sealed class AcceptanceTests
             RequestPacket.Create(ActionNames.InvoiceGetMine, tenantToken, new { }));
 
         Assert.IsTrue(mine.Success, mine.Message);
-        var invoices = mine.GetData<List<InvoiceDto>>()!;
-        Assert.AreEqual(1, invoices.Count, "Tenant chỉ thấy đúng 1 hóa đơn phòng mình.");
-        Assert.AreEqual(MainRoomId, invoices[0].RoomId);
-        Assert.AreEqual(BillingMonth, invoices[0].BillingMonth);
-        Assert.AreEqual(2_000_000m, invoices[0].TotalAmount);
+        var page = mine.GetData<InvoiceMinePageDto>()!;
+        Assert.IsNotNull(page);
+        Assert.AreEqual(1, page.TotalCount, "Tenant chỉ thấy đúng 1 hóa đơn phòng mình.");
+        Assert.AreEqual(1, page.Items.Count);
+        Assert.AreEqual(MainRoomId, page.Items[0].RoomId);
+        Assert.AreEqual(BillingMonth, page.Items[0].BillingMonth);
+        Assert.AreEqual(2_000_000m, page.Items[0].TotalAmount);
+    }
+
+    /// <summary>US-24: INVOICE_GET_MINE hỗ trợ phân trang server-side page/pageSize.</summary>
+    [TestMethod]
+    public async Task InvoiceGetMine_SupportsServerSidePagination()
+    {
+        await SeedSecondRoomWithInvoiceAsync();
+        var router = Router();
+        var login = await router.HandleAsync(RequestPacket.Create(
+            ActionNames.AuthLogin, null, new LoginRequest(MainCccd, TenantPasswordOf(MainCccd))));
+        Assert.IsTrue(login.Success, login.Message);
+        var tenantToken = login.GetData<LoginResult>()!.Token;
+
+        // Trang 1, pageSize 1: lấy đúng 1 phần tử
+        var page1Res = await router.HandleAsync(
+            RequestPacket.Create(ActionNames.InvoiceGetMine, tenantToken, new { page = 1, pageSize = 1 }));
+        Assert.IsTrue(page1Res.Success, page1Res.Message);
+        var page1 = page1Res.GetData<InvoiceMinePageDto>()!;
+        Assert.AreEqual(1, page1.Page);
+        Assert.AreEqual(1, page1.PageSize);
+        Assert.IsTrue(page1.TotalCount >= 1);
+        Assert.AreEqual(1, page1.Items.Count);
+
+        // Trang 999: vượt quá số lượng -> trả danh sách rỗng, TotalCount vẫn giữ nguyên
+        var pageFarRes = await router.HandleAsync(
+            RequestPacket.Create(ActionNames.InvoiceGetMine, tenantToken, new { page = 999, pageSize = 10 }));
+        Assert.IsTrue(pageFarRes.Success, pageFarRes.Message);
+        var pageFar = pageFarRes.GetData<InvoiceMinePageDto>()!;
+        Assert.AreEqual(999, pageFar.Page);
+        Assert.AreEqual(10, pageFar.PageSize);
+        Assert.AreEqual(page1.TotalCount, pageFar.TotalCount);
+        Assert.AreEqual(0, pageFar.Items.Count);
     }
 
     // --------------------------------------------------------------- US-23 khóa đăng nhập

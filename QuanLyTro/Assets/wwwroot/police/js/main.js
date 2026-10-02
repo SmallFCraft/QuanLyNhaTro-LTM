@@ -8,8 +8,10 @@ const POLICE_TITLES = {
 
 // Cache client-side dùng chung cho tab Công dân và Tạm trú.
 let policeCache = null;
+let _currentPTab = 'citizens';
 
 async function loadPoliceTab(tabKey) {
+  _currentPTab = tabKey || _currentPTab;
   document.getElementById('ptitle').textContent = POLICE_TITLES[tabKey] || '';
   Object.keys(POLICE_TITLES).forEach(k => {
     const el = document.getElementById('ptab-' + k);
@@ -55,4 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const name = new URLSearchParams(window.location.search).get('u');
   if (name) document.getElementById('pname').textContent = name;
   loadPoliceTab('citizens');
+
+  // ponytail: tự động làm mới toàn trang — thay nút sync tay. Reset cache buộc nạp lại từ server.
+  startAutoRefresh(() => { policeCache = null; return loadPoliceTab(_currentPTab); }, 30000);
 });

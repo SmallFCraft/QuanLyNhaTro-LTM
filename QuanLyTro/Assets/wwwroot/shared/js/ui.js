@@ -34,6 +34,25 @@ function toast(msg, kind) {
   setTimeout(() => el.remove(), 4000);
 }
 
+/**
+ * Tự động làm mới toàn trang: định kỳ + khi quay lại tab. Thay các nút "F5 / Đồng bộ / Tải lại".
+ * Bỏ qua khi modal đang mở (tránh nuốt thao tác nhập liệu) và khi lượt trước còn chạy (tránh chồng request).
+ */
+function startAutoRefresh(fn, ms = 30000) {
+  let running = false;
+  const tick = async () => {
+    if (running || document.hidden) return;
+    // Bỏ qua khi đang mở modal nhập liệu hoặc người dùng đang gõ trong input/textarea/select.
+    if (document.querySelector('#modal-root .modal-back, #modal-root .modal')) return;
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+    running = true;
+    try { await fn(); } finally { running = false; }
+  };
+  setInterval(tick, ms);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+}
+
 function openModal({ title, fields, onSubmit }) {
   const root = document.getElementById('modal-root');
   const back = document.createElement('div');

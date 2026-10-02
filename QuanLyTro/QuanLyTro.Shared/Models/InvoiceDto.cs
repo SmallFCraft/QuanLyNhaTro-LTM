@@ -19,3 +19,12 @@ public sealed record InvoiceDto(
     InvoiceStatus Status,
     DateTime? PaidAt
 );
+
+/// <summary>Kết quả phân trang danh sách hóa đơn của khách thuê (BR-14).</summary>
+public sealed record InvoiceMinePageDto(
+    List<InvoiceDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize
+);
+

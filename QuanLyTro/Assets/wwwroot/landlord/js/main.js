@@ -21,17 +21,20 @@ const LANDLORD_LOADERS = {
   perms: () => loadPerms()
 };
 
+let _currentTab = 'dash';
+
 async function loadLandlordTab(tabKey) {
-  document.getElementById('modtitle').textContent = LANDLORD_TITLES[tabKey] || '';
+  _currentTab = tabKey || _currentTab;
+  document.getElementById('modtitle').textContent = LANDLORD_TITLES[_currentTab] || '';
   Object.keys(LANDLORD_TITLES).forEach(k => {
     const el = document.getElementById('tab-' + k);
-    if (el) el.hidden = (k !== tabKey);
+    if (el) el.hidden = (k !== _currentTab);
   });
   document.querySelectorAll('#landlord .tabs .tab').forEach(t => {
-    t.classList.toggle('on', t.dataset.tab === tabKey);
+    t.classList.toggle('on', t.dataset.tab === _currentTab);
   });
   try {
-    const loader = LANDLORD_LOADERS[tabKey];
+    const loader = LANDLORD_LOADERS[_currentTab];
     if (loader) await loader();
   } catch (err) {
     toast(err.message, 'err');
@@ -50,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (name) document.getElementById('uname').textContent = name;
   applyLandlordRoleView(params.get('role') || 'Landlord');
   loadLandlordTab('dash');
+
+  // ponytail: tự động làm mới tab hiện tại mỗi 30s + khi quay lại cửa sổ — thay nút F5 / Tải lại.
+  startAutoRefresh(() => loadLandlordTab(_currentTab), 30000);
 });
 
 /**
