@@ -10,7 +10,7 @@ namespace QuanLyTro.Server.Network;
 /// Giao thức: JSON UTF-8 một dòng kết thúc bằng '\n', giới hạn 1 MiB mỗi gói tin.
 /// Bắt ngoại lệ ở tầng ngoài cùng để một client hỏng không bao giờ làm sập Server.
 /// </summary>
-public sealed class ClientHandler(TcpClient client, RequestRouter router)
+public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
 {
     public const int MaxPacketBytes = 1024 * 1024; // 1 MiB
 

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Công an phường · Quản Lý Phòng Trọ Ngũ Hành Sơn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../shared/css/tokens.css">
+<link rel="stylesheet" href="../shared/css/base.css">
+<link rel="stylesheet" href="congan.css">
+</head>
+<body>
+
+<!-- ====== POLICE SHELL ====== -->
+<div class="win" id="police">
+  <div class="app">
+    <!-- menu strip -->
+    <div class="menustrip">
+      <div class="hscroll" style="display:flex;gap:6px">
+        <span class="mi"><i class="fas fa-search"></i> Tra cứu</span>
+        <span class="mi cur"><i class="fas fa-clipboard-list"></i> Lưu trú</span>
+        <span class="mi"><i class="fas fa-file-export"></i> Xuất báo cáo</span>
+        <span class="mi"><i class="fas fa-question-circle"></i> Trợ giúp</span>
+      </div>
+      <span style="color:var(--dim)"><i class="fas fa-user-shield"></i></span>
+    </div>
+    <!-- userbar -->
+    <div class="userbar">
+      <div class="usr">
+        <i class="fas fa-user-circle fa-lg"></i> <b id="pname">Lê Văn CA</b>
+        <span class="vai_tro police"><i class="fas fa-user-shield"></i> Công an phường</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+    </div>
+    <!-- module headline -->
+    <div class="headline">
+      <div class="l">
+        <span class="badge-module police">Module Lưu trú</span>
+        <h1 id="ptitle">Tra cứu công dân</h1>
+      </div>
+      <span class="vchip"><i class="fas fa-lock"></i> ReadOnly</span>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-ptab="citizens" onclick="loadPoliceTab('citizens')"><i class="fas fa-id-card"></i> Công dân</div>
+      <div class="tab" data-ptab="residence" onclick="loadPoliceTab('residence')"><i class="fas fa-home"></i> Tạm trú <span class="cnt">41</span></div>
+      <div class="tab" data-ptab="history" onclick="loadPoliceTab('history')"><i class="fas fa-history"></i> Biến động</div>
+    </div>
+    <div class="content">
+
+      <!-- PM-02/03: TRA CỨU CÔNG DÂN + PHÒNG -->
+      <div id="ptab-citizens">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Khu Ngũ Hành Sơn</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-tai_khoan"></i> Người đang lưu trú</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi amber"><div class="lbl"><i class="fas fa-id-card"></i> Đã đăng ký tạm trú</div><div class="val">36</div><div class="sub">87,8%</div></div>
+          <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Chưa đăng ký</div><div class="val">5</div><div class="sub">Cần kiểm tra</div></div>
+        </div>
+        <div class="toolbar">
+          <input class="inp" id="p-search" placeholder="Tìm theo CCCD, họ tên hoặc SĐT..." style="width:300px" oninput="loadPoliceTab('citizens')">
+          <select class="inp" style="width:160px"><option>Tất cả phòng</option><option>P101</option><option>P102</option><option>P103</option></select>
+          <select class="inp" style="width:170px"><option>Tất cả tạm trú</option><option>Đã đăng ký</option><option>Chưa đăng ký</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm" onclick="loadPoliceTab('citizens')"><i class="fas fa-search"></i> Tra cứu</button>
+          <button class="btn btn-outline btn-sm" onclick="exportCitizens()"><i class="fas fa-file-export"></i> Xuất danh sách</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th class="num">Trạng thái tạm trú</th></tr></thead>
+          <tbody>
+            <tr><td><b>Trần Văn B</b></td><td class="mono">15/03/2004</td><td class="mono">0482 0301 2XXX</td><td>Quảng Nam</td><td><b>P102</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Lê Thị C</b></td><td class="mono">21/07/2002</td><td class="mono">0482 0455 9XXX</td><td>Huế</td><td><b>P105</b></td><td class="num"><span class="tag done">Đã đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="num"><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 41 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+        <div class="rowbn">
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: mở khung xem chi tiết công dân"><i class="fas fa-eye"></i> Xem hồ sơ</button>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: lọc theo phòng đã chọn"><i class="fas fa-door-open"></i> Phòng đang ở</button>
+        </div>
+      </div>
+
+      <!-- PM-04: BÁO CÁO TẠM TRÚ -->
+      <div id="ptab-residence" hidden>
+        <div class="toolbar">
+          <select class="inp" style="width:170px"><option>Tất cả phòng</option><option>P101</option><option>P102</option></select>
+          <select class="inp" style="width:180px"><option>Chỉ chưa đăng ký</option><option>Tất cả</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra CSV"><i class="fas fa-file-csv"></i> CSV</button>
+          <button class="btn btn-primary btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra Excel"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>CCCD</th><th>Quê quán</th><th>Phòng</th><th>Ngày vào</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td><b>Ngô Thị E</b></td><td class="mono">02/11/2003</td><td class="mono">0482 0988 7XXX</td><td>Quảng Ngãi</td><td><b>P102</b></td><td class="mono">12/08/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Phạm D</b></td><td class="mono">09/01/2005</td><td class="mono">0482 0771 3XXX</td><td>Đà Nẵng</td><td><b>P108</b></td><td class="mono">03/09/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+            <tr><td><b>Đỗ Thị F</b></td><td class="mono">30/05/2004</td><td class="mono">0482 0612 4XXX</td><td>Bình Định</td><td><b>P201</b></td><td class="mono">19/06/2026</td><td><span class="tag warn">Chưa đăng ký</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 5 chưa đăng ký <span class="sep">|</span> <span class="sel-txt">Chọn: Ngô Thị E</span></span><span>Đã đồng bộ với Server</span></div>
+        </div>
+      </div>
+
+      <!-- PM-05: LỊCH SỬ BIẾN ĐỘNG + XUẤT -->
+      <div id="ptab-history" hidden>
+        <div class="toolbar">
+          <input class="inp mono" id="p-from" type="date" value="2026-09-01" style="width:150px">
+          <span style="color:var(--dim)">→</span>
+          <input class="inp mono" id="p-to" type="date" value="2026-09-30" style="width:150px">
+          <select class="inp" style="width:190px"><option>Tất cả biến động</option><option>Vào</option><option>Ra</option><option>Chuyển phòng</option></select>
+          <select class="inp" style="width:140px"><option>Tất cả phòng</option><option>P102</option></select>
+          <span class="spacer"></span>
+          <button class="btn btn-outline btn-sm" onclick="loadHistory()"><i class="fas fa-eye"></i> Xem trước</button>
+          <button class="btn btn-primary btn-sm" onclick="exportHistory()"><i class="fas fa-file-export"></i> Xuất file</button>
+        </div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Họ tên</th><th>Phòng</th><th>Biến động</th><th>Ngày vào</th><th>Ngày ra</th><th>Lý do</th></tr></thead>
+          <tbody>
+            <tr><td><b>Phạm D</b></td><td><b>P108</b></td><td><span class="tag rent">Vào</span></td><td class="mono">03/09/2026</td><td class="mono">—</td><td>Nhập học</td></tr>
+            <tr><td><b>Ngô Thị E</b></td><td><b>P102</b></td><td><span class="tag rent">Vào</span></td><td class="mono">12/08/2026</td><td class="mono">—</td><td>Đi làm</td></tr>
+            <tr><td><b>Vũ G</b></td><td><b>P103</b></td><td><span class="tag unpaid">Ra</span></td><td class="mono">01/02/2026</td><td class="mono">28/08/2026</td><td>Hết hợp đồng</td></tr>
+            <tr><td><b>Hoàng H</b></td><td><b>P105 → P201</b></td><td><span class="tag avail">Chuyển phòng</span></td><td class="mono">15/09/2026</td><td class="mono">15/09/2026</td><td>Đổi phòng rộng hơn</td></tr>
+          </tbody>
+        </table>
+        <div class="tblfoot"><span>Tổng: 4 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Phạm D</span></span><span>Xem trước 10 dòng đầu trước khi xuất</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="statusstrip">
+    <div class="l"><i class="fas fa-user-shield" style="color:#70A9FF"></i><span>Công an phường · Phường Ngũ Hành Sơn (CongAn · ReadOnly)</span></div>
+    <div class="r"><span>.NET 8.0 CLR</span></div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script src="../shared/js/bridge.js"></script>
+<script src="../shared/js/ui.js"></script>
+<script src="js/main.js"></script>
+<script src="js/citizens.js"></script>
+<script src="js/residence.js"></script>
+<script src="js/history.js"></script>
+</body>
+</html>

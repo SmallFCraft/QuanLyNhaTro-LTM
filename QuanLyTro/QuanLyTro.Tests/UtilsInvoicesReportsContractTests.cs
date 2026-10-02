@@ -12,26 +12,26 @@ public sealed class UtilsInvoicesReportsContractTests
     [TestMethod]
     public void UtilsJs_LoadsPreviousAndSavesReading()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "utils.js"));
-        Assert.IsTrue(js.Contains("UTILITY_GET_PREVIOUS"), "utils.js chưa tự điền chỉ số cũ");
-        Assert.IsTrue(js.Contains("UTILITY_RECORD"), "utils.js chưa lưu được chỉ số");
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "utils.js"));
+        Assert.IsTrue(js.Contains("DIEN_NUOC_LAY_KY_TRUOC"), "utils.js chưa tự điền chỉ số cũ");
+        Assert.IsTrue(js.Contains("DIEN_NUOC_GHI_SO"), "utils.js chưa lưu được chỉ số");
     }
 
     [TestMethod]
     public void InvoicesJs_CreatesAndPays()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "invoices.js"));
-        Assert.IsTrue(js.Contains("INVOICE_CREATE"), "invoices.js chưa lập được hóa đơn");
-        Assert.IsTrue(js.Contains("INVOICE_PAY"), "invoices.js chưa thu được tiền");
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "hoa_don.js"));
+        Assert.IsTrue(js.Contains("HOA_DON_TAO"), "hoa_don.js chưa lập được hóa đơn");
+        Assert.IsTrue(js.Contains("HOA_DON_THANH_TOAN"), "hoa_don.js chưa thu được tiền");
         // BR-11: hóa đơn đã thu không được thao tác
-        Assert.IsTrue(js.Contains("'Paid'"), "invoices.js thiếu chặn hóa đơn đã thu (BR-11)");
+        Assert.IsTrue(js.Contains("'DaThu'"), "hoa_don.js thiếu chặn hóa đơn đã thu (BR-11)");
     }
 
     [TestMethod]
     public void ReportsJs_LoadsSummaryAndExports()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "reports.js"));
-        Assert.IsTrue(js.Contains("REPORT_SUMMARY"), "reports.js chưa tải số liệu");
-        Assert.IsTrue(js.Contains("EXPORT_RESIDENCE"), "reports.js chưa xuất được danh sách tạm trú");
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "reports.js"));
+        Assert.IsTrue(js.Contains("BAO_CAO_TONG_QUAN"), "reports.js chưa tải số liệu");
+        Assert.IsTrue(js.Contains("XUAT_HO_SO_TAM_TRU"), "reports.js chưa xuất được danh sách tạm trú");
     }
 }

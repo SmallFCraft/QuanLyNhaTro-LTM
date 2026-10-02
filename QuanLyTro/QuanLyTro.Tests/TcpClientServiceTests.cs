@@ -62,38 +62,38 @@ public sealed class TcpClientServiceTests
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         string? receivedLine = null;
-        var rooms = new List<RoomDto>
+        var phong = new List<PhongDto>
         {
-            new(1, "P.101", 1_500_000m, 3, RoomStatus.Rented, "Tầng 1", 2),
-            new(2, "P.102", 1_700_000m, 2, RoomStatus.Available, null),
+            new(1, "P.101", 1_500_000m, 3, TrangThaiPhong.DaThue, "Tầng 1", 2),
+            new(2, "P.102", 1_700_000m, 2, TrangThaiPhong.Trong, null),
         };
 
         var listener = await StartStubAsync(line =>
         {
             receivedLine = line;
             return Task.FromResult(JsonSerializer.Serialize(
-                ResponsePacket.Ok(rooms), JsonDefaults.Options));
+                ResponsePacket.Ok(phong), JsonDefaults.Options));
         }, cts.Token);
 
         var client = new TcpClientService();
         await client.ConnectAsync("127.0.0.1", PortOf(listener), cts.Token);
 
-        var result = await client.SendAsync<LoginRequest, List<RoomDto>>(
-            ActionNames.RoomGetAll, new LoginRequest("admin", "123456"), cts.Token);
+        var result = await client.SendAsync<YeuCauDangNhap, List<PhongDto>>(
+            ActionNames.PhongLayTatCa, new YeuCauDangNhap("admin", "123456"), cts.Token);
 
         listener.Stop();
         client.Disconnect();
 
         Assert.IsNotNull(receivedLine);
         var request = JsonSerializer.Deserialize<RequestPacket>(receivedLine, JsonDefaults.Options)!;
-        Assert.AreEqual(ActionNames.RoomGetAll, request.Action);
-        Assert.AreEqual("admin", request.GetData<LoginRequest>().Username);
+        Assert.AreEqual(ActionNames.PhongLayTatCa, request.Action);
+        Assert.AreEqual("admin", request.GetData<YeuCauDangNhap>().TenDangNhap);
 
         Assert.AreEqual(2, result.Count);
-        Assert.AreEqual("P.101", result[0].RoomNumber);
-        Assert.AreEqual(RoomStatus.Rented, result[0].Status);
-        Assert.AreEqual(1_500_000m, result[0].Price);
-        Assert.IsNull(result[1].Description);
+        Assert.AreEqual("P.101", result[0].SoPhong);
+        Assert.AreEqual(TrangThaiPhong.DaThue, result[0].TrangThai);
+        Assert.AreEqual(1_500_000m, result[0].GiaThue);
+        Assert.IsNull(result[1].MoTa);
     }
 
     [TestMethod]
@@ -109,8 +109,8 @@ public sealed class TcpClientServiceTests
         await client.ConnectAsync("127.0.0.1", PortOf(listener), cts.Token);
 
         var ex = await Assert.ThrowsExceptionAsync<ClientRequestException>(() =>
-            client.SendAsync<LoginRequest, List<RoomDto>>(
-                ActionNames.RoomAdd, new LoginRequest("admin", "123456"), cts.Token));
+            client.SendAsync<YeuCauDangNhap, List<PhongDto>>(
+                ActionNames.PhongThem, new YeuCauDangNhap("admin", "123456"), cts.Token));
 
         listener.Stop();
         client.Disconnect();
@@ -138,8 +138,8 @@ public sealed class TcpClientServiceTests
 
         // Server đóng socket ngay sau khi nhận kết nối; client phải phát hiện EOF.
         var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-            client.SendAsync<LoginRequest, LoginResult>(
-                ActionNames.AuthLogin, new LoginRequest("admin", "123456"), cts.Token));
+            client.SendAsync<YeuCauDangNhap, KetQuaDangNhap>(
+                ActionNames.DangNhap, new YeuCauDangNhap("admin", "123456"), cts.Token));
 
         Assert.IsNotNull(ex);
         Assert.IsTrue(await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(10)),
@@ -155,18 +155,18 @@ public sealed class TcpClientServiceTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
 
         var listener = await StartStubAsync(_ => Task.FromResult(JsonSerializer.Serialize(
-            ResponsePacket.Ok(new LoginResult("tok-abc", "Nguyễn Văn A", UserRole.Landlord)),
+            ResponsePacket.Ok(new KetQuaDangNhap("tok-abc", "Nguyễn Văn A", VaiTroNguoiDung.ChuTro)),
             JsonDefaults.Options)), cts.Token);
 
         var client = new TcpClientService();
         await client.ConnectAsync("127.0.0.1", PortOf(listener), cts.Token);
 
-        var login = await client.SendAsync<LoginRequest, LoginResult>(
-            ActionNames.AuthLogin, new LoginRequest("admin", "123456"), cts.Token);
+        var login = await client.SendAsync<YeuCauDangNhap, KetQuaDangNhap>(
+            ActionNames.DangNhap, new YeuCauDangNhap("admin", "123456"), cts.Token);
 
         client.Token = login.Token;
         Assert.AreEqual("tok-abc", client.Token);
-        Assert.AreEqual(UserRole.Landlord, login.Role);
+        Assert.AreEqual(VaiTroNguoiDung.ChuTro, login.VaiTro);
 
         listener.Stop();
         client.Disconnect();

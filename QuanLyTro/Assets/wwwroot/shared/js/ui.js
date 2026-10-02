@@ -110,11 +110,11 @@ function confirmDialog(msg) {
 // ===== Thanh menu =====
 const MENU_ITEMS = {
   landlord: [
-    { icon: 'fa-door-open', label: 'Phòng', tab: 'rooms' },
-    { icon: 'fa-users', label: 'Người thuê', tab: 'tenants' },
-    { icon: 'fa-file-signature', label: 'Hợp đồng', tab: 'contracts' },
+    { icon: 'fa-door-open', label: 'Phòng', tab: 'phong' },
+    { icon: 'fa-tai_khoan', label: 'Người thuê', tab: 'khach_thue' },
+    { icon: 'fa-file-signature', label: 'Hợp đồng', tab: 'hop_dong' },
     { icon: 'fa-tachometer-alt', label: 'Điện nước', tab: 'utils' },
-    { icon: 'fa-receipt', label: 'Hóa đơn', tab: 'invoices' }
+    { icon: 'fa-receipt', label: 'Hóa đơn', tab: 'hoa_don' }
   ]
 };
 

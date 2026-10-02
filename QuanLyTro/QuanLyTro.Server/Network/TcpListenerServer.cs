@@ -7,7 +7,7 @@ namespace QuanLyTro.Server.Network;
 /// TCP listener đa kết nối: mỗi <see cref="TcpClient"/> được giao cho một <see cref="ClientHandler"/>
 /// chạy song song trên thread-pool. Bind `IPAddress.Any` nên Client khác máy trong LAN vẫn vào được.
 /// </summary>
-public sealed class TcpListenerServer(RequestRouter router)
+public sealed class TcpListenerServer(DieuPhoiYeuCau router)
 {
     public const int DefaultPort = 8888;
 

@@ -15,7 +15,7 @@ public sealed class Database(string connectionString)
     }
 
     /// <summary>
-    /// Mở kết nối cấp máy chủ (không chọn Database) — dùng riêng cho SchemaInitializer
+    /// Mở kết nối cấp máy chủ (không chọn Database) — dùng riêng cho KhoiTaoSchema
     /// để chạy `CREATE DATABASE IF NOT EXISTS`.
     /// Bật AllowUserVariables vì script schema dùng biến `@role_col`/`@sql` cho ALTER
     /// có điều kiện; MySqlConnector mặc định coi mọi `@tên` là tham số command.

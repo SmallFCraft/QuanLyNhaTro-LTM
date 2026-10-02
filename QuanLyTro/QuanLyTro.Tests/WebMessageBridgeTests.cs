@@ -33,8 +33,8 @@ public sealed class WebMessageBridgeTests
     }
 
     /// <summary>
-    /// C1 + C2: AUTH_LOGIN thành công → bridge nạp `_client.Token` phía C#, đồng thời
-    /// xoá trường `token` khỏi JSON trả về cho JS (chỉ còn fullName, role).
+    /// C1 + C2: DANG_NHAP thành công → bridge nạp `_client.Token` phía C#, đồng thời
+    /// xoá trường `token` khỏi JSON trả về cho JS (chỉ còn hoTen, vai_tro).
     /// </summary>
     [TestMethod]
     public async Task AuthLogin_CapturesTokenInCSharp_AndStripsFromJsPayload()
@@ -54,7 +54,7 @@ public sealed class WebMessageBridgeTests
                 var line = await reader.ReadLineAsync(cts.Token);
                 if (line is not null)
                 {
-                    var okResponse = ResponsePacket.Ok(new LoginResult("secret-jwt-token-123", "Thiếu úy Nguyễn Văn A", UserRole.Police));
+                    var okResponse = ResponsePacket.Ok(new KetQuaDangNhap("secret-jwt-token-123", "Thiếu úy Nguyễn Văn A", VaiTroNguoiDung.CongAn));
                     var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(okResponse, JsonDefaults.Options) + "\n");
                     await stream.WriteAsync(bytes, cts.Token);
                     await stream.FlushAsync(cts.Token);
@@ -71,8 +71,8 @@ public sealed class WebMessageBridgeTests
         var rawJsRequest = JsonSerializer.Serialize(new
         {
             requestId = "req_1",
-            action = ActionNames.AuthLogin,
-            data = new { Username = "police1", Password = "secret-pass" }
+            hanh_dong = ActionNames.DangNhap,
+            data = new { TenDangNhap = "police1", MatKhau = "secret-pass" }
         });
 
         await bridge.DispatchAsync(rawJsRequest, msg =>
@@ -82,12 +82,12 @@ public sealed class WebMessageBridgeTests
         });
 
         // C1: token đã được gán vào C# client (đọc trước khi Disconnect() xoá Token)
-        Assert.AreEqual("secret-jwt-token-123", tcpClient.Token, "C1: _client.Token phải được gán từ AUTH_LOGIN.");
+        Assert.AreEqual("secret-jwt-token-123", tcpClient.Token, "C1: _client.Token phải được gán từ DANG_NHAP.");
 
         listener.Stop();
         tcpClient.Disconnect();
 
-        // C2: JS nhận được fullName và role, nhưng KHÔNG có token
+        // C2: JS nhận được hoTen và vai_tro, nhưng KHÔNG có token
         Assert.IsNotNull(jsReturnedJson);
         using var doc = JsonDocument.Parse(jsReturnedJson);
         var root = doc.RootElement;
@@ -97,8 +97,8 @@ public sealed class WebMessageBridgeTests
         var data = root.GetProperty("data");
         Assert.IsFalse(data.TryGetProperty("token", out _), "C2: trường 'token' không được lộ xuống JS.");
         Assert.IsFalse(data.TryGetProperty("Token", out _), "C2: trường 'Token' không được lộ xuống JS.");
-        Assert.AreEqual("Thiếu úy Nguyễn Văn A", data.GetProperty("fullName").GetString());
-        Assert.AreEqual("Police", data.GetProperty("role").GetString());
+        Assert.AreEqual("Thiếu úy Nguyễn Văn A", data.GetProperty("hoTen").GetString());
+        Assert.AreEqual("CongAn", data.GetProperty("vai_tro").GetString());
     }
 
     [TestMethod]
@@ -119,7 +119,7 @@ public sealed class WebMessageBridgeTests
                 var line = await reader.ReadLineAsync(cts.Token);
                 if (line is not null)
                 {
-                    // Mô phỏng server trả về Data = null (ví dụ: UTILITY_GET_PREVIOUS)
+                    // Mô phỏng server trả về Data = null (ví dụ: DIEN_NUOC_LAY_KY_TRUOC)
                     var nullDataResponse = ResponsePacket.Ok<object?>(null);
                     var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(nullDataResponse, JsonDefaults.Options) + "\n");
                     await stream.WriteAsync(bytes, cts.Token);
@@ -137,8 +137,8 @@ public sealed class WebMessageBridgeTests
         var rawJsRequest = JsonSerializer.Serialize(new
         {
             requestId = "req_util_prev",
-            action = ActionNames.UtilityGetPrevious,
-            data = new { roomId = 1, billingMonth = "2026-09" }
+            hanh_dong = ActionNames.DienNuocLayKyTruoc,
+            data = new { phongId = 1, kyCuoc = "2026-09" }
         });
 
         await bridge.DispatchAsync(rawJsRequest, msg =>
@@ -166,7 +166,7 @@ public sealed class WebMessageBridgeTests
         string? responseJson = null;
 
         await bridge.DispatchAsync(
-            """{"requestId":"r_out","action":"UI_LOGOUT","data":{}}""",
+            """{"requestId":"r_out","hanh_dong":"UI_LOGOUT","data":{}}""",
             msg => { responseJson = msg; return Task.CompletedTask; });
 
         Assert.IsNull(client.Token, "UI_LOGOUT phải xóa token");
@@ -175,9 +175,9 @@ public sealed class WebMessageBridgeTests
 
     /// <summary>
     /// Mô phỏng đầy đủ luồng thực tế của người dùng:
-    /// 1. Đăng nhập admin qua AUTH_LOGIN (bridge lưu token nội bộ)
-    /// 2. Chuyển sang tab "Điện Nước": gọi ROOM_GET_ALL
-    /// 3. Gọi UTILITY_GET_PREVIOUS cho phòng chưa có chỉ số kỳ trước (trả Data = null)
+    /// 1. Đăng nhập admin qua DANG_NHAP (bridge lưu token nội bộ)
+    /// 2. Chuyển sang tab "Điện Nước": gọi PHONG_LAY_TAT_CA
+    /// 3. Gọi DIEN_NUOC_LAY_KY_TRUOC cho phòng chưa có chỉ số kỳ trước (trả Data = null)
     /// Toàn bộ không được ném InvalidOperationException hay trả success: false.
     /// </summary>
     [TestMethod]
@@ -204,9 +204,9 @@ public sealed class WebMessageBridgeTests
                     var req = JsonSerializer.Deserialize<RequestPacket>(line, JsonDefaults.Options)!;
                     ResponsePacket resp = req.Action switch
                     {
-                        ActionNames.AuthLogin => ResponsePacket.Ok(new LoginResult("adm-token-999", "Chủ trọ Admin", UserRole.Landlord)),
-                        ActionNames.RoomGetAll => ResponsePacket.Ok(new[] { new RoomDto(101, "Phòng 101", 1500000m, 2, RoomStatus.Available, null) }),
-                        ActionNames.UtilityGetPrevious => ResponsePacket.Ok<UtilityReadingDto?>(null),
+                        ActionNames.DangNhap => ResponsePacket.Ok(new KetQuaDangNhap("adm-token-999", "Chủ trọ Admin", VaiTroNguoiDung.ChuTro)),
+                        ActionNames.PhongLayTatCa => ResponsePacket.Ok(new[] { new PhongDto(101, "Phòng 101", 1500000m, 2, TrangThaiPhong.Trong, null) }),
+                        ActionNames.DienNuocLayKyTruoc => ResponsePacket.Ok<ChiSoDienNuocDto?>(null),
                         _ => ResponsePacket.Fail("Unknown")
                     };
 
@@ -227,23 +227,23 @@ public sealed class WebMessageBridgeTests
         await bridge.DispatchAsync(JsonSerializer.Serialize(new
         {
             requestId = "r_login",
-            action = ActionNames.AuthLogin,
-            data = new { Username = "admin", Password = "123" }
+            hanh_dong = ActionNames.DangNhap,
+            data = new { TenDangNhap = "admin", MatKhau = "123" }
         }), msg => { loginResp = msg; return Task.CompletedTask; });
 
         Assert.IsNotNull(loginResp);
         using (var doc = JsonDocument.Parse(loginResp))
         {
             Assert.IsTrue(doc.RootElement.GetProperty("success").GetBoolean());
-            Assert.AreEqual("Landlord", doc.RootElement.GetProperty("data").GetProperty("role").GetString());
+            Assert.AreEqual("ChuTro", doc.RootElement.GetProperty("data").GetProperty("vai_tro").GetString());
         }
 
-        // Bước 2: Chuyển sang tab Điện Nước -> gọi ROOM_GET_ALL
+        // Bước 2: Chuyển sang tab Điện Nước -> gọi PHONG_LAY_TAT_CA
         string? roomsResp = null;
         await bridge.DispatchAsync(JsonSerializer.Serialize(new
         {
             requestId = "r_rooms",
-            action = ActionNames.RoomGetAll,
+            hanh_dong = ActionNames.PhongLayTatCa,
             data = new { }
         }), msg => { roomsResp = msg; return Task.CompletedTask; });
 
@@ -254,20 +254,20 @@ public sealed class WebMessageBridgeTests
             Assert.AreEqual(JsonValueKind.Array, doc.RootElement.GetProperty("data").ValueKind);
         }
 
-        // Bước 3: LoadPreviousReading -> UTILITY_GET_PREVIOUS trả null
+        // Bước 3: LoadPreviousReading -> DIEN_NUOC_LAY_KY_TRUOC trả null
         string? utilResp = null;
         await bridge.DispatchAsync(JsonSerializer.Serialize(new
         {
             requestId = "r_util",
-            action = ActionNames.UtilityGetPrevious,
-            data = new { roomId = 101, billingMonth = "2026-09" }
+            hanh_dong = ActionNames.DienNuocLayKyTruoc,
+            data = new { phongId = 101, kyCuoc = "2026-09" }
         }), msg => { utilResp = msg; return Task.CompletedTask; });
 
         Assert.IsNotNull(utilResp);
         using (var doc = JsonDocument.Parse(utilResp))
         {
             Assert.IsTrue(doc.RootElement.GetProperty("success").GetBoolean(),
-                $"UTILITY_GET_PREVIOUS phải thành công nhưng bị lỗi: {doc.RootElement.GetProperty("error").GetString()}");
+                $"DIEN_NUOC_LAY_KY_TRUOC phải thành công nhưng bị lỗi: {doc.RootElement.GetProperty("error").GetString()}");
             Assert.AreEqual(JsonValueKind.Null, doc.RootElement.GetProperty("data").ValueKind);
         }
 

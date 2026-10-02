@@ -157,7 +157,10 @@ All agents post:
 
 - **Solution:** `QuanLyTro/QuanLyTro.slnx` (.NET 8.0 Windows Forms Client + Console TCP Server)
 - **Ports:** Server TCP `8888`, MySQL `3306` (Laragon, db `quanly_phongtro_nhs`), Wireframe preview `8890` (launch.json)
-- **Test suite (baseline: 136 passed, 0 failed, 2026-09-30):**
+- **4 Vai trò chính:** `ChuTro`, `QuanLy`, `CongAn`, `KhachThue`
+- **Bảng CSDL (snake_case không dấu):** `tai_khoan`, `quyen_vai_tro`, `phong`, `khach_thue`, `hop_dong`, `chi_so_dien_nuoc`, `hoa_don`
+- **Tài khoản demo:** `chutro|chutro`, `quanly|quanly`, `congan|congan`, `100000000001|100000000001` (bảng `khach_thue`)
+- **Test suite (baseline: 201 passed, 0 failed, 2026-10-02):**
   ```bash
   dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --nologo -v q
   ```
@@ -169,7 +172,6 @@ All agents post:
   ```bash
   dotnet run --project "QuanLyTro"
   ```
-- **Seeded dev account:** `admin` / `admin` (PBKDF2-SHA256, table `users`)
 - **Note on file locks:** If `dotnet build` fails with `MSB3021/MSB3027` (file locked by QuanLyTro.exe/QuanLyTro.Server.exe), close the running processes before rebuilding.
 
 ---

@@ -37,7 +37,7 @@ public sealed class RoomDeleteTests
     private const int TenantRaceTenantId = 9203;
 
     private static readonly Database Db = new(ConnectionString);
-    private static readonly RoomService Rooms = new(new RoomRepository(Db));
+    private static readonly PhongService Rooms = new(new PhongRepository(Db));
 
     [TestInitialize]
     public Task CleanupBeforeAsync() => CleanupAsync();
@@ -60,7 +60,7 @@ public sealed class RoomDeleteTests
         await SeedRoomAsync(TenantRoomId);
         await SeedTenantAsync(TenantId, TenantRoomId);
 
-        var ex = await Assert.ThrowsExceptionAsync<BusinessRuleException>(
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
             () => Rooms.DeleteAsync(TenantRoomId));
 
         Assert.AreEqual(OccupiedMessage, ex.Message);
@@ -74,7 +74,7 @@ public sealed class RoomDeleteTests
         await SeedTenantAsync(ContractTenantId, null);
         await SeedContractAsync(ContractRoomId, ContractTenantId);
 
-        var ex = await Assert.ThrowsExceptionAsync<BusinessRuleException>(
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
             () => Rooms.DeleteAsync(ContractRoomId));
 
         Assert.AreEqual(OccupiedMessage, ex.Message);
@@ -89,16 +89,16 @@ public sealed class RoomDeleteTests
         await SeedRoomAsync(RaceRoomId);
 
         await using var concurrent = await Db.OpenAsync();
-        await using var transaction = await concurrent.BeginTransactionAsync();
+        await using var giao_dich = await concurrent.BeginTransactionAsync();
         await using (var insert = new MySqlCommand(
             """
-            INSERT INTO tenants (id, room_id, full_name, dob, id_card, phone, hometown, workplace, is_temporary_registered)
-            VALUES (@id, @roomId, 'Race tenant', '1995-01-01', @idCard, '0900000003', 'Đà Nẵng', NULL, 1)
-            """, concurrent, transaction))
+            INSERT INTO khach_thue (id, phong_id, ho_ten, ngay_sinh, cccd, so_dien_thoai, que_quan, noi_lam_viec, da_dang_ky_tam_tru)
+            VALUES (@id, @phongId, 'Race tenant', '1995-01-01', @cccd, '0900000003', 'Đà Nẵng', NULL, 1)
+            """, concurrent, giao_dich))
         {
             insert.Parameters.AddWithValue("@id", TenantRaceTenantId);
-            insert.Parameters.AddWithValue("@roomId", RaceRoomId);
-            insert.Parameters.AddWithValue("@idCard", IdCardOf(TenantRaceTenantId));
+            insert.Parameters.AddWithValue("@phongId", RaceRoomId);
+            insert.Parameters.AddWithValue("@cccd", IdCardOf(TenantRaceTenantId));
             await insert.ExecuteNonQueryAsync();
         }
 
@@ -117,19 +117,19 @@ public sealed class RoomDeleteTests
         });
 
         await WaitUntilBlockedAsync(deleteTask);
-        await transaction.CommitAsync();
+        await giao_dich.CommitAsync();
 
         var deleteSucceeded = await deleteTask;
 
         Assert.IsTrue(await RoomExistsAsync(RaceRoomId), "Phòng vừa có người thuê không được bị xóa.");
         Assert.AreEqual(RaceRoomId, await RoomIdOfTenantAsync(TenantRaceTenantId),
-            "Người thuê vừa thêm không được bị mồ côi (room_id = NULL).");
+            "Người thuê vừa thêm không được bị mồ côi (phong_id = NULL).");
         Assert.IsFalse(deleteSucceeded, "Lần xóa phải thất bại thay vì xóa phòng đang có người.");
-        Assert.IsInstanceOfType<BusinessRuleException>(deleteError, $"Lỗi trả về: {deleteError}");
+        Assert.IsInstanceOfType<LoiNghiepVu>(deleteError, $"Lỗi trả về: {deleteError}");
         Assert.AreEqual(OccupiedMessage, deleteError!.Message);
     }
 
-    /// <summary>Hợp đồng Active thêm vào sau bước kiểm tra: phải trả lỗi nghiệp vụ, không phải MySQL 1451 thô.</summary>
+    /// <summary>Hợp đồng HieuLuc thêm vào sau bước kiểm tra: phải trả lỗi nghiệp vụ, không phải MySQL 1451 thô.</summary>
     [TestMethod]
     [Timeout(30_000)]
     public async Task DeleteAsync_ContractAddedAfterCheck_RejectsWithBusinessRule()
@@ -138,16 +138,16 @@ public sealed class RoomDeleteTests
         await SeedTenantAsync(ContractRaceTenantId, null);
 
         await using var concurrent = await Db.OpenAsync();
-        await using var transaction = await concurrent.BeginTransactionAsync();
+        await using var giao_dich = await concurrent.BeginTransactionAsync();
         await using (var insert = new MySqlCommand(
             """
-            INSERT INTO contracts (room_id, representative_tenant_id, start_date, end_date,
-                                   rental_price, deposit_amount, status, notes)
-            VALUES (@roomId, @tenantId, '2026-01-01', '2026-12-31', 1000000, 0, 'Active', 'RoomDeleteTests race')
-            """, concurrent, transaction))
+            INSERT INTO hop_dong (phong_id, nguoi_dai_dien_id, ngay_bat_dau, ngay_ket_thuc,
+                                   gia_thue, tien_coc, trang_thai, ghi_chu)
+            VALUES (@phongId, @khachThueId, '2026-01-01', '2026-12-31', 1000000, 0, 'HieuLuc', 'RoomDeleteTests race')
+            """, concurrent, giao_dich))
         {
-            insert.Parameters.AddWithValue("@roomId", RaceRoomId);
-            insert.Parameters.AddWithValue("@tenantId", ContractRaceTenantId);
+            insert.Parameters.AddWithValue("@phongId", RaceRoomId);
+            insert.Parameters.AddWithValue("@khachThueId", ContractRaceTenantId);
             await insert.ExecuteNonQueryAsync();
         }
 
@@ -166,64 +166,64 @@ public sealed class RoomDeleteTests
         });
 
         await WaitUntilBlockedAsync(deleteTask);
-        await transaction.CommitAsync();
+        await giao_dich.CommitAsync();
 
         var deleteSucceeded = await deleteTask;
 
         Assert.IsTrue(await RoomExistsAsync(RaceRoomId), "Phòng đang có hợp đồng không được bị xóa.");
         Assert.IsFalse(deleteSucceeded, "Lần xóa phải thất bại thay vì xóa phòng đang có hợp đồng.");
-        Assert.IsInstanceOfType<BusinessRuleException>(deleteError, $"Lỗi trả về: {deleteError}");
+        Assert.IsInstanceOfType<LoiNghiepVu>(deleteError, $"Lỗi trả về: {deleteError}");
         Assert.AreEqual(OccupiedMessage, deleteError!.Message);
     }
 
-    private static async Task SeedRoomAsync(int roomId)
+    private static async Task SeedRoomAsync(int phongId)
     {
         await using var connection = await Db.OpenAsync();
         await using var command = new MySqlCommand(
             """
-            INSERT INTO rooms (id, room_number, price, max_occupants, status, description)
-            VALUES (@id, @number, 1000000, 2, 'Available', 'RoomDeleteTests')
+            INSERT INTO phong (id, so_phong, gia_thue, so_nguoi_toi_da, trang_thai, mo_ta)
+            VALUES (@id, @number, 1000000, 2, 'Trong', 'RoomDeleteTests')
             """, connection);
-        command.Parameters.AddWithValue("@id", roomId);
-        command.Parameters.AddWithValue("@number", $"DELETE-TEST-{roomId}");
+        command.Parameters.AddWithValue("@id", phongId);
+        command.Parameters.AddWithValue("@number", $"DELETE-TEST-{phongId}");
         await command.ExecuteNonQueryAsync();
     }
 
-    private static async Task SeedTenantAsync(int tenantId, int? roomId)
+    private static async Task SeedTenantAsync(int khachThueId, int? phongId)
     {
         await using var connection = await Db.OpenAsync();
         await using var command = new MySqlCommand(
             """
-            INSERT INTO tenants (id, room_id, full_name, dob, id_card, phone, hometown, workplace, is_temporary_registered)
-            VALUES (@id, @roomId, @fullName, '1995-01-01', @idCard, @phone, 'Đà Nẵng', NULL, 1)
+            INSERT INTO khach_thue (id, phong_id, ho_ten, ngay_sinh, cccd, so_dien_thoai, que_quan, noi_lam_viec, da_dang_ky_tam_tru)
+            VALUES (@id, @phongId, @hoTen, '1995-01-01', @cccd, @so_dien_thoai, 'Đà Nẵng', NULL, 1)
             """, connection);
-        command.Parameters.AddWithValue("@id", tenantId);
-        command.Parameters.AddWithValue("@roomId", (object?)roomId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@fullName", $"Delete test {tenantId}");
-        command.Parameters.AddWithValue("@idCard", IdCardOf(tenantId));
-        command.Parameters.AddWithValue("@phone", $"09{tenantId:D8}");
+        command.Parameters.AddWithValue("@id", khachThueId);
+        command.Parameters.AddWithValue("@phongId", (object?)phongId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@hoTen", $"Delete test {khachThueId}");
+        command.Parameters.AddWithValue("@cccd", IdCardOf(khachThueId));
+        command.Parameters.AddWithValue("@so_dien_thoai", $"09{khachThueId:D8}");
         await command.ExecuteNonQueryAsync();
     }
 
-    private static string IdCardOf(int tenantId) => $"98{tenantId:D10}";
+    private static string IdCardOf(int khachThueId) => $"98{khachThueId:D10}";
 
-    private static async Task SeedContractAsync(int roomId, int tenantId)
+    private static async Task SeedContractAsync(int phongId, int khachThueId)
     {
         await using var connection = await Db.OpenAsync();
         await using var command = new MySqlCommand(
             """
-            INSERT INTO contracts (room_id, representative_tenant_id, start_date, end_date,
-                                   rental_price, deposit_amount, status, notes)
-            VALUES (@roomId, @tenantId, '2026-01-01', '2026-12-31', 1000000, 0, 'Active', 'RoomDeleteTests')
+            INSERT INTO hop_dong (phong_id, nguoi_dai_dien_id, ngay_bat_dau, ngay_ket_thuc,
+                                   gia_thue, tien_coc, trang_thai, ghi_chu)
+            VALUES (@phongId, @khachThueId, '2026-01-01', '2026-12-31', 1000000, 0, 'HieuLuc', 'RoomDeleteTests')
             """, connection);
-        command.Parameters.AddWithValue("@roomId", roomId);
-        command.Parameters.AddWithValue("@tenantId", tenantId);
+        command.Parameters.AddWithValue("@phongId", phongId);
+        command.Parameters.AddWithValue("@khachThueId", khachThueId);
         await command.ExecuteNonQueryAsync();
     }
 
     /// <summary>
     /// Chờ tới khi lần xóa đang nằm trong hàng đợi khóa của MySQL: bước kiểm tra đã đi qua,
-    /// DELETE (hoặc FOR UPDATE) đang chờ khóa S do transaction chưa commit giữ trên dòng phòng.
+    /// DELETE (hoặc FOR UPDATE) đang chờ khóa S do giao_dich chưa commit giữ trên dòng phòng.
     /// </summary>
     private static async Task WaitUntilBlockedAsync(Task task)
     {
@@ -235,21 +235,21 @@ public sealed class RoomDeleteTests
         Assert.IsFalse(task.IsCompleted, "Lần xóa phải đang chờ khóa dòng phòng.");
     }
 
-    private static async Task<bool> RoomExistsAsync(int roomId)
+    private static async Task<bool> RoomExistsAsync(int phongId)
     {
         await using var connection = await Db.OpenAsync();
         await using var command = new MySqlCommand(
-            "SELECT COUNT(*) FROM rooms WHERE id = @id", connection);
-        command.Parameters.AddWithValue("@id", roomId);
+            "SELECT COUNT(*) FROM phong WHERE id = @id", connection);
+        command.Parameters.AddWithValue("@id", phongId);
         return Convert.ToInt64(await command.ExecuteScalarAsync()) > 0;
     }
 
-    private static async Task<int?> RoomIdOfTenantAsync(int tenantId)
+    private static async Task<int?> RoomIdOfTenantAsync(int khachThueId)
     {
         await using var connection = await Db.OpenAsync();
         await using var command = new MySqlCommand(
-            "SELECT room_id FROM tenants WHERE id = @id", connection);
-        command.Parameters.AddWithValue("@id", tenantId);
+            "SELECT phong_id FROM khach_thue WHERE id = @id", connection);
+        command.Parameters.AddWithValue("@id", khachThueId);
         var value = await command.ExecuteScalarAsync();
         return value is null or DBNull ? null : Convert.ToInt32(value);
     }
@@ -257,19 +257,19 @@ public sealed class RoomDeleteTests
     private static async Task CleanupAsync()
     {
         await using var connection = await Db.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        await using var giao_dich = await connection.BeginTransactionAsync();
 
         foreach (var sql in new[]
         {
-            "DELETE FROM invoices WHERE room_id BETWEEN @minId AND @maxId",
-            "DELETE FROM utility_readings WHERE room_id BETWEEN @minId AND @maxId",
-            "DELETE FROM contracts WHERE room_id BETWEEN @minId AND @maxId",
+            "DELETE FROM hoa_don WHERE phong_id BETWEEN @minId AND @maxId",
+            "DELETE FROM chi_so_dien_nuoc WHERE phong_id BETWEEN @minId AND @maxId",
+            "DELETE FROM hop_dong WHERE phong_id BETWEEN @minId AND @maxId",
             // Người thuê do service tự cấp id (auto_increment) nên dọn theo CCCD, không theo id.
-            "DELETE FROM tenants WHERE id_card IN (@card0, @card1, @card2, @card3)",
-            "DELETE FROM rooms WHERE id BETWEEN @minId AND @maxId",
+            "DELETE FROM khach_thue WHERE cccd IN (@card0, @card1, @card2, @card3)",
+            "DELETE FROM phong WHERE id BETWEEN @minId AND @maxId",
         })
         {
-            await using var command = new MySqlCommand(sql, connection, transaction);
+            await using var command = new MySqlCommand(sql, connection, giao_dich);
             command.Parameters.AddWithValue("@minId", MinId);
             command.Parameters.AddWithValue("@maxId", MaxId);
             command.Parameters.AddWithValue("@card0", IdCardOf(TenantId));
@@ -279,6 +279,6 @@ public sealed class RoomDeleteTests
             await command.ExecuteNonQueryAsync();
         }
 
-        await transaction.CommitAsync();
+        await giao_dich.CommitAsync();
     }
 }

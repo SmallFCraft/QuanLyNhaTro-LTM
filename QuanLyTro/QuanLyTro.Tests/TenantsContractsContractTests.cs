@@ -12,22 +12,22 @@ public sealed class TenantsContractsContractTests
     [TestMethod]
     public void TenantsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "tenants.js"));
-        foreach (var a in new[] { "TENANT_GET_BY_ROOM", "TENANT_ADD", "TENANT_UPDATE",
-                                  "TENANT_CHECKOUT", "TENANT_DELETE" })
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "khach_thue.js"));
+        foreach (var a in new[] { "KHACH_THUE_THEO_PHONG", "KHACH_THUE_THEM", "KHACH_THUE_CAP_NHAT",
+                                  "KHACH_THUE_TRA_PHONG", "KHACH_THUE_XOA" })
         {
-            Assert.IsTrue(js.Contains(a), $"tenants.js thiếu {a}");
+            Assert.IsTrue(js.Contains(a), $"khach_thue.js thiếu {a}");
         }
     }
 
     [TestMethod]
     public void ContractsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "contracts.js"));
-        foreach (var a in new[] { "CONTRACT_GET_ALL", "CONTRACT_CREATE",
-                                  "CONTRACT_RENEW", "CONTRACT_TERMINATE" })
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "hop_dong.js"));
+        foreach (var a in new[] { "HOP_DONG_LAY_TAT_CA", "HOP_DONG_TAO",
+                                  "HOP_DONG_GIA_HAN", "HOP_DONG_CHAM_DUT" })
         {
-            Assert.IsTrue(js.Contains(a), $"contracts.js thiếu {a}");
+            Assert.IsTrue(js.Contains(a), $"hop_dong.js thiếu {a}");
         }
     }
 }

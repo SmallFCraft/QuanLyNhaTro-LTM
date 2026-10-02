@@ -17,23 +17,23 @@ public sealed class BusinessRuleTests
     [DataRow("P1", -1, 2)]
     [DataRow("P1", 1000000, 0)]
     [DataRow("P1", 1000000, -1)]
-    public void RoomService_RejectsInvalidRoom(string number, double price, int capacity)
+    public void RoomService_RejectsInvalidRoom(string number, double gia_thue, int capacity)
     {
-        Assert.ThrowsException<BusinessRuleException>(() =>
-            RoomService.Validate(new RoomDto(0, number, (decimal)price, capacity, RoomStatus.Available, null, 0)));
+        Assert.ThrowsException<LoiNghiepVu>(() =>
+            PhongService.Validate(new PhongDto(0, number, (decimal)gia_thue, capacity, TrangThaiPhong.Trong, null, 0)));
     }
 
     [TestMethod]
     public void RoomService_AcceptsValidRoom()
     {
-        var room = new RoomDto(0, "P101", 2_500_000m, 2, RoomStatus.Available, "Tầng 1", 0);
-        RoomService.Validate(room);
+        var room = new PhongDto(0, "P101", 2_500_000m, 2, TrangThaiPhong.Trong, "Tầng 1", 0);
+        PhongService.Validate(room);
     }
 
-    private static TenantDto Tenant(
-        int id = 0, int? roomId = 1, string fullName = "Nguyễn Văn A", string idCard = "012345678901",
-        string phone = "0901234567", string hometown = "Đà Nẵng") =>
-        new(id, roomId, fullName, new DateOnly(2000, 1, 1), idCard, phone, hometown, null, false);
+    private static KhachThueDto KhachThue(
+        int id = 0, int? phongId = 1, string hoTen = "Nguyễn Văn A", string cccd = "012345678901",
+        string so_dien_thoai = "0901234567", string que_quan = "Đà Nẵng") =>
+        new(id, phongId, hoTen, new DateOnly(2000, 1, 1), cccd, so_dien_thoai, que_quan, null, false);
 
     [DataTestMethod]
     [DataRow("")]
@@ -41,49 +41,49 @@ public sealed class BusinessRuleTests
     [DataRow("01234567890")]    // 11 số
     [DataRow("0123456789012")]  // 13 số
     [DataRow("01234567890a")]   // có chữ
-    public void TenantService_RejectsInvalidIdCard(string idCard)
+    public void TenantService_RejectsInvalidIdCard(string cccd)
     {
-        Assert.ThrowsException<BusinessRuleException>(() =>
-            TenantService.Validate(Tenant(idCard: idCard)));
+        Assert.ThrowsException<LoiNghiepVu>(() =>
+            KhachThueService.Validate(KhachThue(cccd: cccd)));
     }
 
     [DataTestMethod]
     [DataRow("")]
     [DataRow("   ")]
-    public void TenantService_RejectsEmptyFullName(string fullName)
+    public void TenantService_RejectsEmptyFullName(string hoTen)
     {
-        Assert.ThrowsException<BusinessRuleException>(() =>
-            TenantService.Validate(Tenant(fullName: fullName)));
+        Assert.ThrowsException<LoiNghiepVu>(() =>
+            KhachThueService.Validate(KhachThue(hoTen: hoTen)));
     }
 
     [DataTestMethod]
     [DataRow("")]
     [DataRow("   ")]
-    public void TenantService_RejectsEmptyPhone(string phone)
+    public void TenantService_RejectsEmptyPhone(string so_dien_thoai)
     {
-        Assert.ThrowsException<BusinessRuleException>(() =>
-            TenantService.Validate(Tenant(phone: phone)));
+        Assert.ThrowsException<LoiNghiepVu>(() =>
+            KhachThueService.Validate(KhachThue(so_dien_thoai: so_dien_thoai)));
     }
 
     [DataTestMethod]
     [DataRow("")]
     [DataRow("   ")]
-    public void TenantService_RejectsEmptyHometown(string hometown)
+    public void TenantService_RejectsEmptyHometown(string que_quan)
     {
-        Assert.ThrowsException<BusinessRuleException>(() =>
-            TenantService.Validate(Tenant(hometown: hometown)));
+        Assert.ThrowsException<LoiNghiepVu>(() =>
+            KhachThueService.Validate(KhachThue(que_quan: que_quan)));
     }
 
     [TestMethod]
     public void TenantService_AcceptsValidTenant()
     {
-        TenantService.Validate(Tenant());
+        KhachThueService.Validate(KhachThue());
     }
 
     [TestMethod]
     public void TenantService_DefaultPasswordIsLastSixDigitsOfIdCard()
     {
-        Assert.AreEqual("678901", TenantService.DefaultPassword("012345678901"));
+        Assert.AreEqual("678901", KhachThueService.DefaultPassword("012345678901"));
     }
 
     // ------------------------------------------------ BR-02/BR-03 trên MySQL thật
@@ -96,7 +96,7 @@ public sealed class BusinessRuleTests
     private const string ExtraCccd = "999999999401";
 
     private static readonly Database Db = new(ConnectionString);
-    private static readonly TenantService Tenants = new(new TenantRepository(Db));
+    private static readonly KhachThueService Tenants = new(new KhachThueRepository(Db));
 
     [TestInitialize]
     public Task CleanBeforeAsync() => CleanupAsync();
@@ -104,15 +104,15 @@ public sealed class BusinessRuleTests
     [TestCleanup]
     public Task CleanAfterAsync() => CleanupAsync();
 
-    /// <summary>BR-02: phòng max_occupants = 1 — người thứ hai bị chặn, phòng vẫn đúng 1 người.</summary>
+    /// <summary>BR-02: phòng so_nguoi_toi_da = 1 — người thứ hai bị chặn, phòng vẫn đúng 1 người.</summary>
     [TestMethod]
     public async Task TenantAdd_RoomAtCapacity_RejectsExactMessage()
     {
         await using (var connection = await Db.OpenAsync())
         await using (var command = new MySqlCommand(
             """
-            INSERT INTO rooms (id, room_number, price, max_occupants, status, description)
-            VALUES (@id, @number, 1000000, 1, 'Available', 'BusinessRuleTests BR-02')
+            INSERT INTO phong (id, so_phong, gia_thue, so_nguoi_toi_da, trang_thai, mo_ta)
+            VALUES (@id, @number, 1000000, 1, 'Trong', 'BusinessRuleTests BR-02')
             """, connection))
         {
             command.Parameters.AddWithValue("@id", CapacityRoomId);
@@ -120,30 +120,30 @@ public sealed class BusinessRuleTests
             await command.ExecuteNonQueryAsync();
         }
 
-        var added = await Tenants.AddAsync(Tenant(roomId: CapacityRoomId, idCard: CapacityCccd), plainPassword: null);
+        var added = await Tenants.AddAsync(KhachThue(phongId: CapacityRoomId, cccd: CapacityCccd), plainPassword: null);
         Assert.IsTrue(added.Id > 0);
 
-        var ex = await Assert.ThrowsExceptionAsync<BusinessRuleException>(
-            () => Tenants.AddAsync(Tenant(roomId: CapacityRoomId, idCard: ExtraCccd), plainPassword: null));
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
+            () => Tenants.AddAsync(KhachThue(phongId: CapacityRoomId, cccd: ExtraCccd), plainPassword: null));
 
         Assert.AreEqual("Phòng đã đủ sức chứa.", ex.Message);
         Assert.AreEqual(1L, await ScalarAsync(
-            "SELECT COUNT(*) FROM tenants WHERE room_id = @r", ("@r", CapacityRoomId)),
+            "SELECT COUNT(*) FROM khach_thue WHERE phong_id = @r", ("@r", CapacityRoomId)),
             "Người thứ hai không được vào phòng.");
     }
 
-    /// <summary>BR-03: hai người trùng CCCD — lần hai bị UNIQUE(id_card) chặn (MySQL 1062).</summary>
+    /// <summary>BR-03: hai người trùng CCCD — lần hai bị UNIQUE(cccd) chặn (MySQL 1062).</summary>
     [TestMethod]
     public async Task TenantAdd_DuplicateIdCard_RejectsExactMessage()
     {
-        await Tenants.AddAsync(Tenant(roomId: null, idCard: CapacityCccd), plainPassword: null);
+        await Tenants.AddAsync(KhachThue(phongId: null, cccd: CapacityCccd), plainPassword: null);
 
-        var ex = await Assert.ThrowsExceptionAsync<BusinessRuleException>(
-            () => Tenants.AddAsync(Tenant(roomId: null, idCard: CapacityCccd), plainPassword: null));
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
+            () => Tenants.AddAsync(KhachThue(phongId: null, cccd: CapacityCccd), plainPassword: null));
 
         Assert.AreEqual("Số CCCD đã tồn tại trong hệ thống.", ex.Message);
         Assert.AreEqual(1L, await ScalarAsync(
-            "SELECT COUNT(*) FROM tenants WHERE id_card = @c", ("@c", CapacityCccd)));
+            "SELECT COUNT(*) FROM khach_thue WHERE cccd = @c", ("@c", CapacityCccd)));
     }
 
     private static async Task<long> ScalarAsync(string sql, params (string Name, object Value)[] parameters)
@@ -161,22 +161,22 @@ public sealed class BusinessRuleTests
     private static async Task CleanupAsync()
     {
         await using var connection = await Db.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        await using var giao_dich = await connection.BeginTransactionAsync();
 
         // FK-safe: người thuê trước, phòng sau. CCCD lấy từ hằng số — không sửa literal tay.
-        await using (var tenants = new MySqlCommand(
-            $"DELETE FROM tenants WHERE id_card IN ('{CapacityCccd}', '{ExtraCccd}')", connection, transaction))
+        await using (var khach_thue = new MySqlCommand(
+            $"DELETE FROM khach_thue WHERE cccd IN ('{CapacityCccd}', '{ExtraCccd}')", connection, giao_dich))
         {
-            await tenants.ExecuteNonQueryAsync();
+            await khach_thue.ExecuteNonQueryAsync();
         }
 
-        await using (var rooms = new MySqlCommand(
-            "DELETE FROM rooms WHERE id = @id OR room_number LIKE 'BR02-%'", connection, transaction))
+        await using (var phong = new MySqlCommand(
+            "DELETE FROM phong WHERE id = @id OR so_phong LIKE 'BR02-%'", connection, giao_dich))
         {
-            rooms.Parameters.AddWithValue("@id", CapacityRoomId);
-            await rooms.ExecuteNonQueryAsync();
+            phong.Parameters.AddWithValue("@id", CapacityRoomId);
+            await phong.ExecuteNonQueryAsync();
         }
 
-        await transaction.CommitAsync();
+        await giao_dich.CommitAsync();
     }
 }

@@ -12,13 +12,13 @@
 │  (net8.0-windows)  │ ◄──────────────────────── │  Console App        │             │  Laragon     │
 │  KHÔNG chạm DB     │   ResponsePacket(JSON)    │  Router→Service→Repo│             │  cổng 3306   │
 └────────────────────┘                           └─────────────────────┘             └──────────────┘
-        Form1 + 8 UserControl                        RequestRouter
-        TcpClientService                             PermissionMatrix (BR-14)
-        App.config: ServerHost/ServerPort            SessionStore, AuthService
+        Form1 + 8 UserControl                        DieuPhoiYeuCau
+        TcpClientService                             MaTranPhanQuyen (BR-14)
+        App.config: ServerHost/ServerPort            SessionStore, XacThucService
 ```
 
 - **Client** chỉ gửi `RequestPacket` và hiển thị kết quả; mọi business rule BR-01..BR-14 enforce tại **Server**.
-- **Server** sở hữu toàn bộ nghiệp vụ, transaction MySQL, phân quyền 2 vai.
+- **Server** sở hữu toàn bộ nghiệp vụ, giao_dich MySQL, phân quyền 2 vai.
 - **MySQL** là nguồn dữ liệu duy nhất; ràng buộc UNIQUE/CHECK/FK bảo vệ tầng cuối.
 
 ---
@@ -37,12 +37,12 @@ Cấu hình kết nối nằm ở `QuanLyTro.Server/appsettings.json`:
 
 ```json
 {
-  "ConnectionString": "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User ID=root;Password=;SslMode=None;",
+  "ConnectionString": "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User ID=root;MatKhau=;SslMode=None;",
   "Port": 8888
 }
 ```
 
-> `User ID=root;Password=` là mặc định của Laragon. Đổi mật khẩu root thì sửa luôn chuỗi này.
+> `User ID=root;MatKhau=` là mặc định của Laragon. Đổi mật khẩu root thì sửa luôn chuỗi này.
 
 ---
 
@@ -63,11 +63,11 @@ Kết quả in ra: `Database initialized.`
 ```bash
 # 1) Sinh hash (xem mục 4 để biết cách chạy đoạn C# này)
 #    → pbkdf2-sha256$210000$<salt>$<key>
-# 2) Chèn vào users bằng mysql CLI của Laragon.
+# 2) Chèn vào tai_khoan bằng mysql CLI của Laragon.
 #    BẮT BUỘC --default-character-set=utf8mb4, nếu không CLI Windows dùng cp850 và
 #    tên tiếng Việt bị hỏng thành "Ch? Tr? Demo".
 "E:/Apps/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe" --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u root quanly_phongtro_nhs \
-  -e "INSERT INTO users (username, password_hash, full_name, role) VALUES ('admin', '<HASH>', 'Chủ Trọ Demo', 'Landlord') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), full_name = VALUES(full_name), role = 'Landlord';"
+  -e "INSERT INTO tai_khoan (tenDangNhap, mat_khau_hash, ho_ten, vai_tro) VALUES ('admin', '<HASH>', 'Chủ Trọ Demo', 'ChuTro') ON DUPLICATE KEY UPDATE mat_khau_hash = VALUES(mat_khau_hash), ho_ten = VALUES(ho_ten), vai_tro = 'ChuTro';"
 ```
 
 > **Muốn demo thêm vai Công an phường (BR-16)?** Sinh một hash khác (mật khẩu khác,
@@ -75,7 +75,7 @@ Kết quả in ra: `Database initialized.`
 
 ```bash
 "E:/Apps/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe" --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u root quanly_phongtro_nhs \
-  -e "INSERT INTO users (username, password_hash, full_name, role) VALUES ('police_nhs', '<POLICE_HASH>', 'Công An Phường', 'Police') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), full_name = VALUES(full_name), role = 'Police';"
+  -e "INSERT INTO tai_khoan (tenDangNhap, mat_khau_hash, ho_ten, vai_tro) VALUES ('police_nhs', '<POLICE_HASH>', 'Công An Phường', 'CongAn') ON DUPLICATE KEY UPDATE mat_khau_hash = VALUES(mat_khau_hash), ho_ten = VALUES(ho_ten), vai_tro = 'CongAn';"
 ```
 
 **Bước 4 — Chạy Server** (giữ terminal này mở):
@@ -103,12 +103,12 @@ Mật khẩu **trùng tên đăng nhập** cho mọi tài khoản:
 
 | Vai | Đăng nhập | Mật khẩu |
 |---|---|---|
-| Chủ trọ (Landlord) | `landlord` | `landlord` |
-| Công an phường (Police) | `police` | `police` |
-| Người thuê (Tenant) | `100000000001` (CCCD) | `100000000001` |
+| Chủ trọ (ChuTro) | `landlord` | `landlord` |
+| Công an phường (CongAn) | `police` | `police` |
+| Người thuê (KhachThue) | `100000000001` (CCCD) | `100000000001` |
 
 Dữ liệu mẫu: 3 phòng (`P201` đang cho thuê, `P202`/`P203` trống), 1 người thuê,
-1 hợp đồng Active, 1 kỳ chỉ số điện nước và 1 hóa đơn `Unpaid` 2.245.000 đ cho kỳ hiện tại.
+1 hợp đồng HieuLuc, 1 kỳ chỉ số điện nước và 1 hóa đơn `ChuaThu` 2.245.000 đ cho kỳ hiện tại.
 Seeder idempotent (chạy lại chỉ ghi đè dòng mẫu) và nằm trong dải id 7001-7009.
 
 ### Tài khoản khác trong DB cục bộ
@@ -118,43 +118,43 @@ là cách chính thức tạo dữ liệu mẫu.
 
 > Đừng tự viết PBKDF2 tay hoặc dùng hash từ công cụ khác — định dạng
 > `pbkdf2-sha256$iterations$salt$key` phải khớp `PasswordHasher.Verify` thì đăng nhập mới qua.
-> `DemoSeeder` dùng chính `PasswordHasher` nên không thể lệch định dạng.
+> `DuLieuMau` dùng chính `PasswordHasher` nên không thể lệch định dạng.
 
 > Người thuê tự tạo qua UI (không dùng seeder) mặc định có mật khẩu là **6 số cuối CCCD**
 > khi chủ trọ để trống ô mật khẩu.
 
 ---
 
-## 5. 22 action TCP & ma trận phân quyền
+## 5. 22 hanh_dong TCP & ma trận phân quyền
 
-Server enforce tại `RequestRouter` → `PermissionMatrix.IsAllowed(action, role)` (BR-14). Mọi action ngoài `AUTH_LOGIN` đều cần token hợp lệ; thiếu/sai token → `"Phiên đăng nhập không hợp lệ hoặc đã hết hạn."`; sai vai → `"Không có quyền."`.
+Server enforce tại `DieuPhoiYeuCau` → `MaTranPhanQuyen.IsAllowed(hanh_dong, vai_tro)` (BR-14). Mọi hanh_dong ngoài `DANG_NHAP` đều cần token hợp lệ; thiếu/sai token → `"Phiên đăng nhập không hợp lệ hoặc đã hết hạn."`; sai vai → `"Không có quyền."`.
 
-| # | Action | Payload vào | Trả ra | Landlord | Tenant |
+| # | Action | Payload vào | Trả ra | ChuTro | KhachThue |
 |---|---|---|---|:---:|:---:|
-| 1 | `AUTH_LOGIN` | `{Username, Password}` | `LoginResult{Token, FullName, Role}` | ✅ | ✅ |
-| 2 | `ROOM_GET_ALL` | `{}` | `List<RoomDto>` | ✅ | — |
-| 3 | `ROOM_ADD` | `RoomDto` | `RoomDto` | ✅ | — |
-| 4 | `ROOM_UPDATE` | `RoomDto` | `bool` | ✅ | — |
-| 5 | `ROOM_DELETE` | `{RoomId}` | `bool` | ✅ | — |
-| 6 | `TENANT_GET_BY_ROOM` | `{RoomId}` | `List<TenantDto>` | ✅ | — |
-| 7 | `TENANT_ADD` | `TenantDto` (+`plainPassword`) | `TenantDto` | ✅ | — |
-| 8 | `TENANT_UPDATE` | `TenantDto` (+`plainPassword`) | `bool` | ✅ | — |
-| 9 | `TENANT_CHECKOUT` | `{TenantId}` | `bool` | ✅ | — |
-| 10 | `TENANT_DELETE` | `{TenantId}` | `bool` | ✅ | — |
-| 11 | `CONTRACT_CREATE` | `ContractDto` | `ContractDto` | ✅ | — |
-| 12 | `CONTRACT_TERMINATE` | `{ContractId, Notes}` | `bool` | ✅ | — |
-| 13 | `CONTRACT_RENEW` | `{ContractId, NewEndDate}` | `bool` | ✅ | — |
-| 14 | `CONTRACT_GET_ALL` | `{}` | `List<ContractListItem>` | ✅ | — |
-| 15 | `UTILITY_GET_PREVIOUS` | `{RoomId, BillingMonth?}` | `UtilityReadingDto?` | ✅ | — |
-| 16 | `UTILITY_RECORD` | `UtilityReadingDto` | `UtilityReadingDto` | ✅ | — |
-| 17 | `INVOICE_CREATE` | `{RoomId, BillingMonth, OtherFees}` | `InvoiceDto` | ✅ | — |
-| 18 | `INVOICE_GET_ALL` | `{BillingMonth?, RoomId?}` | `List<InvoiceDto>` | ✅ | — |
-| 19 | `INVOICE_PAY` | `{InvoiceId}` | `bool` | ✅ | — |
-| 20 | `INVOICE_GET_MINE` | `{}` (server suy từ token) | `List<InvoiceDto>` | — | ✅ |
-| 21 | `REPORT_SUMMARY` | `{BillingMonth}` | `SummaryReportDto` | ✅ | — |
-| 22 | `EXPORT_RESIDENCE` | `{}` | `List<ResidenceExportDto>` | ✅ | — |
+| 1 | `DANG_NHAP` | `{TenDangNhap, MatKhau}` | `KetQuaDangNhap{Token, HoTen, VaiTro}` | ✅ | ✅ |
+| 2 | `PHONG_LAY_TAT_CA` | `{}` | `List<PhongDto>` | ✅ | — |
+| 3 | `PHONG_THEM` | `PhongDto` | `PhongDto` | ✅ | — |
+| 4 | `PHONG_CAP_NHAT` | `PhongDto` | `bool` | ✅ | — |
+| 5 | `PHONG_XOA` | `{PhongId}` | `bool` | ✅ | — |
+| 6 | `KHACH_THUE_THEO_PHONG` | `{PhongId}` | `List<KhachThueDto>` | ✅ | — |
+| 7 | `KHACH_THUE_THEM` | `KhachThueDto` (+`plainPassword`) | `KhachThueDto` | ✅ | — |
+| 8 | `KHACH_THUE_CAP_NHAT` | `KhachThueDto` (+`plainPassword`) | `bool` | ✅ | — |
+| 9 | `KHACH_THUE_TRA_PHONG` | `{TenantId}` | `bool` | ✅ | — |
+| 10 | `KHACH_THUE_XOA` | `{TenantId}` | `bool` | ✅ | — |
+| 11 | `HOP_DONG_TAO` | `HopDongDto` | `HopDongDto` | ✅ | — |
+| 12 | `HOP_DONG_CHAM_DUT` | `{HopDongId, GhiChu}` | `bool` | ✅ | — |
+| 13 | `HOP_DONG_GIA_HAN` | `{HopDongId, NewEndDate}` | `bool` | ✅ | — |
+| 14 | `HOP_DONG_LAY_TAT_CA` | `{}` | `List<MucHopDongItem>` | ✅ | — |
+| 15 | `DIEN_NUOC_LAY_KY_TRUOC` | `{PhongId, KyCuoc?}` | `ChiSoDienNuocDto?` | ✅ | — |
+| 16 | `DIEN_NUOC_GHI_SO` | `ChiSoDienNuocDto` | `ChiSoDienNuocDto` | ✅ | — |
+| 17 | `HOA_DON_TAO` | `{PhongId, KyCuoc, PhiKhac}` | `HoaDonDto` | ✅ | — |
+| 18 | `HOA_DON_LAY_TAT_CA` | `{KyCuoc?, PhongId?}` | `List<HoaDonDto>` | ✅ | — |
+| 19 | `HOA_DON_THANH_TOAN` | `{InvoiceId}` | `bool` | ✅ | — |
+| 20 | `HOA_DON_CUA_TOI` | `{}` (server suy từ token) | `List<HoaDonDto>` | — | ✅ |
+| 21 | `BAO_CAO_TONG_QUAN` | `{KyCuoc}` | `BaoCaoTongQuanDto` | ✅ | — |
+| 22 | `XUAT_HO_SO_TAM_TRU` | `{}` | `List<XuatHoSoTamTruDto>` | ✅ | — |
 
-**BR-14:** `INVOICE_GET_MINE` suy `room_id` từ `tenantId` trong phiên, **không** nhận `RoomId` từ client — người thuê không xem được hóa đơn phòng khác.
+**BR-14:** `HOA_DON_CUA_TOI` suy `phong_id` từ `khachThueId` trong phiên, **không** nhận `PhongId` từ client — người thuê không xem được hóa đơn phòng khác.
 
 ---
 
@@ -166,11 +166,11 @@ Thứ tự thao tác trên Client (đăng nhập `admin`):
 2. **Người thuê** → Thêm hồ sơ, chọn phòng vừa tạo; để trống mật khẩu = 6 số cuối CCCD.
 3. **Hợp đồng** → Lập hợp đồng chọn phòng + người đại diện (phải đang ở phòng đó).
 4. **Điện nước** → Chốt chỉ số tháng `yyyy-MM` (hệ thống tự gợi ý chỉ số cũ kỳ trước).
-5. **Hóa đơn** → Lập hóa đơn tháng đó — Server tự tính `RoomPrice + (NewElec−OldElec)×ElecRate + (NewWater−OldWater)×WaterRate + OtherFees` (BR-10).
-6. **Hóa đơn** → nút **Thu** xác nhận thanh toán (hóa đơn chuyển `Paid`).
+5. **Hóa đơn** → Lập hóa đơn tháng đó — Server tự tính `RoomPrice + (NewElec−OldElec)×ElecRate + (NuocMoi−NuocCu)×GiaNuoc + PhiKhac` (BR-10).
+6. **Hóa đơn** → nút **Thu** xác nhận thanh toán (hóa đơn chuyển `DaThu`).
 7. **Thống kê** → xem doanh thu/công nợ tháng + **Xuất DS tạm trú** ra CSV.
 
-Tenant đăng nhập bằng CCCD chỉ thấy tab **"Hóa đơn của tôi"** — read-only, đúng hóa đơn phòng mình.
+KhachThue đăng nhập bằng CCCD chỉ thấy tab **"Hóa đơn của tôi"** — read-only, đúng hóa đơn phòng mình.
 
 ---
 
@@ -184,8 +184,8 @@ Tenant đăng nhập bằng CCCD chỉ thấy tab **"Hóa đơn của tôi"** �
 - **Định dạng:** tên trường JSON camelCase; không BOM; `Data` là object JSON thật (không phải chuỗi escape).
 
 ```json
-{"action":"ROOM_ADD","token":"<token>","data":{"roomNumber":"P101","price":2500000,"maxOccupants":2}}
-{"success":true,"message":"Thành công.","data":{"id":1,"roomNumber":"P101"}}
+{"hanh_dong":"PHONG_THEM","token":"<token>","data":{"soPhong":"P101","gia_thue":2500000,"soNguoiToiDa":2}}
+{"success":true,"message":"Thành công.","data":{"id":1,"soPhong":"P101"}}
 ```
 
 ---
@@ -219,12 +219,12 @@ Lệnh đo coverage:
 dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --collect:"Code Coverage" --nologo
 ```
 
-Artifact `.coverage` nằm trong `QuanLyTro/QuanLyTro.Tests/TestResults/<guid>/` (đã bị `.gitignore`). Lưu ý con số này tính cả mã WinForms UI (khó test tự động) nên thấp hơn tỉ lệ phủ thực tế của tầng nghiệp vụ Server — `RequestRouter`, `PermissionMatrix`, các `Service`/`Repository` đều có test acceptance chạy MySQL thật.
+Artifact `.coverage` nằm trong `QuanLyTro/QuanLyTro.Tests/TestResults/<guid>/` (đã bị `.gitignore`). Lưu ý con số này tính cả mã WinForms UI (khó test tự động) nên thấp hơn tỉ lệ phủ thực tế của tầng nghiệp vụ Server — `DieuPhoiYeuCau`, `MaTranPhanQuyen`, các `Service`/`Repository` đều có test acceptance chạy MySQL thật.
 
 **Acceptance test** (`AcceptanceTests.cs`, 10 test, MySQL thật + router thật):
 
 - Luồng tháng SRS §7 đầu-cuối (tạo phòng → tenant → HĐ → điện nước → hóa đơn → thu → báo cáo → xuất tạm trú), assert DB sau từng bước.
-- Ma trận phân quyền đủ 22 action qua `RequestRouter`; tenant bị chặn `"Không có quyền."`; landlord bị chặn `INVOICE_GET_MINE`.
-- BR-14 room-isolation của `INVOICE_GET_MINE` (seed 2 phòng + 2 hóa đơn).
+- Ma trận phân quyền đủ 22 hanh_dong qua `DieuPhoiYeuCau`; tenant bị chặn `"Không có quyền."`; landlord bị chặn `HOA_DON_CUA_TOI`.
+- BR-14 room-isolation của `HOA_DON_CUA_TOI` (seed 2 phòng + 2 hóa đơn).
 - Khóa đăng nhập US-23 với clock injectable (không sleep thật).
 - BR-04, BR-05, BR-06, BR-09, BR-10, BR-11 trên MySQL thật.

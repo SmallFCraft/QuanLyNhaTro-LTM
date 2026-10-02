@@ -1,33 +1,33 @@
-// Ánh xạ Role từ server (Landlord=0, Tenant=1, Police=2, Manager=3) sang trang tác nhân.
-// Chủ trọ và Quản lý dùng CHUNG shell `landlord/` — shell tự ẩn/hiện tab theo `?role=`.
+// Ánh xạ VaiTro từ server (ChuTro=0, KhachThue=1, CongAn=2, QuanLy=3) sang trang tác nhân.
+// Chủ trọ và Quản lý dùng CHUNG shell `chutro/` — shell tự ẩn/hiện tab theo `?vai_tro=`.
 const ROLE_ROUTES = {
-  0: '../landlord/index.html?role=Landlord',
-  1: '../tenant/index.html',
-  2: '../police/index.html',
-  3: '../landlord/index.html?role=Manager',
-  'Landlord': '../landlord/index.html?role=Landlord',
-  'Tenant': '../tenant/index.html',
-  'Police': '../police/index.html',
-  'Manager': '../landlord/index.html?role=Manager'
+  0: '../chutro/index.html?vai_tro=ChuTro',
+  1: '../khachthue/index.html',
+  2: '../congan/index.html',
+  3: '../chutro/index.html?vai_tro=QuanLy',
+  'ChuTro': '../chutro/index.html?vai_tro=ChuTro',
+  'KhachThue': '../khachthue/index.html',
+  'CongAn': '../congan/index.html',
+  'QuanLy': '../chutro/index.html?vai_tro=QuanLy'
 };
 
 async function doLogin() {
-  const username = document.getElementById('lu').value.trim();
-  const password = document.getElementById('lp').value;
-  if (!username || !password) {
+  const tenDangNhap = document.getElementById('lu').value.trim();
+  const matKhau = document.getElementById('lp').value;
+  if (!tenDangNhap || !matKhau) {
     alert('Vui lòng nhập tài khoản và mật khẩu.');
     return;
   }
   try {
-    const user = await window.bridge.call('AUTH_LOGIN', { Username: username, Password: password });
+    const user = await window.bridge.call('DANG_NHAP', { TenDangNhap: tenDangNhap, MatKhau: matKhau });
     if (!user) return;
-    const roleVal = user.role ?? user.Role;
-    const target = ROLE_ROUTES[roleVal];
+    const vaiTro = user.vaiTro ?? user.VaiTro;
+    const target = ROLE_ROUTES[vaiTro];
     if (!target) {
       alert('Tài khoản chưa được gán vai trò hợp lệ. Liên hệ Chủ trọ.');
       return;
     }
-    const name = encodeURIComponent(user.fullName ?? user.FullName ?? '');
+    const name = encodeURIComponent(user.hoTen ?? user.HoTen ?? '');
     const sep = target.includes('?') ? '&' : '?';
     window.location.href = `${target}${sep}u=${name}`;
   } catch (err) {

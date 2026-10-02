@@ -13,9 +13,9 @@ public sealed class AssetPackagingTests
     public void Wwwroot_ContainsEntryPointAndBridge()
     {
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "auth", "index.html")), "Thiếu auth/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "index.html")), "Thiếu landlord/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "index.html")), "Thiếu police/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "index.html")), "Thiếu tenant/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "chutro", "index.html")), "Thiếu chutro/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "congan", "index.html")), "Thiếu congan/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "khachthue", "index.html")), "Thiếu khachthue/index.html");
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "js", "bridge.js")), "Thiếu shared/js/bridge.js");
         Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "shared", "css", "base.css")), "Thiếu shared/css/base.css");
     }
@@ -40,34 +40,34 @@ public sealed class AssetPackagingTests
     [TestMethod]
     public void Wwwroot_ContainsLandlordModule()
     {
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "index.html")), "Thiếu landlord/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "landlord.css")), "Thiếu landlord/landlord.css");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "js", "main.js")), "Thiếu landlord/js/main.js");
-        foreach (var tab in new[] { "dash", "rooms", "tenants", "contracts", "utils", "invoices", "reports" })
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "chutro", "index.html")), "Thiếu chutro/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "chutro", "chutro.css")), "Thiếu chutro/chutro.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "chutro", "js", "main.js")), "Thiếu chutro/js/main.js");
+        foreach (var tab in new[] { "dash", "phong", "khach_thue", "hop_dong", "utils", "hoa_don", "reports", "perms" })
         {
-            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "landlord", "js", tab + ".js")),
-                $"Thiếu landlord/js/{tab}.js");
+            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "chutro", "js", tab + ".js")),
+                $"Thiếu chutro/js/{tab}.js");
         }
     }
 
     [TestMethod]
     public void Wwwroot_ContainsTenantModule()
     {
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "index.html")), "Thiếu tenant/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "tenant.css")), "Thiếu tenant/tenant.css");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "tenant", "js", "tenant.js")), "Thiếu tenant/js/tenant.js");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "khachthue", "index.html")), "Thiếu khachthue/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "khachthue", "khachthue.css")), "Thiếu khachthue/khachthue.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "khachthue", "js", "khach_thue.js")), "Thiếu khachthue/js/khach_thue.js");
     }
 
     [TestMethod]
     public void Wwwroot_ContainsPoliceModule()
     {
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "index.html")), "Thiếu police/index.html");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "police.css")), "Thiếu police/police.css");
-        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "js", "main.js")), "Thiếu police/js/main.js");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "congan", "index.html")), "Thiếu congan/index.html");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "congan", "congan.css")), "Thiếu congan/congan.css");
+        Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "congan", "js", "main.js")), "Thiếu congan/js/main.js");
         foreach (var tab in new[] { "citizens", "residence", "history" })
         {
-            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "police", "js", tab + ".js")),
-                $"Thiếu police/js/{tab}.js");
+            Assert.IsTrue(File.Exists(Path.Combine(Wwwroot, "congan", "js", tab + ".js")),
+                $"Thiếu congan/js/{tab}.js");
         }
     }
 }

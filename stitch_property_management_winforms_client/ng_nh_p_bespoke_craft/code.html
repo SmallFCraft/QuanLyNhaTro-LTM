@@ -89,7 +89,7 @@
 <span class="text-[11px] font-mono text-[#767e88]">v8.2-LTS</span>
 </div>
 </div>
-<!-- Window action buttons -->
+<!-- Window hanh_dong buttons -->
 <div class="flex items-center space-x-1 pl-2">
 <button aria-label="Minimize" class="w-6 h-6 rounded flex items-center justify-center text-[#767e88] hover:text-[#e0e3e7] hover:bg-[#202529] transition-colors" type="button">
 <span class="material-symbols-outlined text-[14px]">remove</span>
@@ -123,7 +123,7 @@
 </div>
 <!-- Form Body Section -->
 <div class="p-5 flex flex-col space-y-5 bg-[#181c1f]">
-<!-- Role Selection Segmented Control -->
+<!-- VaiTro Selection Segmented Control -->
 <div class="flex flex-col space-y-2">
 <div class="flex items-center justify-between">
 <span class="text-[11px] uppercase tracking-wider font-semibold text-[#868e96] font-mono">Vai trò phiên đăng nhập</span>
@@ -144,10 +144,10 @@
 </div>
 <!-- Credentials Fieldset -->
 <div class="space-y-4 pt-1">
-<!-- Username Field -->
+<!-- TenDangNhap Field -->
 <div class="flex flex-col space-y-1.5">
 <div class="flex items-center justify-between">
-<label class="text-xs font-medium text-[#d4dadf]" for="txtUsername" id="lblUsername">Tài khoản quản trị (Username / Mã QL):</label>
+<label class="text-xs font-medium text-[#d4dadf]" for="txtUsername" id="lblUsername">Tài khoản quản trị (TenDangNhap / Mã QL):</label>
 <span class="font-mono text-[10px] text-[#a78b83] uppercase tracking-wider bg-[#221c1a] px-1.5 py-0.5 rounded border border-[#3d2a24]">Required</span>
 </div>
 <div class="flex items-center tactile-input rounded px-3 py-2">
@@ -155,16 +155,16 @@
 <input class="w-full bg-transparent text-xs sm:text-sm text-[#f0f3f6] placeholder-[#555d66] font-mono outline-none border-0 p-0 focus:ring-0" id="txtUsername" placeholder="Nhập mã định danh..." type="text" value="admin"/>
 </div>
 </div>
-<!-- Password Field -->
+<!-- MatKhau Field -->
 <div class="flex flex-col space-y-1.5">
 <div class="flex items-center justify-between">
-<label class="text-xs font-medium text-[#d4dadf]" for="txtPassword">Mật khẩu xác thực (Password):</label>
+<label class="text-xs font-medium text-[#d4dadf]" for="txtPassword">Mật khẩu xác thực (MatKhau):</label>
 <a class="text-xs text-[#ea6944] hover:text-[#ffb5a0] transition-colors" href="javascript:void(0)">Quên mật khẩu?</a>
 </div>
 <div class="flex items-center tactile-input rounded px-3 py-2">
 <span class="material-symbols-outlined text-[17px] text-[#636c75] mr-2.5">key</span>
 <input class="w-full bg-transparent text-xs sm:text-sm text-[#f0f3f6] placeholder-[#555d66] font-mono outline-none border-0 p-0 focus:ring-0 tracking-wider" id="txtPassword" type="password" value="SystemSecret@2025"/>
-<button aria-label="Toggle Password Visibility" class="p-1 rounded text-[#767e88] hover:text-[#e0e3e7] hover:bg-[#202529] transition-colors" id="btnTogglePassword" type="button">
+<button aria-label="Toggle MatKhau Visibility" class="p-1 rounded text-[#767e88] hover:text-[#e0e3e7] hover:bg-[#202529] transition-colors" id="btnTogglePassword" type="button">
 <span class="material-symbols-outlined text-[17px]" id="eyeIcon">visibility_off</span>
 </button>
 </div>
@@ -227,20 +227,20 @@
     const btnLogin = document.getElementById('btnLogin');
     const lblStatus = document.getElementById('lblStatus');
 
-    // Role switcher label update
+    // VaiTro switcher label update
     radioRoles.forEach(r => {
       r.addEventListener('change', (e) => {
         if (e.target.value === 'TENANT') {
-          lblUser.textContent = 'Số điện thoại khách thuê (Registered Phone):';
+          lblUser.textContent = 'Số điện thoại khách thuê (Registered SoDienThoai):';
           if (txtUser.value === 'admin') txtUser.value = '0908123456';
         } else {
-          lblUser.textContent = 'Tài khoản quản trị (Username / Mã QL):';
+          lblUser.textContent = 'Tài khoản quản trị (TenDangNhap / Mã QL):';
           if (txtUser.value === '0908123456') txtUser.value = 'admin';
         }
       });
     });
 
-    // Toggle Password Visibility
+    // Toggle MatKhau Visibility
     btnToggle.addEventListener('click', () => {
       const isPass = txtPass.getAttribute('type') === 'password';
       txtPass.setAttribute('type', isPass ? 'text' : 'password');

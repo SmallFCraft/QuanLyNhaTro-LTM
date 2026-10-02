@@ -58,7 +58,7 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',Consolas,monospace}
 .tbl .empty td{color:var(--dim);font-style:italic;text-align:center;padding:24px}
 
-/* status tags: 4px radius, NO pills */
+/* trang_thai tags: 4px radius, NO pills */
 .tag{
   display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:4px;
   font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;

@@ -160,7 +160,7 @@ The system merges **Swiss Modernism** (rigid column grids, calculated whitespace
 The palette derives from physical construction elements: burnt terracotta clay, slate graphite foundations, lime wash accents, and patinated bronze and sage accents.
 
 ### Palette Architecture
-- **Primary (`#D95D39`):** Burnt Terracotta. Reserved exclusively for primary brand actions, deliberate focal points, operational alerts, and selected navigation states. It provides high micro-contrast without synthetic oversaturation.
+- **Primary (`#D95D39`):** Burnt Terracotta. Reserved exclusively for primary brand hanh_dong, deliberate focal points, operational alerts, and selected navigation states. It provides high micro-contrast without synthetic oversaturation.
 - **Secondary (`#F4EFEA`):** Warm Sand / Cream. Serves as the primary high-contrast foreground text tone, structural hairline divider base, and selected metric value color.
 - **Tertiary (`#3E885B`):** Patinated Sage. Denotes operational health, collected yields, positive lease variations, and verified states. It avoids digital electric greens in favor of an earthy, organic mineral tone.
 - **Neutral (`#121619`):** Deep Graphite Charcoal. The foundational bedrock of the dark surface architecture, anchored with warm slate undertones.
@@ -181,7 +181,7 @@ Typography functions as the primary visual architecture of this design system. I
 
 ### Rules of Engagement
 - **Tabular Alignment:** Financial yields, square footage, vacancy rates, and rent rolls must strictly employ `font-variant-numeric: tabular-nums` to maintain vertical decimal alignment across data matrices.
-- **Label Capitalization:** All `label-sm` elements (table column heads, micro-badges, operational status stamps) must be set in uppercase with `letterSpacing: 0.06em` to maintain legibility against charcoal surfaces.
+- **Label Capitalization:** All `label-sm` elements (table column heads, micro-badges, operational trang_thai stamps) must be set in uppercase with `letterSpacing: 0.06em` to maintain legibility against charcoal surfaces.
 - **Tightened Display Scale:** Larger headings use disciplined negative tracking (`-0.025em` to `-0.03em`) to replicate the compressed authority of classic Swiss print and architectural project portfolios.
 
 ## Layout & Spacing
@@ -204,12 +204,12 @@ This system decisively eliminates all fuzzy drop-shadows, directional illuminati
 - **Base Canvas (`#0F1316`):** The foundational viewport floor. Carries the overall screen boundaries.
 - **Tier 1 Ground (`#121619`):** Left navigation rails, pinned control strips, and breadcrumb runs.
 - **Tier 2 Paneling (`#1A1F24`):** Primary operational content surfaces, property dossiers, and records tables.
-- **Tier 3 Overlays (`#232930`):** Dropdowns, context menus, tooltips, and floating action sheets.
+- **Tier 3 Overlays (`#232930`):** Dropdowns, context menus, tooltips, and floating hanh_dong sheets.
 
 ### Hairline Contrast System
 - Rather than elevating cards using dropshadows, components rely on high-contrast edge strokes:
   - Default borders: `1px solid #283038`
-  - Active/Focused boundaries: `1px solid #D95D39`
+  - HieuLuc/Focused boundaries: `1px solid #D95D39`
   - High-priority operational panels: Double-stroked top border (`2px solid #F4EFEA`) with regular `1px solid #283038` perimeter strokes.
 - Floating modal sheets leverage a single crisp keyline occlusion: `0 0 0 1px #3A444E, 0 16px 32px -8px rgba(0, 0, 0, 0.8)`. Shadows exist strictly to obscure content behind modals, never as decorative styling.
 
@@ -218,15 +218,15 @@ This system decisively eliminates all fuzzy drop-shadows, directional illuminati
 The shape system adopts a minimal soft-corner language (`roundedness: 1`). Elements possess crisp, nearly sharp corners that reinforce the structural, physical nature of architectural drawings and technical real estate ledgers.
 
 ### Radius Calibration
-- **Base Components (`0.25rem` / `4px`):** Used universally across buttons, form inputs, status tags, table cell highlights, and segment tabs.
+- **Base Components (`0.25rem` / `4px`):** Used universally across buttons, form inputs, trang_thai tags, table cell highlights, and segment tabs.
 - **Surface Containers (`0.5rem` / `8px`):** Used for large module cards, modals, and property overview dossiers.
-- **Zero Radius (`0px`):** Docked panes, table headers, sticky horizontal action ribbons, and interior data grid divisions remain strictly squared to maintain grid continuity.
+- **Zero Radius (`0px`):** Docked panes, table headers, sticky horizontal hanh_dong ribbons, and interior data grid divisions remain strictly squared to maintain grid continuity.
 - **Pills are strictly prohibited:** No circular or fully-rounded pill elements exist within the system. Badges and chips remain rectangular with 4px soft corners.
 
 ## Components
 
 ### Buttons
-- **Primary:** Background `#D95D39`, text `#FFFFFF`, border `1px solid #D95D39`. Hover state: background `#C24F2E`. Active: `#9E3E22`. Strictly 4px border radius.
+- **Primary:** Background `#D95D39`, text `#FFFFFF`, border `1px solid #D95D39`. Hover state: background `#C24F2E`. HieuLuc: `#9E3E22`. Strictly 4px border radius.
 - **Secondary / Outline:** Background `transparent`, text `#F4EFEA`, border `1px solid #3A444E`. Hover state: background `#1A1F24`, border-color `#F4EFEA`.
 - **Tertiary / Subdued:** Background `transparent`, text `#A0AAB4`, border `1px solid transparent`. Hover state: text `#F4EFEA`, background `#1A1F24`.
 - **Sizing:** Compact (32px height, 12px padding), Standard (40px height, 16px padding). Typography: `label-md`, font weight `500`.
@@ -236,12 +236,12 @@ The shape system adopts a minimal soft-corner language (`roundedness: 1`). Eleme
 - **Rows:** Alternating background `transparent` and `#14181C`. Row divider: `1px solid #1F262D`. Cell height: 44px. Hover state: `#1C2329`.
 - **Numeric Cells:** Right-aligned, `font-variant-numeric: tabular-nums`, text color `#F4EFEA`.
 
-### Status Badges & Chips
+### TrangThai Badges & Chips
 - Formed with a 4px radius, `1px` subtle solid border, and non-glossy, low-opacity fills:
   - **Healthy / Occupied:** Background `rgba(62, 136, 91, 0.12)`, border `1px solid rgba(62, 136, 91, 0.35)`, text `#57A977`.
   - **Attention / Delinquent / Urgent:** Background `rgba(217, 93, 57, 0.12)`, border `1px solid rgba(217, 93, 57, 0.35)`, text `#D95D39`.
   - **Pending / Scheduled:** Background `rgba(232, 223, 216, 0.08)`, border `1px solid #2E363E`, text `#E8DFD8`.
-- Contains a solid `6px` square status pip indicator positioned inline to the left of the label text.
+- Contains a solid `6px` square trang_thai pip indicator positioned inline to the left of the label text.
 
 ### Form Inputs & Selectors
 - **Input Fields:** Background `#15191D`, border `1px solid #283038`, text `#F4EFEA`, placeholder `#646E77`, border-radius `4px`, height `40px`, padding `0 12px`.

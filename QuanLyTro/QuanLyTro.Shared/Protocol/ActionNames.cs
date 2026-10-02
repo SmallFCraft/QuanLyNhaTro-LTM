@@ -1,57 +1,57 @@
 namespace QuanLyTro.Shared.Protocol;
 
 /// <summary>
-/// Tên 22 hành động của giao thức TCP: 18 gốc + 4 bổ sung cho phân vai người thuê.
+/// Tên 26 hành động của giao thức TCP bằng tiếng Việt không dấu.
 /// </summary>
 public static class ActionNames
 {
-    public const string AuthLogin = "AUTH_LOGIN";
+    public const string DangNhap = "DANG_NHAP";
 
-    public const string RoomGetAll = "ROOM_GET_ALL";
-    public const string RoomAdd = "ROOM_ADD";
-    public const string RoomUpdate = "ROOM_UPDATE";
-    public const string RoomDelete = "ROOM_DELETE";
+    public const string PhongLayTatCa = "PHONG_LAY_TAT_CA";
+    public const string PhongThem = "PHONG_THEM";
+    public const string PhongCapNhat = "PHONG_CAP_NHAT";
+    public const string PhongXoa = "PHONG_XOA";
 
-    public const string TenantGetByRoom = "TENANT_GET_BY_ROOM";
-    public const string TenantAdd = "TENANT_ADD";
-    public const string TenantUpdate = "TENANT_UPDATE";
-    public const string TenantCheckout = "TENANT_CHECKOUT";
-    public const string TenantDelete = "TENANT_DELETE";
+    public const string KhachThueTheoPhong = "KHACH_THUE_THEO_PHONG";
+    public const string KhachThueThem = "KHACH_THUE_THEM";
+    public const string KhachThueCapNhat = "KHACH_THUE_CAP_NHAT";
+    public const string KhachThueTraPhong = "KHACH_THUE_TRA_PHONG";
+    public const string KhachThueXoa = "KHACH_THUE_XOA";
 
-    public const string ContractCreate = "CONTRACT_CREATE";
-    public const string ContractTerminate = "CONTRACT_TERMINATE";
-    public const string ContractRenew = "CONTRACT_RENEW";
-    public const string ContractGetAll = "CONTRACT_GET_ALL";
+    public const string HopDongTao = "HOP_DONG_TAO";
+    public const string HopDongGiaHan = "HOP_DONG_GIA_HAN";
+    public const string HopDongChamDut = "HOP_DONG_CHAM_DUT";
+    public const string HopDongLayTatCa = "HOP_DONG_LAY_TAT_CA";
 
-    public const string UtilityGetPrevious = "UTILITY_GET_PREVIOUS";
-    public const string UtilityRecord = "UTILITY_RECORD";
+    public const string DienNuocLayKyTruoc = "DIEN_NUOC_LAY_KY_TRUOC";
+    public const string DienNuocGhiSo = "DIEN_NUOC_GHI_SO";
 
-    public const string InvoiceCreate = "INVOICE_CREATE";
-    public const string InvoiceGetAll = "INVOICE_GET_ALL";
-    public const string InvoicePay = "INVOICE_PAY";
-    public const string InvoiceGetMine = "INVOICE_GET_MINE";
+    public const string HoaDonTao = "HOA_DON_TAO";
+    public const string HoaDonLayTatCa = "HOA_DON_LAY_TAT_CA";
+    public const string HoaDonThanhToan = "HOA_DON_THANH_TOAN";
+    public const string HoaDonCuaToi = "HOA_DON_CUA_TOI";
 
-    public const string ReportSummary = "REPORT_SUMMARY";
-    public const string ExportResidence = "EXPORT_RESIDENCE";
+    public const string BaoCaoTongQuan = "BAO_CAO_TONG_QUAN";
+    public const string XuatHoSoTamTru = "XUAT_HO_SO_TAM_TRU";
 
-    public const string ResidenceHistoryGet = "RESIDENCE_HISTORY_GET";
-    public const string ExportResidenceHistory = "EXPORT_RESIDENCE_HISTORY";
+    public const string LichSuCuTruLay = "LICH_SU_CU_TRU_LAY";
+    public const string XuatLichSuCuTru = "XUAT_LICH_SU_CU_TRU";
 
-    // Quản lý phân quyền động — CHỈ Chủ trọ (Landlord) được gọi.
-    public const string PermissionGetMatrix = "PERMISSION_GET_MATRIX";
-    public const string PermissionUpdateRole = "PERMISSION_UPDATE_ROLE";
+    // Quản lý phân quyền động — CHỈ Chủ trọ (ChuTro) được gọi.
+    public const string PhanQuyenLayMaTran = "PHAN_QUYEN_LAY_MA_TRAN";
+    public const string PhanQuyenCapNhatVaiTro = "PHAN_QUYEN_CAP_NHAT_VAI_TRO";
 
-    /// <summary>Toàn bộ tên action hợp lệ — dùng cho test và kiểm tra router.</summary>
+    /// <summary>Toàn bộ tên hanh_dong hợp lệ — dùng cho test và kiểm tra router.</summary>
     public static readonly IReadOnlyList<string> All =
     [
-        AuthLogin,
-        RoomGetAll, RoomAdd, RoomUpdate, RoomDelete,
-        TenantGetByRoom, TenantAdd, TenantUpdate, TenantCheckout, TenantDelete,
-        ContractCreate, ContractTerminate, ContractRenew, ContractGetAll,
-        UtilityGetPrevious, UtilityRecord,
-        InvoiceCreate, InvoiceGetAll, InvoicePay, InvoiceGetMine,
-        ReportSummary, ExportResidence,
-        ResidenceHistoryGet, ExportResidenceHistory,
-        PermissionGetMatrix, PermissionUpdateRole,
+        DangNhap,
+        PhongLayTatCa, PhongThem, PhongCapNhat, PhongXoa,
+        KhachThueTheoPhong, KhachThueThem, KhachThueCapNhat, KhachThueTraPhong, KhachThueXoa,
+        HopDongTao, HopDongGiaHan, HopDongChamDut, HopDongLayTatCa,
+        DienNuocLayKyTruoc, DienNuocGhiSo,
+        HoaDonTao, HoaDonLayTatCa, HoaDonThanhToan, HoaDonCuaToi,
+        BaoCaoTongQuan, XuatHoSoTamTru,
+        LichSuCuTruLay, XuatLichSuCuTru,
+        PhanQuyenLayMaTran, PhanQuyenCapNhatVaiTro,
     ];
 }

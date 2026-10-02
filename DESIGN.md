@@ -36,20 +36,20 @@ colors:
   primary-bg-subtle: 'rgba(217, 93, 57, 0.12)'
   primary-border-subtle: 'rgba(217, 93, 57, 0.35)'
 
-  status-sage: '#8BD7A3'
-  status-sage-border: '#2E4A35'
-  status-sage-bg: 'rgba(139, 215, 163, 0.12)'
+  trang_thai-sage: '#8BD7A3'
+  trang_thai-sage-border: '#2E4A35'
+  trang_thai-sage-bg: 'rgba(139, 215, 163, 0.12)'
 
-  status-amber: '#E0AF68'
-  status-amber-border: '#483A24'
-  status-amber-bg: '#2A2319'
+  trang_thai-amber: '#E0AF68'
+  trang_thai-amber-border: '#483A24'
+  trang_thai-amber-bg: '#2A2319'
 
-  status-error: '#FFB4AB'
-  status-error-bg: '#32191B'
-  status-error-border: '#93000A'
-  status-error-surface: '#1F1715'
-  status-error-panel: '#1D1715'
-  status-error-panel-border: '#432C25'
+  trang_thai-error: '#FFB4AB'
+  trang_thai-error-bg: '#32191B'
+  trang_thai-error-border: '#93000A'
+  trang_thai-error-surface: '#1F1715'
+  trang_thai-error-panel: '#1D1715'
+  trang_thai-error-panel-border: '#432C25'
 
   overlay-scrim: 'rgba(0, 0, 0, 0.72)'
 typography:
@@ -125,10 +125,10 @@ Nguồn chuẩn duy nhất từ thư mục `stitch_property_management_winforms_
 ### 2.4. Màu Ngữ Nghĩa (Semantic Roles)
 | Trạng Thái | Màu Chữ | Nền Tag | Viền Tag | Áp Dụng Trong Nghiệp Vụ |
 |---|---|---|---|---|
-| **Đang thuê / Đã thu / OK** | `#8BD7A3` | `rgba(139, 215, 163, 0.12)` | `#2E4A35` | Phòng có người ở, HĐ Active, Hóa đơn đã thu, Đã tạm trú |
+| **Đang thuê / Đã thu / OK** | `#8BD7A3` | `rgba(139, 215, 163, 0.12)` | `#2E4A35` | Phòng có người ở, HĐ HieuLuc, Hóa đơn đã thu, Đã tạm trú |
 | **Nợ / Cảnh báo khẩn** | `#D95D39` | `rgba(217, 93, 57, 0.12)` | `rgba(217, 93, 57, 0.35)` | Phòng nợ tiền, Hóa đơn chưa thu/quá hạn, lỗi kết nối TCP |
 | **Sắp hết hạn / Bảo trì** | `#E0AF68` | `#2A2319` | `#483A24` | Hợp đồng ≤ 30 ngày, phòng đang sửa chữa, chưa chốt điện nước |
-| **Phòng trống / Chờ** | `#CAC6C1` | `#1C2227` | `#313A42` | Phòng Available, chưa nộp tạm trú, người thuê đã trả phòng |
+| **Phòng trống / Chờ** | `#CAC6C1` | `#1C2227` | `#313A42` | Phòng Trong, chưa nộp tạm trú, người thuê đã trả phòng |
 | **Nền banner quá hạn** | `#FFB4AB` trên `#1F1715` | viền `rgba(217,93,57,.40)` | — | Dải cảnh báo nợ đầu màn người thuê |
 
 ## 3. Quy Tắc Thành Phần (Components)
@@ -136,11 +136,11 @@ Nguồn chuẩn duy nhất từ thư mục `stitch_property_management_winforms_
 ### 3.1. Cửa Sổ Desktop (WinForms Chrome)
 - **Title Bar:** Cao 32px, nền `#0B0F12`, chữ `#F4EFEA`, icon `#D95D39`. Nút thu nhỏ/phóng to `#767E88`, nút đóng đỏ dịu `#FFB4AB` khi hover.
 - **Menu Strip:** Cao 36px, nền `#14191D`, nút bấm dạng tab phẳng với viền mảnh `#2B3239`, hover sáng dần.
-- **Status Strip (Đáy):** Cao 28px, nền `#0B0E11`, hiển thị:
+- **TrangThai Strip (Đáy):** Cao 28px, nền `#0B0E11`, hiển thị:
   - Chấm trạng thái TCP Socket xanh (`#8BD7A3`) hoặc đỏ (`#D95D39`).
   - IP + Port: `127.0.0.1:8888`.
   - Độ trễ phản hồi: `12ms`.
-  - Vai trò hiện tại: `Chủ trọ (Landlord)` hoặc `Người thuê: Phòng P.101 (Tenant)`.
+  - Vai trò hiện tại: `Chủ trọ (ChuTro)` hoặc `Người thuê: Phòng P.101 (KhachThue)`.
 
 ### 3.2. DataGrid (Bảng Dữ Liệu)
 - Header: Cao 34px, nền `#1A2025`, chữ in hoa cỡ 10px `letter-spacing: 0.06em`, màu `#767E88`.
@@ -149,7 +149,7 @@ Nguồn chuẩn duy nhất từ thư mục `stitch_property_management_winforms_
 - Cột số (tiền, chỉ số, ngày): Canh phải, dùng font mono hoặc `font-variant-numeric: tabular-nums`.
 
 ### 3.3. Nút Bấm (Buttons)
-- **Nút Chính (Primary):** Nền `#D95D39`, chữ trắng `#FFFFFF`, viền `#D95D39`, góc bo 4px, cao 32px hoặc 36px. Hover: `#EA6944`. Active: `#B84524`.
+- **Nút Chính (Primary):** Nền `#D95D39`, chữ trắng `#FFFFFF`, viền `#D95D39`, góc bo 4px, cao 32px hoặc 36px. Hover: `#EA6944`. HieuLuc: `#B84524`.
 - **Nút Thứ Cấp (Outline):** Nền trong suốt hoặc `#1C2126`, chữ `#F4EFEA`, viền `#2E373F`. Hover: nền `#272F36`, viền `#3A444E`.
 - **Nút Xóa / Nguy Hiểm (Danger):** Nền `#1F252A`, chữ `#FFB4AB`, viền `#3E2925`. Hover: `#32191B`.
 
@@ -166,7 +166,7 @@ Nguồn chuẩn duy nhất từ thư mục `stitch_property_management_winforms_
 
 ## 4. Ánh Xạ Vào 2 Vai Trò Ứng Dụng
 
-| Thành Phần | Giao Diện Chủ Trọ (Landlord) | Giao Diện Người Thuê (Tenant) |
+| Thành Phần | Giao Diện Chủ Trọ (ChuTro) | Giao Diện Người Thuê (KhachThue) |
 |---|---|---|
 | Số tab | 7 tab (Tổng quan, Phòng, Người thuê, Hợp đồng, Điện nước, Hóa đơn, Thống kê) | 1 tab duy nhất: Hóa Đơn Của Tôi |
 | Hành động | Đầy đủ nút Thêm, Sửa, Xóa, Lập HĐ, Chốt số, Thu tiền, Xuất CSV | Chỉ xem (ReadOnly), nút Tra cứu, nút Sao chép nội dung chuyển khoản |

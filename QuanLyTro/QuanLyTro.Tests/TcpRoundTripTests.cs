@@ -15,7 +15,7 @@ namespace QuanLyTro.Tests;
 
 /// <summary>
 /// Round-trip thật qua TCP: server thật (cổng ngẫu nhiên) + <see cref="TcpClient"/> thật, gói tin JSON thô.
-/// Session/Auth dùng stub repo (không cần MySQL); chỉ ReportService trả BusinessRuleException để kiểm tra
+/// Session/Auth dùng stub repo (không cần MySQL); chỉ BaoCaoService trả LoiNghiepVu để kiểm tra
 /// thông báo tiếng Việt đi nguyên vẹn qua mạng.
 /// </summary>
 [TestClass]
@@ -52,13 +52,13 @@ public sealed class TcpRoundTripTests
     public async Task TcpRoundTrip_LoginReturnsTokenAndRole()
     {
         var response = await SendAsync(RequestPacket.Create(
-            ActionNames.AuthLogin, null, new LoginRequest(LandlordUser, LandlordPassword)));
+            ActionNames.DangNhap, null, new YeuCauDangNhap(LandlordUser, LandlordPassword)));
 
         Assert.IsTrue(response.Success, response.Message);
-        var result = response.GetData<LoginResult>();
+        var result = response.GetData<KetQuaDangNhap>();
         Assert.IsNotNull(result);
-        Assert.AreEqual(UserRole.Landlord, result.Role);
-        Assert.AreEqual("Nguyễn Văn A", result.FullName);
+        Assert.AreEqual(VaiTroNguoiDung.ChuTro, result.VaiTro);
+        Assert.AreEqual("Nguyễn Văn A", result.HoTen);
         Assert.IsFalse(string.IsNullOrWhiteSpace(result.Token));
     }
 
@@ -68,7 +68,7 @@ public sealed class TcpRoundTripTests
         var login = await LoginAsync(LandlordUser, LandlordPassword);
 
         var response = await SendAsync(
-            RequestPacket.Create(ActionNames.ReportSummary, login.Token, new { BillingMonth = "2026-09" }));
+            RequestPacket.Create(ActionNames.BaoCaoTongQuan, login.Token, new { KyCuoc = "2026-09" }));
 
         Assert.IsFalse(response.Success);
         Assert.AreEqual(StubRuleMessage, response.Message);
@@ -79,9 +79,9 @@ public sealed class TcpRoundTripTests
     {
         var login = await LoginAsync(LandlordUser, LandlordPassword);
 
-        // RoomRepository thật + chuỗi kết nối tới cổng đóng → MySqlException 1042.
+        // PhongRepository thật + chuỗi kết nối tới cổng đóng → MySqlException 1042.
         var response = await SendAsync(
-            RequestPacket.Create(ActionNames.RoomGetAll, login.Token, new { }));
+            RequestPacket.Create(ActionNames.PhongLayTatCa, login.Token, new { }));
 
         Assert.IsFalse(response.Success);
         StringAssert.Contains(response.Message, "MySQL", "Client phải được nói rõ lỗi do cơ sở dữ liệu.");
@@ -92,7 +92,7 @@ public sealed class TcpRoundTripTests
     [TestMethod]
     public async Task TcpRoundTrip_UnauthenticatedProtectedActionIsRejected()
     {
-        var response = await SendAsync(RequestPacket.Create(ActionNames.RoomGetAll, null, new { }));
+        var response = await SendAsync(RequestPacket.Create(ActionNames.PhongLayTatCa, null, new { }));
 
         Assert.IsFalse(response.Success);
         Assert.IsFalse(string.IsNullOrWhiteSpace(response.Message));
@@ -102,9 +102,9 @@ public sealed class TcpRoundTripTests
     public async Task TcpRoundTrip_TenantCannotCallLandlordAction()
     {
         var login = await LoginAsync(TenantCccd, TenantPassword);
-        Assert.AreEqual(UserRole.Tenant, login.Role);
+        Assert.AreEqual(VaiTroNguoiDung.KhachThue, login.VaiTro);
 
-        var response = await SendAsync(RequestPacket.Create(ActionNames.RoomGetAll, login.Token, new { }));
+        var response = await SendAsync(RequestPacket.Create(ActionNames.PhongLayTatCa, login.Token, new { }));
 
         Assert.IsFalse(response.Success);
         StringAssert.Contains(response.Message, "quyền");
@@ -118,8 +118,8 @@ public sealed class TcpRoundTripTests
         await using var stream = client.GetStream();
 
         var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(
-            RequestPacket.Create(ActionNames.AuthLogin, null,
-                new LoginRequest(LandlordUser, LandlordPassword)), JsonDefaults.Options) + "\n");
+            RequestPacket.Create(ActionNames.DangNhap, null,
+                new YeuCauDangNhap(LandlordUser, LandlordPassword)), JsonDefaults.Options) + "\n");
         await stream.WriteAsync(payload);
         await stream.FlushAsync();
 
@@ -139,43 +139,43 @@ public sealed class TcpRoundTripTests
         {
             // 1. Chủ trọ đăng nhập -> lấy ma trận quyền thành công
             var landlordLogin = await LoginAsync(LandlordUser, LandlordPassword);
-            Assert.AreEqual(UserRole.Landlord, landlordLogin.Role);
+            Assert.AreEqual(VaiTroNguoiDung.ChuTro, landlordLogin.VaiTro);
 
             var getResponse = await SendAsync(RequestPacket.Create(
-                ActionNames.PermissionGetMatrix, landlordLogin.Token, new { }));
+                ActionNames.PhanQuyenLayMaTran, landlordLogin.Token, new { }));
             Assert.IsTrue(getResponse.Success, getResponse.Message);
 
-            var matrix = getResponse.GetData<RolePermissionsMatrixDto>();
+            var matrix = getResponse.GetData<MaTranQuyenVaiTroDto>();
             Assert.IsNotNull(matrix);
-            Assert.IsTrue(matrix.RoleActions.ContainsKey("Manager"));
-            Assert.IsTrue(matrix.AvailableActions.Count > 0);
+            Assert.IsTrue(matrix.QuyenTheoVaiTro.ContainsKey("QuanLy"));
+            Assert.IsTrue(matrix.DanhSachHanhDong.Count > 0);
 
-            // 2. Chủ trọ cập nhật quyền của Manager
+            // 2. Chủ trọ cập nhật quyền của QuanLy
             var updateResponse = await SendAsync(RequestPacket.Create(
-                ActionNames.PermissionUpdateRole, landlordLogin.Token,
-                new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll, ActionNames.InvoiceGetAll])));
+                ActionNames.PhanQuyenCapNhatVaiTro, landlordLogin.Token,
+                new YeuCauCapNhatQuyenVaiTro("QuanLy", [ActionNames.PhongLayTatCa, ActionNames.HoaDonLayTatCa])));
             Assert.IsTrue(updateResponse.Success, updateResponse.Message);
 
             // 3. Quản lý đăng nhập
             var managerLogin = await LoginAsync(ManagerUser, ManagerPassword);
-            Assert.AreEqual(UserRole.Manager, managerLogin.Role);
+            Assert.AreEqual(VaiTroNguoiDung.QuanLy, managerLogin.VaiTro);
 
-            // Quản lý gọi action quản lý phân quyền -> Bị từ chối vì không có quyền
+            // Quản lý gọi hanh_dong quản lý phân quyền -> Bị từ chối vì không có quyền
             var managerGetAttempt = await SendAsync(RequestPacket.Create(
-                ActionNames.PermissionGetMatrix, managerLogin.Token, new { }));
+                ActionNames.PhanQuyenLayMaTran, managerLogin.Token, new { }));
             Assert.IsFalse(managerGetAttempt.Success);
             StringAssert.Contains(managerGetAttempt.Message, "quyền");
 
             var managerUpdateAttempt = await SendAsync(RequestPacket.Create(
-                ActionNames.PermissionUpdateRole, managerLogin.Token,
-                new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll])));
+                ActionNames.PhanQuyenCapNhatVaiTro, managerLogin.Token,
+                new YeuCauCapNhatQuyenVaiTro("QuanLy", [ActionNames.PhongLayTatCa])));
             Assert.IsFalse(managerUpdateAttempt.Success);
             StringAssert.Contains(managerUpdateAttempt.Message, "quyền");
         }
         finally
         {
             // Khôi phục quyền mặc định sau test — luôn chạy dù assert phía trên fail
-            PermissionMatrix.ResetToDefaults();
+            MaTranPhanQuyen.ResetToDefaults();
         }
     }
 
@@ -183,20 +183,20 @@ public sealed class TcpRoundTripTests
     public void RequestRouter_RegistersAllKnownProtocolActions()
     {
         var router = MakeRouter();
-        foreach (var action in ActionNames.All)
+        foreach (var hanh_dong in ActionNames.All)
         {
-            Assert.IsTrue(router.HandledActions.Contains(action),
-                $"Router thiếu handler cho action: {action}");
+            Assert.IsTrue(router.HandledActions.Contains(hanh_dong),
+                $"Router thiếu handler cho hanh_dong: {hanh_dong}");
         }
     }
 
-    private async Task<LoginResult> LoginAsync(string username, string password)
+    private async Task<KetQuaDangNhap> LoginAsync(string tenDangNhap, string password)
     {
         var response = await SendAsync(RequestPacket.Create(
-            ActionNames.AuthLogin, null, new LoginRequest(username, password)));
+            ActionNames.DangNhap, null, new YeuCauDangNhap(tenDangNhap, password)));
 
         Assert.IsTrue(response.Success, response.Message);
-        return response.GetData<LoginResult>()!;
+        return response.GetData<KetQuaDangNhap>()!;
     }
 
     private async Task<ResponsePacket> SendAsync(RequestPacket packet)
@@ -218,38 +218,38 @@ public sealed class TcpRoundTripTests
             ?? throw new AssertFailedException($"Phản hồi không đọc được: {line}");
     }
 
-    private static RequestRouter MakeRouter()
+    private static DieuPhoiYeuCau MakeRouter()
     {
         // Cổng 1 luôn đóng trên Windows → MySqlErrorCode.UnableToConnectToHost, không phụ thuộc
         // việc Laragon có đang chạy lúc test hay không.
         var database = new Database("Server=127.0.0.1;Port=1;Database=unused_for_router_tests;User Id=root;Password=;");
         var sessions = new SessionStore();
-        var auth = new AuthService(new StubUserRepository(), new StubTenantRepository(), sessions);
+        var auth = new XacThucService(new StubUserRepository(), new StubTenantRepository(), sessions);
 
-        return new RequestRouter(
+        return new DieuPhoiYeuCau(
             auth,
-            new RoomService(new RoomRepository(database)),
-            new TenantService(new TenantRepository(database)),
-            new ContractService(new ContractRepository(database)),
-            new UtilityService(new UtilityRepository(database)),
-            new InvoiceService(new InvoiceRepository(database)),
-            new ReportService(new StubReportRepository()),
-            new ResidenceService(new ResidenceRepository(database)),
+            new PhongService(new PhongRepository(database)),
+            new KhachThueService(new KhachThueRepository(database)),
+            new HopDongService(new HopDongRepository(database)),
+            new DienNuocService(new DienNuocRepository(database)),
+            new HoaDonService(new HoaDonRepository(database)),
+            new BaoCaoService(new StubReportRepository()),
+            new CuTruService(new CuTruRepository(database)),
             sessions,
             new StubPermissionRepository());
     }
 
-    private sealed class StubUserRepository : IUserRepository
+    private sealed class StubUserRepository : ITaiKhoanRepository
     {
-        private readonly UserRecord _user =
+        private readonly TaiKhoanRecord _user =
             new(1, PasswordHasher.Hash(LandlordPassword), "Nguyễn Văn A");
 
-        // Manager dùng chung mật khẩu demo để test phân quyền mà không cần MySQL.
-        private readonly UserRecord _manager =
-            new(2, PasswordHasher.Hash(ManagerPassword), "Quản Lý Thử Nghiệm", UserRole.Manager);
+        // QuanLy dùng chung mật khẩu demo để test phân quyền mà không cần MySQL.
+        private readonly TaiKhoanRecord _manager =
+            new(2, PasswordHasher.Hash(ManagerPassword), "Quản Lý Thử Nghiệm", VaiTroNguoiDung.QuanLy);
 
-        public Task<UserRecord?> FindByUsernameAsync(string username, CancellationToken ct = default) =>
-            Task.FromResult(username switch
+        public Task<TaiKhoanRecord?> FindByUsernameAsync(string tenDangNhap, CancellationToken ct = default) =>
+            Task.FromResult(tenDangNhap switch
             {
                 LandlordUser => _user,
                 ManagerUser => _manager,
@@ -258,10 +258,10 @@ public sealed class TcpRoundTripTests
     }
 
     /// <summary>Kho phân quyền in-memory cho test — không cần MySQL.</summary>
-    private sealed class StubPermissionRepository : IPermissionRepository
+    private sealed class StubPermissionRepository : IPhanQuyenRepository
     {
         private readonly Dictionary<string, List<string>> _matrix =
-            DefaultRolePermissions.All.ToDictionary(
+            QuyenMacDinhTheoVaiTro.All.ToDictionary(
                 kv => kv.Key,
                 kv => kv.Value.ToList(),
                 StringComparer.OrdinalIgnoreCase);
@@ -269,29 +269,29 @@ public sealed class TcpRoundTripTests
         public Task<Dictionary<string, List<string>>> GetAllAsync(CancellationToken ct = default) =>
             Task.FromResult(_matrix.ToDictionary(kv => kv.Key, kv => kv.Value.ToList()));
 
-        public Task UpdateRoleActionsAsync(string role, IEnumerable<string> actions, CancellationToken ct = default)
+        public Task UpdateRoleActionsAsync(string vai_tro, IEnumerable<string> hanh_dong, CancellationToken ct = default)
         {
-            _matrix[role] = actions.ToList();
+            _matrix[vai_tro] = hanh_dong.ToList();
             return Task.CompletedTask;
         }
     }
 
-    private sealed class StubTenantRepository : ITenantRepository
+    private sealed class StubTenantRepository : IKhachThueRepository
     {
-        private readonly TenantAuthRecord _tenant =
+        private readonly KhachThueAuthRecord _tenant =
             new(10, TenantCccd, PasswordHasher.Hash(TenantPassword), "Trần Văn B", 101);
 
-        public Task<TenantAuthRecord?> FindByCccdAsync(string idCard, CancellationToken ct = default) =>
-            Task.FromResult(idCard == TenantCccd ? _tenant : null);
+        public Task<KhachThueAuthRecord?> FindByCccdAsync(string cccd, CancellationToken ct = default) =>
+            Task.FromResult(cccd == TenantCccd ? _tenant : null);
     }
 
-    /// <summary>Ném BusinessRuleException để kiểm tra thông báo lỗi nghiệp vụ đi qua TCP nguyên văn.</summary>
-    private sealed class StubReportRepository : IReportRepository
+    /// <summary>Ném LoiNghiepVu để kiểm tra thông báo lỗi nghiệp vụ đi qua TCP nguyên văn.</summary>
+    private sealed class StubReportRepository : IBaoCaoRepository
     {
-        public Task<SummaryReportDto> GetSummaryAsync(string billingMonth, CancellationToken ct = default) =>
-            throw new BusinessRuleException(StubRuleMessage);
+        public Task<BaoCaoTongQuanDto> GetSummaryAsync(string kyCuoc, CancellationToken ct = default) =>
+            throw new LoiNghiepVu(StubRuleMessage);
 
-        public Task<List<ResidenceExportDto>> GetResidentsAsync(CancellationToken ct = default) =>
-            throw new BusinessRuleException(StubRuleMessage);
+        public Task<List<XuatHoSoTamTruDto>> GetResidentsAsync(CancellationToken ct = default) =>
+            throw new LoiNghiepVu(StubRuleMessage);
     }
 }

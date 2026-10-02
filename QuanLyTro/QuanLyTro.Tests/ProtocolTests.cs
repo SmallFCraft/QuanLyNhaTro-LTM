@@ -11,22 +11,22 @@ public class ProtocolTests
     [TestMethod]
     public void RequestPacket_RoundTripsTypedData()
     {
-        var packet = RequestPacket.Create(ActionNames.RoomAdd, null,
-            new RoomDto(0, "P101", 2_500_000m, 2, RoomStatus.Available, null, 0));
+        var packet = RequestPacket.Create(ActionNames.PhongThem, null,
+            new PhongDto(0, "P101", 2_500_000m, 2, TrangThaiPhong.Trong, null, 0));
         var json = JsonSerializer.Serialize(packet, JsonDefaults.Options);
         var result = JsonSerializer.Deserialize<RequestPacket>(json, JsonDefaults.Options)!;
-        Assert.AreEqual("P101", result.GetData<RoomDto>().RoomNumber);
-        Assert.AreEqual(ActionNames.RoomAdd, result.Action);
+        Assert.AreEqual("P101", result.GetData<PhongDto>().SoPhong);
+        Assert.AreEqual(ActionNames.PhongThem, result.Action);
     }
 
     [TestMethod]
     public void ResponsePacket_OkAndFailRoundTrip()
     {
-        var ok = ResponsePacket.Ok(new[] { new RoomDto(1, "P1", 1_000_000m, 2, RoomStatus.Available, null, 0) });
+        var ok = ResponsePacket.Ok(new[] { new PhongDto(1, "P1", 1_000_000m, 2, TrangThaiPhong.Trong, null, 0) });
         var okJson = JsonSerializer.Serialize(ok, JsonDefaults.Options);
         var okBack = JsonSerializer.Deserialize<ResponsePacket>(okJson, JsonDefaults.Options)!;
         Assert.IsTrue(okBack.Success);
-        Assert.AreEqual(1, okBack.Data!.Value.Deserialize<List<RoomDto>>(JsonDefaults.Options)![0].Id);
+        Assert.AreEqual(1, okBack.Data!.Value.Deserialize<List<PhongDto>>(JsonDefaults.Options)![0].Id);
 
         var fail = ResponsePacket.Fail("Số phòng đã tồn tại.");
         var failBack = JsonSerializer.Deserialize<ResponsePacket>(
@@ -39,34 +39,34 @@ public class ProtocolTests
     [TestMethod]
     public void Packet_SerializesDateOnlyAndDecimal()
     {
-        var contract = new ContractDto(0, 1, 2, new DateOnly(2026, 9, 1), new DateOnly(2027, 9, 1),
-            2_000_000m, 4_000_000m, ContractStatus.Active, null);
-        var packet = RequestPacket.Create(ActionNames.ContractCreate, "tok", contract);
+        var contract = new HopDongDto(0, 1, 2, new DateOnly(2026, 9, 1), new DateOnly(2027, 9, 1),
+            2_000_000m, 4_000_000m, TrangThaiHopDong.HieuLuc, null);
+        var packet = RequestPacket.Create(ActionNames.HopDongTao, "tok", contract);
         var back = JsonSerializer.Deserialize<RequestPacket>(
             JsonSerializer.Serialize(packet, JsonDefaults.Options), JsonDefaults.Options)!;
-        var parsed = back.GetData<ContractDto>();
-        Assert.AreEqual(new DateOnly(2027, 9, 1), parsed.EndDate);
-        Assert.AreEqual(2_000_000m, parsed.RentalPrice);
+        var parsed = back.GetData<HopDongDto>();
+        Assert.AreEqual(new DateOnly(2027, 9, 1), parsed.NgayKetThuc);
+        Assert.AreEqual(2_000_000m, parsed.GiaThue);
     }
 
     [TestMethod]
     public void ActionNames_ContainsPoliceActions_AndUserRoleHasPolice()
     {
-        Assert.IsTrue(ActionNames.All.Contains(ActionNames.ResidenceHistoryGet));
-        Assert.IsTrue(ActionNames.All.Contains(ActionNames.ExportResidenceHistory));
-        Assert.IsTrue(Enum.IsDefined(typeof(UserRole), UserRole.Police));
+        Assert.IsTrue(ActionNames.All.Contains(ActionNames.LichSuCuTruLay));
+        Assert.IsTrue(ActionNames.All.Contains(ActionNames.XuatLichSuCuTru));
+        Assert.IsTrue(Enum.IsDefined(typeof(VaiTroNguoiDung), VaiTroNguoiDung.CongAn));
     }
 
     [TestMethod]
     public void ActionNames_ContainsNewPermissionActions()
     {
-        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PermissionGetMatrix);
-        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PermissionUpdateRole);
+        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PhanQuyenLayMaTran);
+        CollectionAssert.Contains((System.Collections.ICollection)ActionNames.All, ActionNames.PhanQuyenCapNhatVaiTro);
     }
 
     [TestMethod]
     public void UserRole_ContainsManager()
     {
-        Assert.AreEqual(3, (int)UserRole.Manager);
+        Assert.AreEqual(3, (int)VaiTroNguoiDung.QuanLy);
     }
 }

@@ -3,13 +3,13 @@ window.bridge = {
   _handlers: {},
   _seq: 0,
 
-  call: function (action, data) {
+  call: function (hanh_dong, data) {
     return new Promise((resolve, reject) => {
       const requestId = 'req_' + (++this._seq);
       this._handlers[requestId] = { resolve, reject };
       window.chrome.webview.postMessage(JSON.stringify({
         requestId: requestId,
-        action: action,
+        hanh_dong: hanh_dong,
         data: data || {}
       }));
     });
@@ -33,16 +33,16 @@ if (window.chrome && window.chrome.webview) {
   window.chrome.webview.addEventListener('message', ev => window.bridge.onMessage(ev.data));
 } else if (window.location.protocol.startsWith('http')) {
   const SAMPLE = [
-    { id: 3, roomId: 102, contractId: 1, billingMonth: '2026-09', roomAmount: 2000000, electricityAmount: 175000, waterAmount: 20000, otherFees: 50000, totalAmount: 2245000, status: 'Unpaid', paidAt: null },
-    { id: 2, roomId: 102, contractId: 1, billingMonth: '2026-08', roomAmount: 2000000, electricityAmount: 172000, waterAmount: 20000, otherFees: 50000, totalAmount: 2242000, status: 'Paid', paidAt: '2026-09-05T10:14:00' },
-    { id: 1, roomId: 102, contractId: 1, billingMonth: '2026-07', roomAmount: 2000000, electricityAmount: 155000, waterAmount: 20000, otherFees: 50000, totalAmount: 2225000, status: 'Paid', paidAt: '2026-08-04T15:22:00' }
+    { id: 3, phongId: 102, hopDongId: 1, kyCuoc: '2026-09', tienPhong: 2000000, tienDien: 175000, tienNuoc: 20000, phiKhac: 50000, tongTien: 2245000, trang_thai: 'ChuaThu', ngayDong: null },
+    { id: 2, phongId: 102, hopDongId: 1, kyCuoc: '2026-08', tienPhong: 2000000, tienDien: 172000, tienNuoc: 20000, phiKhac: 50000, tongTien: 2242000, trang_thai: 'DaThu', ngayDong: '2026-09-05T10:14:00' },
+    { id: 1, phongId: 102, hopDongId: 1, kyCuoc: '2026-07', tienPhong: 2000000, tienDien: 155000, tienNuoc: 20000, phiKhac: 50000, tongTien: 2225000, trang_thai: 'DaThu', ngayDong: '2026-08-04T15:22:00' }
   ];
-  window.bridge.call = function (action, data) {
-    if (action === 'INVOICE_GET_MINE') {
+  window.bridge.call = function (hanh_dong, data) {
+    if (hanh_dong === 'HOA_DON_CUA_TOI') {
       const page = Number((data && data.page) || 1);
-      const size = Number((data && data.pageSize) || 10);
+      const size = Number((data && data.soLuongMoiTrang) || 10);
       const start = (page - 1) * size;
-      return Promise.resolve({ items: SAMPLE.slice(start, start + size), totalCount: SAMPLE.length, page, pageSize: size });
+      return Promise.resolve({ items: SAMPLE.slice(start, start + size), tongSo: SAMPLE.length, page, soLuongMoiTrang: size });
     }
     return Promise.resolve({});
   };

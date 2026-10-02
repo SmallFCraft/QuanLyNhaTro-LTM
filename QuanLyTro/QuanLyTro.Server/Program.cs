@@ -29,41 +29,41 @@ internal class Program
 
         if (args.Contains("--initialize-only"))
         {
-            await new SchemaInitializer(database).InitializeAsync();
+            await new KhoiTaoSchema(database).InitializeAsync();
             Console.WriteLine("Database initialized.");
             return 0;
         }
 
         if (args.Contains("--seed-demo"))
         {
-            await DemoSeeder.SeedAsync(database);
+            await DuLieuMau.SeedAsync(database);
             Console.WriteLine("Demo data seeded.");
             return 0;
         }
 
         var sessions = new SessionStore();
-        var permissions = new PermissionRepository(database);
+        var permissions = new PhanQuyenRepository(database);
 
         // Nạp ma trận quyền động từ CSDL vào cache. DB lỗi/chưa seed không được làm sập Server —
-        // PermissionMatrix đã có sẵn quyền mặc định từ code nên cứ chạy tiếp.
+        // MaTranPhanQuyen đã có sẵn quyền mặc định từ code nên cứ chạy tiếp.
         try
         {
-            PermissionMatrix.ApplyMatrix(await permissions.GetAllAsync());
+            MaTranPhanQuyen.ApplyMatrix(await permissions.GetAllAsync());
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Không nạp được phân quyền từ CSDL, dùng quyền mặc định: {ex.Message}");
         }
 
-        var router = new RequestRouter(
-            new AuthService(new UserRepository(database), new TenantAuthRepository(database), sessions),
-            new RoomService(new RoomRepository(database)),
-            new TenantService(new TenantRepository(database)),
-            new ContractService(new ContractRepository(database)),
-            new UtilityService(new UtilityRepository(database)),
-            new InvoiceService(new InvoiceRepository(database)),
-            new ReportService(new ReportRepository(database)),
-            new ResidenceService(new ResidenceRepository(database)),
+        var router = new DieuPhoiYeuCau(
+            new XacThucService(new TaiKhoanRepository(database), new KhachThueAuthRepository(database), sessions),
+            new PhongService(new PhongRepository(database)),
+            new KhachThueService(new KhachThueRepository(database)),
+            new HopDongService(new HopDongRepository(database)),
+            new DienNuocService(new DienNuocRepository(database)),
+            new HoaDonService(new HoaDonRepository(database)),
+            new BaoCaoService(new BaoCaoRepository(database)),
+            new CuTruService(new CuTruRepository(database)),
             sessions,
             permissions);
 

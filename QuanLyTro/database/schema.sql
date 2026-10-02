@@ -1,6 +1,6 @@
 -- Schema Quản Lý Phòng Trọ — Ngũ Hành Sơn
 -- MySQL 8.0 / InnoDB / UTF8MB4
--- Mỗi statement kết thúc bằng marker dòng riêng "-- statement" để SchemaInitializer tách và chạy tuần tự.
+-- Mỗi statement kết thúc bằng marker dòng riêng "-- statement" để KhoiTaoSchema tách và chạy tuần tự.
 
 CREATE DATABASE IF NOT EXISTS quanly_phongtro_nhs
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -9,130 +9,108 @@ CREATE DATABASE IF NOT EXISTS quanly_phongtro_nhs
 USE quanly_phongtro_nhs;
 -- statement
 
-CREATE TABLE IF NOT EXISTS users (
+-- Tài khoản đăng nhập của Chủ trọ / Quản lý / Công an phường.
+CREATE TABLE IF NOT EXISTS tai_khoan (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    role ENUM('Landlord', 'Manager', 'Police', 'Tenant') NOT NULL DEFAULT 'Landlord',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ten_dang_nhap VARCHAR(50) NOT NULL UNIQUE,
+    mat_khau_hash VARCHAR(255) NOT NULL,
+    ho_ten VARCHAR(100) NOT NULL,
+    vai_tro ENUM('ChuTro', 'QuanLy', 'CongAn', 'KhachThue') NOT NULL DEFAULT 'ChuTro',
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
--- Delta WebView2: DB cũ phải có cột `role` (CREATE TABLE IF NOT EXISTS bỏ qua bảng đã tồn tại).
--- MySQL 8 không có "ADD COLUMN IF NOT EXISTS" → ALTER động, chỉ chạy khi cột thiếu.
--- SchemaInitializer giữ MỘT connection cho toàn bộ script nên @role_col/@sql sống giữa các statement.
--- ponytail: kiểm tra INFORMATION_SCHEMA thay vì dựng hệ thống migration; đổi khi cần >1 thay đổi.
-SET @role_col := (SELECT COUNT(*) FROM information_schema.columns
-                  WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role');
--- statement
-SET @sql := IF(@role_col = 0,
-               'ALTER TABLE users ADD COLUMN role ENUM(''Landlord'', ''Manager'', ''Police'', ''Tenant'') NOT NULL DEFAULT ''Landlord'' AFTER full_name',
-               'SELECT 1');
--- statement
-PREPARE role_migration FROM @sql;
--- statement
-EXECUTE role_migration;
--- statement
-DEALLOCATE PREPARE role_migration;
--- statement
-
--- Delta RBAC: bảng ma trận quyền động theo vai trò. Chủ trọ (Landlord) KHÔNG lưu ở đây —
--- quyền của Chủ trọ bypass cứng trong code để không bao giờ tự khóa mình khỏi hệ thống.
-CREATE TABLE IF NOT EXISTS role_permissions (
-    role VARCHAR(20) NOT NULL,
-    action VARCHAR(50) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (role, action)
+-- Ma trận quyền động theo vai trò. Chủ trọ (ChuTro) KHÔNG lưu ở đây —
+-- quyền Chủ trọ bypass cứng trong code để không bao giờ tự khóa mình khỏi hệ thống.
+CREATE TABLE IF NOT EXISTS quyen_vai_tro (
+    vai_tro VARCHAR(20) NOT NULL,
+    hanh_dong VARCHAR(50) NOT NULL,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (vai_tro, hanh_dong)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
--- Delta RBAC: thêm vai `Manager` vào ENUM. MODIFY COLUMN idempotent — chạy lại vô hại.
-ALTER TABLE users MODIFY COLUMN role ENUM('Landlord', 'Manager', 'Police', 'Tenant')
-  NOT NULL DEFAULT 'Landlord';
--- statement
-
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE TABLE IF NOT EXISTS phong (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_number VARCHAR(20) NOT NULL UNIQUE,
-    price DECIMAL(12, 2) NOT NULL,
-    max_occupants INT NOT NULL DEFAULT 2,
-    status ENUM('Available', 'Rented', 'Maintenance') DEFAULT 'Available',
-    description VARCHAR(255) NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_rooms_price CHECK (price > 0),
-    CONSTRAINT chk_rooms_max_occupants CHECK (max_occupants > 0)
+    so_phong VARCHAR(20) NOT NULL UNIQUE,
+    gia_thue DECIMAL(12, 2) NOT NULL,
+    so_nguoi_toi_da INT NOT NULL DEFAULT 2,
+    trang_thai ENUM('Trong', 'DaThue', 'BaoTri') DEFAULT 'Trong',
+    mo_ta VARCHAR(255) NULL,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_phong_gia_thue CHECK (gia_thue > 0),
+    CONSTRAINT chk_phong_so_nguoi CHECK (so_nguoi_toi_da > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
-CREATE TABLE IF NOT EXISTS tenants (
+CREATE TABLE IF NOT EXISTS khach_thue (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    dob DATE NOT NULL,
-    id_card VARCHAR(20) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NULL,
-    phone VARCHAR(20) NOT NULL,
-    hometown VARCHAR(150) NOT NULL,
-    workplace VARCHAR(150) NULL,
-    is_temporary_registered BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_tenants_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+    phong_id INT NULL,
+    ho_ten VARCHAR(100) NOT NULL,
+    ngay_sinh DATE NOT NULL,
+    cccd VARCHAR(20) NOT NULL UNIQUE,
+    mat_khau_hash VARCHAR(255) NULL,
+    so_dien_thoai VARCHAR(20) NOT NULL,
+    que_quan VARCHAR(150) NOT NULL,
+    noi_lam_viec VARCHAR(150) NULL,
+    da_dang_ky_tam_tru BOOLEAN DEFAULT FALSE,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_khach_thue_phong FOREIGN KEY (phong_id) REFERENCES phong(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
-CREATE TABLE IF NOT EXISTS contracts (
+CREATE TABLE IF NOT EXISTS hop_dong (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
-    representative_tenant_id INT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    rental_price DECIMAL(12, 2) NOT NULL,
-    deposit_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
-    status ENUM('Active', 'Expired', 'Terminated') DEFAULT 'Active',
-    notes TEXT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_contracts_dates CHECK (end_date > start_date),
-    CONSTRAINT fk_contracts_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_contracts_representative FOREIGN KEY (representative_tenant_id) REFERENCES tenants(id),
-    INDEX idx_contracts_room_status (room_id, status)
+    phong_id INT NOT NULL,
+    nguoi_dai_dien_id INT NOT NULL,
+    ngay_bat_dau DATE NOT NULL,
+    ngay_ket_thuc DATE NOT NULL,
+    gia_thue DECIMAL(12, 2) NOT NULL,
+    tien_coc DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    trang_thai ENUM('HieuLuc', 'HetHan', 'ChamDut') DEFAULT 'HieuLuc',
+    ghi_chu TEXT NULL,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_hop_dong_ngay CHECK (ngay_ket_thuc > ngay_bat_dau),
+    CONSTRAINT fk_hop_dong_phong FOREIGN KEY (phong_id) REFERENCES phong(id),
+    CONSTRAINT fk_hop_dong_nguoi_dai_dien FOREIGN KEY (nguoi_dai_dien_id) REFERENCES khach_thue(id),
+    INDEX idx_hop_dong_phong_trang_thai (phong_id, trang_thai)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
-CREATE TABLE IF NOT EXISTS utility_readings (
+CREATE TABLE IF NOT EXISTS chi_so_dien_nuoc (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
-    billing_month VARCHAR(7) NOT NULL,
-    old_electricity INT NOT NULL,
-    new_electricity INT NOT NULL,
-    electricity_rate DECIMAL(10, 2) NOT NULL DEFAULT 3500,
-    old_water INT NOT NULL,
-    new_water INT NOT NULL,
-    water_rate DECIMAL(10, 2) NOT NULL DEFAULT 10000,
-    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_utility_electricity CHECK (new_electricity >= old_electricity),
-    CONSTRAINT chk_utility_water CHECK (new_water >= old_water),
-    CONSTRAINT fk_utility_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    UNIQUE KEY uq_room_month (room_id, billing_month)
+    phong_id INT NOT NULL,
+    ky_cuoc VARCHAR(7) NOT NULL,
+    dien_cu INT NOT NULL,
+    dien_moi INT NOT NULL,
+    gia_dien DECIMAL(10, 2) NOT NULL DEFAULT 3500,
+    nuoc_cu INT NOT NULL,
+    nuoc_moi INT NOT NULL,
+    gia_nuoc DECIMAL(10, 2) NOT NULL DEFAULT 10000,
+    ngay_ghi DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_chi_so_dien CHECK (dien_moi >= dien_cu),
+    CONSTRAINT chk_chi_so_nuoc CHECK (nuoc_moi >= nuoc_cu),
+    CONSTRAINT fk_chi_so_phong FOREIGN KEY (phong_id) REFERENCES phong(id),
+    UNIQUE KEY uq_phong_ky (phong_id, ky_cuoc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
-CREATE TABLE IF NOT EXISTS invoices (
+CREATE TABLE IF NOT EXISTS hoa_don (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
-    contract_id INT NOT NULL,
-    billing_month VARCHAR(7) NOT NULL,
-    room_amount DECIMAL(12, 2) NOT NULL,
-    electricity_amount DECIMAL(12, 2) NOT NULL,
-    water_amount DECIMAL(12, 2) NOT NULL,
-    other_fees DECIMAL(12, 2) NOT NULL DEFAULT 0,
-    total_amount DECIMAL(12, 2) NOT NULL,
-    status ENUM('Unpaid', 'Paid') DEFAULT 'Unpaid',
-    paid_at DATETIME NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_invoices_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_invoices_contract FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    UNIQUE KEY uq_invoice_room_month (room_id, billing_month),
-    INDEX idx_invoices_status_month (status, billing_month)
+    phong_id INT NOT NULL,
+    hop_dong_id INT NOT NULL,
+    ky_cuoc VARCHAR(7) NOT NULL,
+    tien_phong DECIMAL(12, 2) NOT NULL,
+    tien_dien DECIMAL(12, 2) NOT NULL,
+    tien_nuoc DECIMAL(12, 2) NOT NULL,
+    phi_khac DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    tong_tien DECIMAL(12, 2) NOT NULL,
+    trang_thai ENUM('ChuaThu', 'DaThu') DEFAULT 'ChuaThu',
+    ngay_dong DATETIME NULL,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_hoa_don_phong FOREIGN KEY (phong_id) REFERENCES phong(id),
+    CONSTRAINT fk_hoa_don_hop_dong FOREIGN KEY (hop_dong_id) REFERENCES hop_dong(id),
+    UNIQUE KEY uq_hoa_don_phong_ky (phong_id, ky_cuoc),
+    INDEX idx_hoa_don_trang_thai_ky (trang_thai, ky_cuoc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement

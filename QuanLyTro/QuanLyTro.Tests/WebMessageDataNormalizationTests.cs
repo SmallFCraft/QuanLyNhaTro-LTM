@@ -28,7 +28,7 @@ public sealed class WebMessageDataNormalizationTests
     public void Envelope_MissingDataField_YieldsUndefined()
     {
         var env = JsonSerializer.Deserialize<WebMessageBridge.ClientEnvelope>(
-            """{"requestId":"r1","action":"INVOICE_GET_ALL"}""", JsonDefaults.Options);
+            """{"requestId":"r1","hanh_dong":"HOA_DON_LAY_TAT_CA"}""", JsonDefaults.Options);
 
         Assert.IsNotNull(env);
         Assert.AreEqual(JsonValueKind.Undefined, env!.Data.ValueKind);
@@ -38,7 +38,7 @@ public sealed class WebMessageDataNormalizationTests
     public void Envelope_NullData_YieldsNullKind()
     {
         var env = JsonSerializer.Deserialize<WebMessageBridge.ClientEnvelope>(
-            """{"requestId":"r1","action":"INVOICE_GET_ALL","data":null}""", JsonDefaults.Options);
+            """{"requestId":"r1","hanh_dong":"HOA_DON_LAY_TAT_CA","data":null}""", JsonDefaults.Options);
 
         Assert.IsNotNull(env);
         Assert.AreEqual(JsonValueKind.Null, env!.Data.ValueKind);
@@ -53,7 +53,7 @@ public sealed class WebMessageDataNormalizationTests
         var bridge = new WebMessageBridge(new QuanLyTro.Network.TcpClientService());
 
         await bridge.DispatchAsync(
-            """{"requestId":"r1","action":"INVOICE_GET_ALL"}""",
+            """{"requestId":"r1","hanh_dong":"HOA_DON_LAY_TAT_CA"}""",
             msg => { reply = msg; return Task.CompletedTask; });
 
         Assert.IsNotNull(reply, "Bridge phải luôn trả lời, kể cả khi lỗi.");
@@ -71,7 +71,7 @@ public sealed class WebMessageDataNormalizationTests
         var bridge = new WebMessageBridge(new QuanLyTro.Network.TcpClientService());
 
         await bridge.DispatchAsync(
-            """{"requestId":"r2","action":"INVOICE_GET_ALL","data":null}""",
+            """{"requestId":"r2","hanh_dong":"HOA_DON_LAY_TAT_CA","data":null}""",
             msg => { reply = msg; return Task.CompletedTask; });
 
         Assert.IsNotNull(reply);

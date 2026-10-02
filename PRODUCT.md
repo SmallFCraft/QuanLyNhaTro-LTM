@@ -29,7 +29,7 @@ Hệ thống quản lý phòng trọ Client–Server TCP/IP (đồ án môn Lậ
 
 ## Positioning
 
-Kiến trúc 3 tầng Client–Server qua TCP/IP tự viết (18→22 action), mọi business rule (BR-01..BR-14) enforce tại Server + ràng buộc MySQL — khác với app quản lý trọ thông thường chạy trực tiếp DB.
+Kiến trúc 3 tầng Client–Server qua TCP/IP tự viết (18→22 hanh_dong), mọi business rule (BR-01..BR-14) enforce tại Server + ràng buộc MySQL — khác với app quản lý trọ thông thường chạy trực tiếp DB.
 
 ## Operating Context
 
@@ -39,8 +39,8 @@ Kiến trúc 3 tầng Client–Server qua TCP/IP tự viết (18→22 action), m
 
 ## Capabilities and Constraints
 
-- 22 action TCP, JSON 1 dòng kết thúc `\n`, packet ≤ 1 MiB.
-- 2 vai: Landlord (full CRUD) / Tenant (chỉ `INVOICE_GET_MINE`). Phân quyền server-enforced (BR-14).
+- 22 hanh_dong TCP, JSON 1 dòng kết thúc `\n`, packet ≤ 1 MiB.
+- 2 vai: ChuTro (full CRUD) / KhachThue (chỉ `HOA_DON_CUA_TOI`). Phân quyền server-enforced (BR-14).
 - 14 business rule BR-01..BR-14; 24 user story US-01..US-24.
 - Đã chốt: không làm vai công an phường; US-20 tra cứu nhanh deferred; US-19 khoảng tháng cộng client-side.
 - Client WinForms `net8.0-windows`; Server/Shared/Tests `net8.0`.
@@ -54,8 +54,8 @@ Tên hiển thị: "Quản Lý Phòng Trọ Ngũ Hành Sơn". Tiếng Việt to�
 - [DESIGN.md](DESIGN.md) — hệ thống thiết kế chuẩn (Terracotta &amp; Slate) từ Stitch; nguồn duy nhất cho token màu/chữ/component.
 - [docs/superpowers/mockups/giaodien.html](docs/superpowers/mockups/giaodien.html) — bản mẫu giao diện đã áp design system: đăng nhập 3 vai, chủ trọ 7 tab, công an phường 3 tab, người thuê 1 tab.
 - [BAO_CAO_USER_STORY.md](BAO_CAO_USER_STORY.md) — báo cáo môn học, 23 US gốc + 13 BR.
-- [docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md](docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md) — SRS 18 action.
-- [docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md](docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md) — delta 2 tác nhân, 22 action.
+- [docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md](docs/superpowers/specs/2026-09-09-quanly-phongtro-srs-design.md) — SRS 18 hanh_dong.
+- [docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md](docs/superpowers/specs/2026-09-10-quanly-phongtro-multi-actor-design.md) — delta 2 tác nhân, 22 hanh_dong.
 - [docs/superpowers/plans/2026-09-09-quanly-phongtro-net8.md](docs/superpowers/plans/2026-09-09-quanly-phongtro-net8.md) — plan 11 task (đang vá).
 - Code: Task 1–2 plan DONE (Shared DTO + protocol + tests PASS).
 
@@ -64,7 +64,7 @@ Tên hiển thị: "Quản Lý Phòng Trọ Ngũ Hành Sơn". Tiếng Việt to�
 1. Server là nguồn chân lý — Client không quyết định nghiệp vụ.
 2. Dashboard trước bảng biểu — chủ trọ mở app thấy ngay việc cần làm (nợ, HĐ sắp hết hạn).
 3. Luồng tháng là xương sống demo — mọi màn hình phục vụ chuỗi phòng→hóa đơn→thu tiền.
-4. 2 vai, 2 trải nghiệm: Landlord thấy đủ; Tenant thấy đúng 1 tab, không nút ghi.
+4. 2 vai, 2 trải nghiệm: ChuTro thấy đủ; KhachThue thấy đúng 1 tab, không nút ghi.
 
 ## Accessibility & Inclusion
 

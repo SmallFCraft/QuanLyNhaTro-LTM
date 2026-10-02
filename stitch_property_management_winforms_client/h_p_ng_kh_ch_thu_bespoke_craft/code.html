@@ -113,7 +113,7 @@
 </div>
 </div>
 </div>
-<!-- Active Tab Indicator & Title -->
+<!-- HieuLuc Tab Indicator & Title -->
 <div class="h-10 px-4 flex items-center justify-between bg-[#101417]/80">
 <div class="flex items-center gap-2">
 <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[#1c2023] text-terracotta border border-terracotta/30">MODULE</span>
@@ -130,7 +130,7 @@
 <!-- Segmented Tab Switcher (Architectural Slate) -->
 <div class="p-1 rounded-xl bg-[#181c1f] border border-[#262a2e] flex items-center gap-1">
 <button class="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-[#262a2e] text-cream text-xs font-headline font-semibold border border-[#363a3d] shadow-sm transition-colors">
-<span class="material-symbols-outlined text-[16px] text-terracotta">description</span>
+<span class="material-symbols-outlined text-[16px] text-terracotta">mo_ta</span>
 <span>Hợp Đồng</span>
 </button>
 <button class="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-cream-muted hover:text-cream hover:bg-[#1f2327] text-xs font-headline font-medium transition-colors">
@@ -170,7 +170,7 @@
 </div>
 <!-- Crisp KPI Metric Architectural Cards -->
 <div class="grid grid-cols-3 gap-2">
-<!-- Active KPI -->
+<!-- HieuLuc KPI -->
 <div class="bg-[#181c1f] border border-[#262a2e] border-t-2 border-t-sage rounded-xl p-3 flex flex-col justify-between">
 <div class="flex items-center gap-1.5 text-sage">
 <span class="material-symbols-outlined text-[15px]">verified</span>
@@ -207,7 +207,7 @@
 <!-- Contract Cards List: Crisp Architectural Cards -->
 <div class="flex flex-col space-y-2.5" id="contractList">
 <!-- Record 1: Phòng 101 -->
-<div class="contract-card bg-[#181c1f] hover:bg-[#1e2327] border border-[#262a2e] hover:border-[#3a4148] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-sage" data-contract="HĐ-2025-089" data-room="101" data-status="ACTIVE">
+<div class="contract-card bg-[#181c1f] hover:bg-[#1e2327] border border-[#262a2e] hover:border-[#3a4148] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-sage" data-contract="HĐ-2025-089" data-room="101" data-trang_thai="ACTIVE">
 <div class="flex items-center justify-between">
 <div class="flex items-center gap-2">
 <span class="px-2 py-0.5 rounded bg-[#262a2e] text-cream text-[11px] font-mono font-bold border border-[#363a3d]">P.101</span>
@@ -244,7 +244,7 @@
 </div>
 </div>
 <!-- Record 2: Phòng 103 (Expiring - Terracotta Focus) -->
-<div class="contract-card bg-[#1d1715] hover:bg-[#231c19] border border-[#442b23] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-terracotta" data-contract="HĐ-2025-042" data-room="103" data-status="EXPIRING">
+<div class="contract-card bg-[#1d1715] hover:bg-[#231c19] border border-[#442b23] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-terracotta" data-contract="HĐ-2025-042" data-room="103" data-trang_thai="EXPIRING">
 <div class="flex items-center justify-between">
 <div class="flex items-center gap-2">
 <span class="px-2 py-0.5 rounded bg-terracotta text-white text-[11px] font-mono font-bold">P.103</span>
@@ -281,7 +281,7 @@
 </div>
 </div>
 <!-- Record 3: Phòng 104 -->
-<div class="contract-card bg-[#181c1f] hover:bg-[#1e2327] border border-[#262a2e] hover:border-[#3a4148] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-sage" data-contract="HĐ-2024-118" data-room="104" data-status="ACTIVE">
+<div class="contract-card bg-[#181c1f] hover:bg-[#1e2327] border border-[#262a2e] hover:border-[#3a4148] rounded-xl p-3.5 transition-all duration-150 cursor-pointer shadow-sm active:scale-[0.99] border-l-[3px] border-l-sage" data-contract="HĐ-2024-118" data-room="104" data-trang_thai="ACTIVE">
 <div class="flex items-center justify-between">
 <div class="flex items-center gap-2">
 <span class="px-2 py-0.5 rounded bg-[#262a2e] text-cream text-[11px] font-mono font-bold border border-[#363a3d]">P.104</span>
@@ -347,7 +347,7 @@
 </button>
 </div>
 </div>
-<!-- TcpClient Clean Status Strip -->
+<!-- TcpClient Clean TrangThai Strip -->
 <div class="bg-[#14181c] border border-[#262a2e] rounded-lg px-3 py-2 flex items-center justify-between text-xs text-cream-muted font-mono">
 <div class="flex items-center gap-2 min-w-0 truncate">
 <span class="w-2 h-2 rounded-full bg-sage shrink-0"></span>
@@ -381,9 +381,9 @@
 <span class="material-symbols-outlined text-[19px]">groups</span>
 <span class="text-[10px] font-headline font-medium tracking-tight">Khách Thuê</span>
 </a>
-<!-- Active Center Tab: Terracotta Solid Button -->
+<!-- HieuLuc Center Tab: Terracotta Solid Button -->
 <a class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg bg-terracotta text-white shadow-sm transition-colors" data-path="hop-dong" href="#">
-<span class="material-symbols-outlined text-[19px]">description</span>
+<span class="material-symbols-outlined text-[19px]">mo_ta</span>
 <span class="text-[10px] font-headline font-semibold tracking-tight">Hợp Đồng</span>
 </a>
 <a class="flex flex-col items-center justify-center gap-0.5 py-1 rounded-lg text-cream-muted hover:text-cream transition-colors" data-path="hoa-don" href="#">
@@ -395,7 +395,7 @@
 <span class="text-[10px] font-headline font-medium tracking-tight">Của Tôi</span>
 </a>
 </div>
-<!-- Mini Connection Status Sub-bar -->
+<!-- Mini Connection TrangThai Sub-bar -->
 <div class="h-6 px-3 bg-[#0d1012] border-t border-[#22272b] flex items-center justify-between text-cream-muted text-[10px] font-mono">
 <div class="flex items-center gap-1.5">
 <span class="w-1.5 h-1.5 rounded-full bg-sage"></span>
@@ -436,7 +436,7 @@
 
       function filterCards() {
         const term = (searchInput.value || '').toLowerCase().trim();
-        const status = statusFilter.value;
+        const trang_thai = statusFilter.value;
 
         if (term.length > 0) {
           clearSearchBtn.classList.remove('hidden');
@@ -446,10 +446,10 @@
 
         cards.forEach(card => {
           const text = card.textContent.toLowerCase();
-          const cardStatus = card.getAttribute('data-status');
+          const cardStatus = card.getAttribute('data-trang_thai');
 
           const matchesSearch = term === '' || text.includes(term);
-          const matchesStatus = status === 'ALL' || cardStatus === status;
+          const matchesStatus = trang_thai === 'ALL' || cardStatus === trang_thai;
 
           if (matchesSearch && matchesStatus) {
             card.classList.remove('hidden');

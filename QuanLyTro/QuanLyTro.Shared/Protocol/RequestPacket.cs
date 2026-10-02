@@ -8,8 +8,8 @@ namespace QuanLyTro.Shared.Protocol;
 /// </summary>
 public sealed record RequestPacket(string Action, string? Token, JsonElement Data)
 {
-    public static RequestPacket Create<T>(string action, string? token, T data) =>
-        new(action, token, JsonSerializer.SerializeToElement(data, JsonDefaults.Options));
+    public static RequestPacket Create<T>(string hanh_dong, string? token, T data) =>
+        new(hanh_dong, token, JsonSerializer.SerializeToElement(data, JsonDefaults.Options));
 
     public T GetData<T>() => Data.Deserialize<T>(JsonDefaults.Options)
         ?? throw new JsonException("Request Data deserialized to null.");

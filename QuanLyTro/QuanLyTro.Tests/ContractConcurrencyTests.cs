@@ -8,7 +8,7 @@ using QuanLyTro.Shared.Models;
 namespace QuanLyTro.Tests;
 
 [TestClass]
-public sealed class ContractConcurrencyTests
+public sealed class HopDongConcurrencyTests
 {
     private const string ConnectionString =
         "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User ID=root;Password=;SslMode=None;";
@@ -19,14 +19,14 @@ public sealed class ContractConcurrencyTests
     private const string TestCccd = "999999999188";
 
     private Database _database = null!;
-    private ContractService _service = null!;
+    private HopDongService _service = null!;
 
     [TestInitialize]
     public async Task SetUpAsync()
     {
         _database = new Database(ConnectionString);
-        var repo = new ContractRepository(_database);
-        _service = new ContractService(repo);
+        var repo = new HopDongRepository(_database);
+        _service = new HopDongService(repo);
 
         await CleanupAsync();
         await SeedRoomAndTenantAsync();
@@ -49,7 +49,7 @@ public sealed class ContractConcurrencyTests
             await startSignal.Task;
             try
             {
-                var contract = new ContractDto(
+                var contract = new HopDongDto(
                     0,
                     TestRoomId,
                     TestTenantId,
@@ -57,7 +57,7 @@ public sealed class ContractConcurrencyTests
                     new DateOnly(2026, 12, 31),
                     3_000_000m,
                     1_500_000m,
-                    ContractStatus.Active,
+                    TrangThaiHopDong.HieuLuc,
                     "Concurrent race test");
 
                 var created = await _service.CreateAsync(contract);
@@ -74,21 +74,21 @@ public sealed class ContractConcurrencyTests
         var results = await Task.WhenAll(tasks);
 
         var successCount = results.Count(r => r.Success);
-        var ruleFailures = results.Count(r => !r.Success && r.Ex is BusinessRuleException);
+        var ruleFailures = results.Count(r => !r.Success && r.Ex is LoiNghiepVu);
 
         Assert.AreEqual(1, successCount, $"Chỉ đúng 1 hợp đồng được phép thành công, thực tế: {successCount}");
         Assert.AreEqual(concurrency - 1, ruleFailures,
-            $"Tất cả {concurrency - 1} request còn lại phải bị chặn bởi BusinessRuleException");
+            $"Tất cả {concurrency - 1} request còn lại phải bị chặn bởi LoiNghiepVu");
 
         // DB authoritative count check
         await using var connection = await _database.OpenAsync();
         await using var command = new MySqlCommand(
-            "SELECT COUNT(*) FROM contracts WHERE room_id = @roomId AND status = 'Active'",
+            "SELECT COUNT(*) FROM hop_dong WHERE phong_id = @phongId AND trang_thai = 'HieuLuc'",
             connection);
-        command.Parameters.AddWithValue("@roomId", TestRoomId);
+        command.Parameters.AddWithValue("@phongId", TestRoomId);
         var activeInDb = Convert.ToInt64(await command.ExecuteScalarAsync());
 
-        Assert.AreEqual(1L, activeInDb, "DB chỉ được có đúng 1 hợp đồng Active cho phòng này.");
+        Assert.AreEqual(1L, activeInDb, "DB chỉ được có đúng 1 hợp đồng HieuLuc cho phòng này.");
     }
 
     private async Task SeedRoomAndTenantAsync()
@@ -96,24 +96,24 @@ public sealed class ContractConcurrencyTests
         await using var connection = await _database.OpenAsync();
 
         const string insertRoom = """
-            INSERT INTO rooms (id, room_number, price, max_occupants, status, description)
-            VALUES (@id, @roomNumber, 3000000, 2, 'Available', 'Test room');
+            INSERT INTO phong (id, so_phong, gia_thue, so_nguoi_toi_da, trang_thai, mo_ta)
+            VALUES (@id, @soPhong, 3000000, 2, 'Trong', 'Test room');
             """;
         await using (var cmd = new MySqlCommand(insertRoom, connection))
         {
             cmd.Parameters.AddWithValue("@id", TestRoomId);
-            cmd.Parameters.AddWithValue("@roomNumber", TestRoomNumber);
+            cmd.Parameters.AddWithValue("@soPhong", TestRoomNumber);
             await cmd.ExecuteNonQueryAsync();
         }
 
         const string insertTenant = """
-            INSERT INTO tenants (id, room_id, full_name, dob, id_card, password_hash, phone, hometown, workplace, is_temporary_registered)
-            VALUES (@id, @roomId, 'Test Representative', '1995-01-01', @cccd, NULL, '0987654321', 'Da Nang', NULL, 1);
+            INSERT INTO khach_thue (id, phong_id, ho_ten, ngay_sinh, cccd, mat_khau_hash, so_dien_thoai, que_quan, noi_lam_viec, da_dang_ky_tam_tru)
+            VALUES (@id, @phongId, 'Test Representative', '1995-01-01', @cccd, NULL, '0987654321', 'Da Nang', NULL, 1);
             """;
         await using (var cmd = new MySqlCommand(insertTenant, connection))
         {
             cmd.Parameters.AddWithValue("@id", TestTenantId);
-            cmd.Parameters.AddWithValue("@roomId", TestRoomId);
+            cmd.Parameters.AddWithValue("@phongId", TestRoomId);
             cmd.Parameters.AddWithValue("@cccd", TestCccd);
             await cmd.ExecuteNonQueryAsync();
         }
@@ -125,19 +125,19 @@ public sealed class ContractConcurrencyTests
         {
             await using var connection = await _database.OpenAsync();
 
-            await using (var cmd = new MySqlCommand("DELETE FROM contracts WHERE room_id = @id", connection))
+            await using (var cmd = new MySqlCommand("DELETE FROM hop_dong WHERE phong_id = @id", connection))
             {
                 cmd.Parameters.AddWithValue("@id", TestRoomId);
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            await using (var cmd = new MySqlCommand("DELETE FROM tenants WHERE id = @id", connection))
+            await using (var cmd = new MySqlCommand("DELETE FROM khach_thue WHERE id = @id", connection))
             {
                 cmd.Parameters.AddWithValue("@id", TestTenantId);
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            await using (var cmd = new MySqlCommand("DELETE FROM rooms WHERE id = @id", connection))
+            await using (var cmd = new MySqlCommand("DELETE FROM phong WHERE id = @id", connection))
             {
                 cmd.Parameters.AddWithValue("@id", TestRoomId);
                 await cmd.ExecuteNonQueryAsync();

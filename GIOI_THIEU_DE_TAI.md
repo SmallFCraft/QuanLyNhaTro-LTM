@@ -43,9 +43,9 @@ Hệ thống phục vụ bốn nhóm người dùng, phản ánh mô hình thự
 | Vai trò | Mô tả | Phạm vi quyền |
 |---|---|---|
 | **Chủ trọ** (Owner) | Người sở hữu một hoặc nhiều khu trọ tại các khu vực trong phường Ngũ Hành Sơn | Toàn quyền trên mọi khu: phòng, người thuê, hợp đồng, điện nước, hóa đơn, thống kê; tạo tài khoản và phân công quản lý trọ theo khu |
-| **Quản lý trọ** (Manager) | Người được chủ trọ ủy quyền vận hành một khu trọ cụ thể | Thao tác đầy đủ (thêm/sửa, chốt chỉ số, lập hóa đơn, xác nhận thu) nhưng **chỉ trong khu được phân công**; không thấy dữ liệu các khu khác; không được phân quyền cho người khác |
+| **Quản lý trọ** (QuanLy) | Người được chủ trọ ủy quyền vận hành một khu trọ cụ thể | Thao tác đầy đủ (thêm/sửa, chốt chỉ số, lập hóa đơn, xác nhận thu) nhưng **chỉ trong khu được phân công**; không thấy dữ liệu các khu khác; không được phân quyền cho người khác |
 | **Công an phường** (Chỉ xem) | Cán bộ phụ trách an ninh trật tự và quản lý lưu trú của phường | **Chỉ xem**: danh sách người thuê, thông tin tạm trú – tạm vắng, tình trạng từng phòng, từng khu; màn hình gần giống chủ trọ/quản lý trọ nhưng mọi hành động ghi đều bị Server từ chối |
-| **Khách thuê** (Tenant) | Người đang ở trong khu trọ | Tra cứu hóa đơn và lịch sử thanh toán của phòng mình |
+| **Khách thuê** (KhachThue) | Người đang ở trong khu trọ | Tra cứu hóa đơn và lịch sử thanh toán của phòng mình |
 
 Server kiểm tra vai trò và phạm vi khu của từng phiên đăng nhập trước khi xử lý mọi yêu cầu (quy tắc BR-14, BR-15).
 
@@ -77,7 +77,7 @@ Server kiểm tra vai trò và phạm vi khu của từng phiên đăng nhập t
 
 **Nghiệp vụ thực thi hoàn toàn ở Server.** Client chỉ gửi yêu cầu và hiển thị kết quả, không chứa logic nghiệp vụ. Mọi quy tắc ràng buộc đều do Server kiểm tra trước khi ghi dữ liệu — Client không được phép quyết định tính hợp lệ của nghiệp vụ. Điều này khiến hệ thống an toàn trước việc sửa đổi Client và đúng với kiến trúc ba tầng.
 
-**Chống tranh chấp dữ liệu ở hai tầng.** Tính nhất quán khi nhiều Client thao tác đồng thời được bảo đảm bằng: (a) ràng buộc duy nhất ở tầng cơ sở dữ liệu — hai Client cùng thêm một số phòng thì chỉ một lần thành công; (b) giao dịch (transaction) với cơ chế khóa của InnoDB khi thao tác ghi liên quan nhiều bảng — hoặc thành công toàn bộ, hoặc không ghi gì.
+**Chống tranh chấp dữ liệu ở hai tầng.** Tính nhất quán khi nhiều Client thao tác đồng thời được bảo đảm bằng: (a) ràng buộc duy nhất ở tầng cơ sở dữ liệu — hai Client cùng thêm một số phòng thì chỉ một lần thành công; (b) giao dịch (giao_dich) với cơ chế khóa của InnoDB khi thao tác ghi liên quan nhiều bảng — hoặc thành công toàn bộ, hoặc không ghi gì.
 
 **Mô hình một Client — một luồng.** Luồng chính lắng nghe và chấp nhận kết nối; mỗi kết nối mới được bàn giao cho một luồng xử lý độc lập, tồn tại suốt vòng đời của Client đó. Server phục vụ nhiều Client thật sự song song thay vì xử lý tuần tự.
 
@@ -229,12 +229,12 @@ Mọi quy tắc dưới đây **đều được Server kiểm tra và thực thi
 | Xác thực | LOGIN | Đăng nhập tài khoản; trả về vai trò và phạm vi khu được phép truy cập |
 | Khu trọ | AREA_GET_ALL / AREA_ADD / AREA_UPDATE / AREA_DELETE | Lấy danh sách, thêm, sửa, xóa khu trọ |
 | Phân công | ASSIGN_GET / ASSIGN_SET | Lấy và gán quản lý trọ phụ trách khu |
-| Phòng | ROOM_GET_ALL / ROOM_ADD / ROOM_UPDATE / ROOM_DELETE | Lấy danh sách, thêm, sửa, xóa phòng |
-| Người thuê | TENANT_GET_BY_ROOM / TENANT_ADD / TENANT_UPDATE / TENANT_CHECKOUT | Lấy thành viên theo phòng, thêm, sửa, trả phòng |
-| Hợp đồng | CONTRACT_CREATE / CONTRACT_TERMINATE | Lập hợp đồng, chấm dứt hợp đồng |
-| Điện nước | UTILITY_RECORD / UTILITY_GET_PREVIOUS | Chốt chỉ số kỳ, lấy chỉ số kỳ trước |
-| Hóa đơn | INVOICE_CREATE / INVOICE_GET_ALL / INVOICE_PAY | Lập hóa đơn, danh sách, xác nhận thanh toán |
-| Báo cáo | REPORT_SUMMARY / EXPORT_RESIDENCE | Thống kê tổng hợp, xuất danh sách tạm trú |
+| Phòng | PHONG_LAY_TAT_CA / PHONG_THEM / PHONG_CAP_NHAT / PHONG_XOA | Lấy danh sách, thêm, sửa, xóa phòng |
+| Người thuê | KHACH_THUE_THEO_PHONG / KHACH_THUE_THEM / KHACH_THUE_CAP_NHAT / KHACH_THUE_TRA_PHONG | Lấy thành viên theo phòng, thêm, sửa, trả phòng |
+| Hợp đồng | HOP_DONG_TAO / HOP_DONG_CHAM_DUT | Lập hợp đồng, chấm dứt hợp đồng |
+| Điện nước | DIEN_NUOC_GHI_SO / DIEN_NUOC_LAY_KY_TRUOC | Chốt chỉ số kỳ, lấy chỉ số kỳ trước |
+| Hóa đơn | HOA_DON_TAO / HOA_DON_LAY_TAT_CA / HOA_DON_THANH_TOAN | Lập hóa đơn, danh sách, xác nhận thanh toán |
+| Báo cáo | BAO_CAO_TONG_QUAN / XUAT_HO_SO_TAM_TRU | Thống kê tổng hợp, xuất danh sách tạm trú |
 
 ---
 
@@ -242,11 +242,11 @@ Mọi quy tắc dưới đây **đều được Server kiểm tra và thực thi
 
 Bổ sung hai bảng so với mô hình cốt lõi (tổng cộng 8 bảng):
 
-**Bảng areas — khu trọ:** tên khu (duy nhất trong hệ thống), địa chỉ trong phường, ghi chú. Mỗi phòng `rooms` có khóa ngoại về khu; BR-01 điều chỉnh thành "số phòng duy nhất trong khu".
+**Bảng areas — khu trọ:** tên khu (duy nhất trong hệ thống), địa chỉ trong phường, ghi chú. Mỗi phòng `phong` có khóa ngoại về khu; BR-01 điều chỉnh thành "số phòng duy nhất trong khu".
 
 **Bảng assignments — phân công quản lý:** khóa ngoại về tài khoản quản lý trọ và về khu, ghi nhận quản lý trọ phụ trách những khu nào. Vai và quyền của chủ trọ không phụ thuộc bảng này.
 
-Vai trò người dùng lưu trên bảng `users` mở rộng trường `role` (Owner / Manager / Police / Tenant); khách thuê dùng tài khoản gắn với hồ sơ người thuê tương ứng.
+Vai trò người dùng lưu trên bảng `tai_khoan` mở rộng trường `vai_tro` (Owner / QuanLy / CongAn / KhachThue); khách thuê dùng tài khoản gắn với hồ sơ người thuê tương ứng.
 
 ---
 

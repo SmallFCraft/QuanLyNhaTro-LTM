@@ -27,7 +27,7 @@ public sealed class UiHelpersContractTests
     [TestMethod]
     public void ActorPages_LoadUiJs_AndHaveModalRoot()
     {
-        foreach (var actor in new[] { "landlord", "police", "tenant" })
+        foreach (var actor in new[] { "chutro", "congan", "khachthue" })
         {
             var html = File.ReadAllText(Path.Combine(Wwwroot, actor, "index.html"));
             Assert.IsTrue(html.Contains("shared/js/ui.js"), $"{actor}/index.html chưa nạp ui.js");
@@ -42,23 +42,23 @@ public sealed class UiHelpersContractTests
     [TestMethod]
     public void ActorPages_HasAllScreenElementIds()
     {
-        var landlord = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
+        var landlord = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "index.html"));
         string[] landlordIds =
         {
             // Tổng quan
-            "kpi-total-rooms", "kpi-available", "kpi-tenants", "kpi-unpaid",
+            "kpi-total-phong", "kpi-available", "kpi-khach_thue", "kpi-unpaid",
             "dash-overdue-rows", "dash-expiring-rows",
             // Phòng
-            "room-search", "room-status",
+            "room-search", "room-trang_thai",
             // Người thuê
-            "tenant-room", "tenants-body",
+            "tenant-room", "khach_thue-body",
             // Hợp đồng
-            "contracts-body",
+            "hop_dong-body",
             // Điện nước
             "util-room", "util-month", "util-elec-old", "util-elec-new", "util-elec-rate",
             "util-water-old", "util-water-new", "util-water-rate",
             // Hóa đơn
-            "inv-month", "inv-room", "invoices-body",
+            "inv-month", "inv-room", "hoa_don-body",
             // Thống kê
             "rep-month",
             // Dùng chung
@@ -66,22 +66,22 @@ public sealed class UiHelpersContractTests
         };
         foreach (var id in landlordIds)
         {
-            Assert.IsTrue(landlord.Contains($"id=\"{id}\""), $"landlord/index.html thiếu id=\"{id}\"");
+            Assert.IsTrue(landlord.Contains($"id=\"{id}\""), $"chutro/index.html thiếu id=\"{id}\"");
         }
 
-        var police = File.ReadAllText(Path.Combine(Wwwroot, "police", "index.html"));
+        var police = File.ReadAllText(Path.Combine(Wwwroot, "congan", "index.html"));
         foreach (var id in new[] { "p-search", "p-from", "p-to", "modal-root" })
         {
-            Assert.IsTrue(police.Contains($"id=\"{id}\""), $"police/index.html thiếu id=\"{id}\"");
+            Assert.IsTrue(police.Contains($"id=\"{id}\""), $"congan/index.html thiếu id=\"{id}\"");
         }
 
-        var tenant = File.ReadAllText(Path.Combine(Wwwroot, "tenant", "index.html"));
+        var tenant = File.ReadAllText(Path.Combine(Wwwroot, "khachthue", "index.html"));
         foreach (var id in new[]
         {
             "tenant-history-body", "rc-room", "rc-elec", "rc-water", "rc-other", "rc-total", "modal-root"
         })
         {
-            Assert.IsTrue(tenant.Contains($"id=\"{id}\""), $"tenant/index.html thiếu id=\"{id}\"");
+            Assert.IsTrue(tenant.Contains($"id=\"{id}\""), $"khachthue/index.html thiếu id=\"{id}\"");
         }
     }
 
@@ -96,18 +96,18 @@ public sealed class UiHelpersContractTests
         var pages = new (string Actor, string[] Scripts)[]
         {
             ("auth", new[] { "../shared/js/bridge.js", "../shared/js/ui.js", "auth.js" }),
-            ("landlord", new[]
+            ("chutro", new[]
             {
                 "../shared/js/bridge.js", "../shared/js/ui.js", "js/main.js", "js/dash.js",
-                "js/rooms.js", "js/tenants.js", "js/contracts.js", "js/utils.js",
-                "js/invoices.js", "js/reports.js",
+                "js/phong.js", "js/khach_thue.js", "js/hop_dong.js", "js/utils.js",
+                "js/hoa_don.js", "js/reports.js", "js/perms.js",
             }),
-            ("police", new[]
+            ("congan", new[]
             {
                 "../shared/js/bridge.js", "../shared/js/ui.js", "js/main.js",
                 "js/citizens.js", "js/residence.js", "js/history.js",
             }),
-            ("tenant", new[] { "../shared/js/bridge.js", "../shared/js/ui.js", "js/tenant.js" }),
+            ("khachthue", new[] { "../shared/js/bridge.js", "../shared/js/ui.js", "js/khach_thue.js" }),
         };
         foreach (var (actor, scripts) in pages)
         {

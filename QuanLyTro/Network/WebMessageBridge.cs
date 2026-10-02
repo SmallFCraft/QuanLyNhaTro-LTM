@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using QuanLyTro.Protocol;
 using QuanLyTro.Shared.Protocol;
@@ -8,7 +9,7 @@ namespace QuanLyTro.Network;
 
 /// <summary>
 /// Cầu nối tiếp nhận thông điệp JSON từ JavaScript (WebView2) và định tuyến tới TcpClientService.
-/// Định dạng JS gửi: { "requestId": "r1", "action": "AUTH_LOGIN", "data": { ... } }
+/// Định dạng JS gửi: { "requestId": "r1", "hanh_dong": "DANG_NHAP", "data": { ... } }
 /// Định dạng C# trả về: { "requestId": "r1", "success": true/false, "data": ..., "error": "..." }
 /// </summary>
 public sealed class WebMessageBridge
@@ -20,7 +21,14 @@ public sealed class WebMessageBridge
         _client = client;
     }
 
-    public sealed record ClientEnvelope(string? RequestId, string? Action, JsonElement Data);
+    public sealed record ClientEnvelope(
+        string? RequestId,
+        [property: JsonPropertyName("action")] string? Action,
+        [property: JsonPropertyName("hanh_dong")] string? HanhDong,
+        JsonElement Data)
+    {
+        public string? EffectiveAction => !string.IsNullOrWhiteSpace(HanhDong) ? HanhDong : Action;
+    }
 
     public async Task DispatchAsync(string rawJson, Func<string, Task> postBack)
     {
@@ -28,7 +36,8 @@ public sealed class WebMessageBridge
         try
         {
             var env = JsonSerializer.Deserialize<ClientEnvelope>(rawJson, JsonDefaults.Options);
-            if (env is null || string.IsNullOrWhiteSpace(env.Action))
+            var action = env?.EffectiveAction;
+            if (env is null || string.IsNullOrWhiteSpace(action))
             {
                 await PostErrorAsync(postBack, null, "Gói tin JSON không hợp lệ hoặc thiếu Action.");
                 return;
@@ -37,7 +46,7 @@ public sealed class WebMessageBridge
             reqId = env.RequestId;
 
             // Action cục bộ: đăng xuất chỉ xóa token phiên trong C#, KHÔNG gửi lên TCP Server.
-            if (env.Action == "UI_LOGOUT")
+            if (action == "UI_LOGOUT")
             {
                 _client.Token = null;
                 var ok = JsonSerializer.Serialize(new { requestId = reqId, success = true, data = (object?)null, error = (string?)null }, JsonDefaults.Options);
@@ -51,16 +60,16 @@ public sealed class WebMessageBridge
             // nên chuẩn hóa về object rỗng trước khi chuyển tiếp.
             var payload = NormalizeData(env.Data);
 
-            var response = await _client.SendAsync<JsonElement, JsonElement>(env.Action, payload);
+            var response = await _client.SendAsync<JsonElement, JsonElement>(action, payload);
 
             // Ràng buộc spec §3.2: token phiên sống trong C#, KHÔNG xuống JS.
-            // Giữ token cho các request sau, trả JS chỉ phần login.js cần (fullName, role).
-            if (env.Action == ActionNames.AuthLogin)
+            // Giữ token cho các request sau, trả JS chỉ phần login.js cần (hoTen, vai_tro).
+            if (action == ActionNames.DangNhap)
             {
                 response = CaptureTokenAndStrip(response);
             }
 
-            // Khi Server trả về Data = null (vd UTILITY_GET_PREVIOUS cho phòng chưa có chỉ số kỳ trước):
+            // Khi Server trả về Data = null (vd DIEN_NUOC_LAY_KY_TRUOC cho phòng chưa có chỉ số kỳ trước):
             // TcpClientService.SendAsync trả về default(JsonElement) có ValueKind == Undefined.
             // JsonSerializer.Serialize gặp thuộc tính JsonElement(Undefined) sẽ ném:
             // "Operation is not valid due to the current state of the object."
@@ -95,7 +104,7 @@ public sealed class WebMessageBridge
     private JsonElement CaptureTokenAndStrip(JsonElement response)
     {
         string? token = null;
-        string? fullName = null;
+        string? hoTen = null;
         JsonElement roleElement = default;
 
         if (response.ValueKind == JsonValueKind.Object)
@@ -106,11 +115,11 @@ public sealed class WebMessageBridge
                 {
                     token = prop.Value.GetString();
                 }
-                else if (prop.NameEquals("fullName") || string.Equals(prop.Name, "FullName", StringComparison.OrdinalIgnoreCase))
+                else if (prop.NameEquals("hoTen") || string.Equals(prop.Name, "HoTen", StringComparison.OrdinalIgnoreCase))
                 {
-                    fullName = prop.Value.GetString();
+                    hoTen = prop.Value.GetString();
                 }
-                else if (prop.NameEquals("role") || string.Equals(prop.Name, "Role", StringComparison.OrdinalIgnoreCase))
+                else if (prop.NameEquals("vai_tro") || string.Equals(prop.Name, "VaiTro", StringComparison.OrdinalIgnoreCase))
                 {
                     roleElement = prop.Value;
                 }
@@ -131,8 +140,8 @@ public sealed class WebMessageBridge
 
         return JsonSerializer.SerializeToElement(new
         {
-            fullName,
-            role = roleVal
+            hoTen,
+            vai_tro = roleVal
         }, JsonDefaults.Options);
     }
 

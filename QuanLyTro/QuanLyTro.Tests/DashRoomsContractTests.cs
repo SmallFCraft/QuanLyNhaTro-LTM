@@ -12,29 +12,29 @@ public sealed class DashRoomsContractTests
     [TestMethod]
     public void RoomsJs_CoversFullCrudSurface()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "rooms.js"));
-        foreach (var action in new[] { "ROOM_GET_ALL", "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE" })
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "phong.js"));
+        foreach (var hanh_dong in new[] { "PHONG_LAY_TAT_CA", "PHONG_THEM", "PHONG_CAP_NHAT", "PHONG_XOA" })
         {
-            Assert.IsTrue(js.Contains(action), $"rooms.js thiếu {action}");
+            Assert.IsTrue(js.Contains(hanh_dong), $"phong.js thiếu {hanh_dong}");
         }
         // BR-12: nút xóa phải bị chặn khi phòng còn người
-        Assert.IsTrue(js.Contains("currentOccupants"), "rooms.js thiếu kiểm tra sức chứa để chặn xóa");
+        Assert.IsTrue(js.Contains("soNguoiHienTai"), "phong.js thiếu kiểm tra sức chứa để chặn xóa");
     }
 
     [TestMethod]
     public void DashJs_LoadsSummaryAndLists()
     {
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "js", "dash.js"));
-        Assert.IsTrue(js.Contains("REPORT_SUMMARY"), "dash.js chưa tải số liệu tổng quan");
-        Assert.IsTrue(js.Contains("INVOICE_GET_ALL"), "dash.js chưa tải danh sách còn nợ");
-        Assert.IsTrue(js.Contains("CONTRACT_GET_ALL"), "dash.js chưa tải danh sách HĐ sắp hết hạn");
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "dash.js"));
+        Assert.IsTrue(js.Contains("BAO_CAO_TONG_QUAN"), "dash.js chưa tải số liệu tổng quan");
+        Assert.IsTrue(js.Contains("HOA_DON_LAY_TAT_CA"), "dash.js chưa tải danh sách còn nợ");
+        Assert.IsTrue(js.Contains("HOP_DONG_LAY_TAT_CA"), "dash.js chưa tải danh sách HĐ sắp hết hạn");
     }
 
     [TestMethod]
     public void IndexHtml_LoadsLandlordSubScripts()
     {
-        var html = File.ReadAllText(Path.Combine(Wwwroot, "landlord", "index.html"));
-        Assert.IsTrue(html.Contains("js/rooms.js"), "landlord/index.html chưa nạp js/rooms.js");
-        Assert.IsTrue(html.Contains("js/dash.js"), "landlord/index.html chưa nạp js/dash.js");
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "index.html"));
+        Assert.IsTrue(html.Contains("js/phong.js"), "chutro/index.html chưa nạp js/phong.js");
+        Assert.IsTrue(html.Contains("js/dash.js"), "chutro/index.html chưa nạp js/dash.js");
     }
 }

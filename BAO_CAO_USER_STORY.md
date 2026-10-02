@@ -213,23 +213,23 @@ Các quy tắc dưới đây là ràng buộc bắt buộc, **đều được Se
 | BR-10 | Tổng tiền hóa đơn bằng tiền phòng cộng tiền điện, tiền nước và phí khác |
 | BR-11 | Hóa đơn đã thanh toán không được sửa đổi hay xóa |
 | BR-12 | Chỉ xóa được phòng khi phòng đang trống |
-| BR-13 | Các thao tác ghi liên quan nhiều bảng (hợp đồng, hóa đơn) chạy trong một giao dịch (transaction) — hoặc thành công toàn bộ, hoặc không ghi gì |
+| BR-13 | Các thao tác ghi liên quan nhiều bảng (hợp đồng, hóa đơn) chạy trong một giao dịch (giao_dich) — hoặc thành công toàn bộ, hoặc không ghi gì |
 
 ## 9. THIẾT KẾ DỮ LIỆU
 
 Cơ sở dữ liệu `quanly_phongtro_nhs` gồm 6 bảng chính, thiết kế ở dạng chuẩn hóa 3NF, dùng khóa ngoại đảm bảo toàn vẹn và ràng buộc duy nhất chặn trùng lặp ngay từ tầng cơ sở dữ liệu:
 
-**Bảng users** — tài khoản quản trị: tên đăng nhập (duy nhất), mật khẩu đã băm, họ tên.
+**Bảng tai_khoan** — tài khoản quản trị: tên đăng nhập (duy nhất), mật khẩu đã băm, họ tên.
 
-**Bảng rooms** — phòng trọ: số phòng (duy nhất), giá thuê, sức chứa tối đa, trạng thái (trống / đang thuê / bảo trì), mô tả.
+**Bảng phong** — phòng trọ: số phòng (duy nhất), giá thuê, sức chứa tối đa, trạng thái (trống / đang thuê / bảo trì), mô tả.
 
-**Bảng tenants** — người thuê: họ tên, ngày sinh, CCCD (duy nhất), số điện thoại, quê quán, nơi học tập/làm việc, cờ đăng ký tạm trú, khóa ngoại về phòng đang ở (cho phép rỗng khi chưa gán phòng).
+**Bảng khach_thue** — người thuê: họ tên, ngày sinh, CCCD (duy nhất), số điện thoại, quê quán, nơi học tập/làm việc, cờ đăng ký tạm trú, khóa ngoại về phòng đang ở (cho phép rỗng khi chưa gán phòng).
 
-**Bảng contracts** — hợp đồng: khóa ngoại về phòng và về người đại diện, ngày bắt đầu, ngày kết thúc, giá thuê, tiền cọc, trạng thái (còn hiệu lực / hết hạn / chấm dứt), ghi chú.
+**Bảng hop_dong** — hợp đồng: khóa ngoại về phòng và về người đại diện, ngày bắt đầu, ngày kết thúc, giá thuê, tiền cọc, trạng thái (còn hiệu lực / hết hạn / chấm dứt), ghi chú.
 
-**Bảng utility_readings** — chỉ số điện nước: khóa ngoại về phòng, tháng chốt (định dạng năm-tháng), chỉ số điện và nước cũ/mới, đơn giá điện và nước của kỳ. Ràng buộc duy nhất trên cặp (phòng, tháng) chặn ghi trùng kỳ.
+**Bảng chi_so_dien_nuoc** — chỉ số điện nước: khóa ngoại về phòng, tháng chốt (định dạng năm-tháng), chỉ số điện và nước cũ/mới, đơn giá điện và nước của kỳ. Ràng buộc duy nhất trên cặp (phòng, tháng) chặn ghi trùng kỳ.
 
-**Bảng invoices** — hóa đơn: khóa ngoại về phòng và về hợp đồng, tháng lập, các khoản tiền phòng, điện, nước, phí khác, tổng tiền, trạng thái thanh toán, thời điểm thanh toán. Ràng buộc duy nhất trên cặp (phòng, tháng) đảm bảo không có hai hóa đơn cùng kỳ.
+**Bảng hoa_don** — hóa đơn: khóa ngoại về phòng và về hợp đồng, tháng lập, các khoản tiền phòng, điện, nước, phí khác, tổng tiền, trạng thái thanh toán, thời điểm thanh toán. Ràng buộc duy nhất trên cặp (phòng, tháng) đảm bảo không có hai hóa đơn cùng kỳ.
 
 ## 10. KIẾN TRÚC VÀ GIAO THỨC TRAO ĐỔI
 
@@ -274,9 +274,9 @@ Hướng phát triển sau khi hoàn thành phần cốt lõi: gửi thông báo
 | Nhóm | Hành động | Ý nghĩa |
 |---|---|---|
 | Xác thực | LOGIN | Đăng nhập tài khoản chủ trọ |
-| Phòng | ROOM_GET_ALL / ROOM_ADD / ROOM_UPDATE / ROOM_DELETE | Lấy danh sách, thêm, sửa, xóa phòng |
-| Người thuê | TENANT_GET_BY_ROOM / TENANT_ADD / TENANT_UPDATE / TENANT_CHECKOUT | Lấy thành viên theo phòng, thêm, sửa, trả phòng |
-| Hợp đồng | CONTRACT_CREATE / CONTRACT_TERMINATE | Lập hợp đồng, chấm dứt hợp đồng |
-| Điện nước | UTILITY_RECORD / UTILITY_GET_PREVIOUS | Chốt chỉ số kỳ, lấy chỉ số kỳ trước |
-| Hóa đơn | INVOICE_CREATE / INVOICE_GET_ALL / INVOICE_PAY | Lập hóa đơn, danh sách, xác nhận thanh toán |
-| Báo cáo | REPORT_SUMMARY / EXPORT_RESIDENCE | Thống kê tổng hợp, xuất danh sách tạm trú |
+| Phòng | PHONG_LAY_TAT_CA / PHONG_THEM / PHONG_CAP_NHAT / PHONG_XOA | Lấy danh sách, thêm, sửa, xóa phòng |
+| Người thuê | KHACH_THUE_THEO_PHONG / KHACH_THUE_THEM / KHACH_THUE_CAP_NHAT / KHACH_THUE_TRA_PHONG | Lấy thành viên theo phòng, thêm, sửa, trả phòng |
+| Hợp đồng | HOP_DONG_TAO / HOP_DONG_CHAM_DUT | Lập hợp đồng, chấm dứt hợp đồng |
+| Điện nước | DIEN_NUOC_GHI_SO / DIEN_NUOC_LAY_KY_TRUOC | Chốt chỉ số kỳ, lấy chỉ số kỳ trước |
+| Hóa đơn | HOA_DON_TAO / HOA_DON_LAY_TAT_CA / HOA_DON_THANH_TOAN | Lập hóa đơn, danh sách, xác nhận thanh toán |
+| Báo cáo | BAO_CAO_TONG_QUAN / XUAT_HO_SO_TAM_TRU | Thống kê tổng hợp, xuất danh sách tạm trú |

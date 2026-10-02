@@ -10,16 +10,16 @@ public sealed class PoliceShellContractTests
     private static string Wwwroot =>
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot");
 
-    private static string PoliceHtml => Path.Combine(Wwwroot, "police", "index.html");
+    private static string PoliceHtml => Path.Combine(Wwwroot, "congan", "index.html");
 
-    /// <summary>Mọi action ghi mà Công an phường tuyệt đối không được gọi (BR-16).</summary>
+    /// <summary>Mọi hanh_dong ghi mà Công an phường tuyệt đối không được gọi (BR-16).</summary>
     private static readonly string[] ForbiddenWriteActions =
     {
-        "ROOM_ADD", "ROOM_UPDATE", "ROOM_DELETE",
-        "TENANT_ADD", "TENANT_UPDATE", "TENANT_CHECKOUT", "TENANT_DELETE",
-        "CONTRACT_CREATE", "CONTRACT_TERMINATE", "CONTRACT_RENEW",
-        "UTILITY_RECORD",
-        "INVOICE_CREATE", "INVOICE_PAY"
+        "PHONG_THEM", "PHONG_CAP_NHAT", "PHONG_XOA",
+        "KHACH_THUE_THEM", "KHACH_THUE_CAP_NHAT", "KHACH_THUE_TRA_PHONG", "KHACH_THUE_XOA",
+        "HOP_DONG_TAO", "HOP_DONG_CHAM_DUT", "HOP_DONG_GIA_HAN",
+        "DIEN_NUOC_GHI_SO",
+        "HOA_DON_TAO", "HOA_DON_THANH_TOAN"
     };
 
     [TestMethod]
@@ -27,7 +27,7 @@ public sealed class PoliceShellContractTests
     {
         var html = File.ReadAllText(PoliceHtml);
         var start = html.IndexOf("id=\"police\"", System.StringComparison.Ordinal);
-        Assert.IsTrue(start >= 0, "police/index.html thiếu cửa sổ #police");
+        Assert.IsTrue(start >= 0, "congan/index.html thiếu cửa sổ #police");
 
         var policeBlock = html.Substring(start, html.Length - start);
         string[] tabKeys = { "citizens", "residence", "history" };
@@ -45,7 +45,7 @@ public sealed class PoliceShellContractTests
 
     /// <summary>
     /// C2 (spec §3.2): token phiên chỉ sống trong C#. Không file JS/HTML nào được đọc
-    /// `token` từ đối tượng người dùng trả về AUTH_LOGIN.
+    /// `token` từ đối tượng người dùng trả về DANG_NHAP.
     /// </summary>
     [TestMethod]
     public void FrontEnd_NeverReadsSessionToken()
@@ -79,21 +79,21 @@ public sealed class PoliceShellContractTests
     public void PoliceJs_UsesDocumentElementIds_AndNoWriteActions()
     {
         // Tìm kiếm ở tab Công dân, khoảng ngày ở tab Biến động.
-        var citizens = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "citizens.js"));
-        var history = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "history.js"));
+        var citizens = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "citizens.js"));
+        var history = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "history.js"));
         Assert.IsTrue(citizens.Contains("document.getElementById('p-search')"), "citizens.js phải đọc #p-search bằng getElementById");
         Assert.IsTrue(history.Contains("document.getElementById('p-from')"), "history.js phải đọc #p-from bằng getElementById");
         Assert.IsTrue(history.Contains("document.getElementById('p-to')"), "history.js phải đọc #p-to bằng getElementById");
 
-        // BR-16: shell công an không gọi bất kỳ action ghi nào — quét mọi script của module.
-        var policeJs = Directory.GetFiles(Path.Combine(Wwwroot, "police", "js"), "*.js");
+        // BR-16: shell công an không gọi bất kỳ hanh_dong ghi nào — quét mọi script của module.
+        var policeJs = Directory.GetFiles(Path.Combine(Wwwroot, "congan", "js"), "*.js");
         foreach (var file in policeJs)
         {
             var js = File.ReadAllText(file);
-            foreach (var action in ForbiddenWriteActions)
+            foreach (var hanh_dong in ForbiddenWriteActions)
             {
-                Assert.IsFalse(js.Contains(action),
-                    $"{Path.GetFileName(file)} vi phạm BR-16 — chứa action ghi: {action}");
+                Assert.IsFalse(js.Contains(hanh_dong),
+                    $"{Path.GetFileName(file)} vi phạm BR-16 — chứa hanh_dong ghi: {hanh_dong}");
             }
         }
     }
@@ -106,11 +106,11 @@ public sealed class PoliceShellContractTests
     public void CitizensTab_ExportButton_ExportsCitizensNotHistory()
     {
         var html = File.ReadAllText(PoliceHtml);
-        var js = File.ReadAllText(Path.Combine(Wwwroot, "police", "js", "citizens.js"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "citizens.js"));
 
         Assert.IsTrue(js.Contains("function exportCitizens"), "citizens.js thiếu exportCitizens()");
         Assert.IsTrue(html.Contains("onclick=\"exportCitizens()\""),
-            "police/index.html chưa nối nút Xuất danh sách sang exportCitizens()");
+            "congan/index.html chưa nối nút Xuất danh sách sang exportCitizens()");
 
         // Không được để nút Xuất danh sách gọi nhầm export lịch sử: tab Công dân phải
         // đứng trước tab Biến động trong DOM, và nút export đầu tiên phải là exportCitizens.

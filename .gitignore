@@ -10,7 +10,6 @@ TestResults/
 # AGENTS
 .claude/
 
-
 # SKILLS/MCP/...
 .impeccable/
 .stitch_property_management_winforms_client/

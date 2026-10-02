@@ -9,8 +9,8 @@ using QuanLyTro.Shared.Protocol;
 namespace QuanLyTro.Tests;
 
 /// <summary>
-/// Regression: khi Server trả về Data = null (ví dụ: UTILITY_GET_PREVIOUS khi phòng chưa có
-/// chỉ số kỳ trước, hoặc bất kỳ action nào trả null), TcpClientService trả về JsonElement
+/// Regression: khi Server trả về Data = null (ví dụ: DIEN_NUOC_LAY_KY_TRUOC khi phòng chưa có
+/// chỉ số kỳ trước, hoặc bất kỳ hanh_dong nào trả null), TcpClientService trả về JsonElement
 /// có ValueKind == Undefined.
 /// Nếu không chuẩn hóa, JsonSerializer.Serialize sẽ ném:
 /// "Operation is not valid due to the current state of the object."
@@ -22,7 +22,7 @@ public sealed class NullDataResponseRegressionTests
     [TestMethod]
     public void ServerOk_WithNullData_WireJsonHasDataNull()
     {
-        var serverPacket = ResponsePacket.Ok<UtilityReadingDto?>(null);
+        var serverPacket = ResponsePacket.Ok<ChiSoDienNuocDto?>(null);
         var wireJson = JsonSerializer.Serialize(serverPacket, JsonDefaults.Options);
 
         Assert.IsTrue(wireJson.Contains("\"data\":null"));

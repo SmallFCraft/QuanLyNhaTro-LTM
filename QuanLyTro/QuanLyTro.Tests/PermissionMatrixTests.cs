@@ -11,68 +11,68 @@ public sealed class PermissionMatrixTests
     [TestMethod]
     public void AllActions_AreRegisteredInMatrix()
     {
-        foreach (var action in ActionNames.All)
+        foreach (var hanh_dong in ActionNames.All)
         {
-            Assert.IsTrue(PermissionMatrix.IsKnown(action), $"Action chưa khai báo quyền: {action}");
+            Assert.IsTrue(MaTranPhanQuyen.IsKnown(hanh_dong), $"Action chưa khai báo quyền: {hanh_dong}");
         }
     }
 
     [TestMethod]
     public void Tenant_HasAccessOnlyToAuthAndInvoiceGetMine()
     {
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.AuthLogin, UserRole.Tenant));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetMine, UserRole.Tenant));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.DangNhap, VaiTroNguoiDung.KhachThue));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonCuaToi, VaiTroNguoiDung.KhachThue));
 
-        // Mọi action ghi hoặc list khác đều bị từ chối với Tenant (BR-14).
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomGetAll, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetAll, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoicePay, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ContractCreate, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantAdd, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ReportSummary, UserRole.Tenant));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ExportResidence, UserRole.Tenant));
+        // Mọi hanh_dong ghi hoặc list khác đều bị từ chối với KhachThue (BR-14).
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongLayTatCa, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonLayTatCa, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonThanhToan, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HopDongTao, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueThem, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.BaoCaoTongQuan, VaiTroNguoiDung.KhachThue));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.XuatHoSoTamTru, VaiTroNguoiDung.KhachThue));
     }
 
     [TestMethod]
     public void Police_HasReadOnlyAccessToAllowedActions_AndRejectedOnAllWrites()
     {
         // Được phép đọc
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.AuthLogin, UserRole.Police));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomGetAll, UserRole.Police));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.TenantGetByRoom, UserRole.Police));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ExportResidence, UserRole.Police));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ResidenceHistoryGet, UserRole.Police));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ExportResidenceHistory, UserRole.Police));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.DangNhap, VaiTroNguoiDung.CongAn));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhongLayTatCa, VaiTroNguoiDung.CongAn));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueTheoPhong, VaiTroNguoiDung.CongAn));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.XuatHoSoTamTru, VaiTroNguoiDung.CongAn));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.LichSuCuTruLay, VaiTroNguoiDung.CongAn));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.XuatLichSuCuTru, VaiTroNguoiDung.CongAn));
 
         // Bị cấm toàn bộ thao tác ghi (BR-16)
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomUpdate, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomDelete, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantAdd, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantUpdate, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantCheckout, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.TenantDelete, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ContractCreate, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.ContractTerminate, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.UtilityRecord, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceCreate, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoicePay, UserRole.Police));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetMine, UserRole.Police));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongCapNhat, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongXoa, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueThem, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueCapNhat, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueTraPhong, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.KhachThueXoa, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HopDongTao, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HopDongChamDut, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.DienNuocGhiSo, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonTao, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonThanhToan, VaiTroNguoiDung.CongAn));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonCuaToi, VaiTroNguoiDung.CongAn));
     }
 
     [TestMethod]
     public void Landlord_HasAccessToAllActionsExceptInvoiceGetMine()
     {
-        foreach (var action in ActionNames.All)
+        foreach (var hanh_dong in ActionNames.All)
         {
-            if (action == ActionNames.InvoiceGetMine)
+            if (hanh_dong == ActionNames.HoaDonCuaToi)
             {
-                Assert.IsFalse(PermissionMatrix.IsAllowed(action, UserRole.Landlord));
+                Assert.IsFalse(MaTranPhanQuyen.IsAllowed(hanh_dong, VaiTroNguoiDung.ChuTro));
             }
             else
             {
-                Assert.IsTrue(PermissionMatrix.IsAllowed(action, UserRole.Landlord), $"Landlord thiếu quyền: {action}");
+                Assert.IsTrue(MaTranPhanQuyen.IsAllowed(hanh_dong, VaiTroNguoiDung.ChuTro), $"ChuTro thiếu quyền: {hanh_dong}");
             }
         }
     }
@@ -80,24 +80,24 @@ public sealed class PermissionMatrixTests
     [TestMethod]
     public void Manager_HasOperationalPermissions_ButNotPermissionAdmin()
     {
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomGetAll, UserRole.Manager));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.InvoicePay, UserRole.Manager));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.ContractCreate, UserRole.Manager));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhongLayTatCa, VaiTroNguoiDung.QuanLy));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.QuanLy));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonThanhToan, VaiTroNguoiDung.QuanLy));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.HopDongTao, VaiTroNguoiDung.QuanLy));
 
         // Quản lý KHÔNG được phép quản lý phân quyền (chỉ Chủ trọ tối cao mới được)
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.PermissionGetMatrix, UserRole.Manager));
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.PermissionUpdateRole, UserRole.Manager));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhanQuyenLayMaTran, VaiTroNguoiDung.QuanLy));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhanQuyenCapNhatVaiTro, VaiTroNguoiDung.QuanLy));
 
         // Quản lý không xem hóa đơn cá nhân của người thuê
-        Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.InvoiceGetMine, UserRole.Manager));
+        Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.HoaDonCuaToi, VaiTroNguoiDung.QuanLy));
     }
 
     [TestMethod]
     public void Landlord_HasAllPermissions_IncludingPermissionAdmin()
     {
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.PermissionGetMatrix, UserRole.Landlord));
-        Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.PermissionUpdateRole, UserRole.Landlord));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhanQuyenLayMaTran, VaiTroNguoiDung.ChuTro));
+        Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhanQuyenCapNhatVaiTro, VaiTroNguoiDung.ChuTro));
     }
 
     [TestMethod]
@@ -105,29 +105,29 @@ public sealed class PermissionMatrixTests
     {
         try
         {
-            // Ban đầu Manager được thêm phòng
-            Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
+            // Ban đầu QuanLy được thêm phòng
+            Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.QuanLy));
 
-            // Thu hồi quyền RoomAdd của Manager
-            var updated = DefaultRolePermissions.All.ToDictionary(
+            // Thu hồi quyền PhongThem của QuanLy
+            var updated = QuyenMacDinhTheoVaiTro.All.ToDictionary(
                 kv => kv.Key,
-                kv => kv.Key.Equals("Manager", StringComparison.OrdinalIgnoreCase)
-                    ? kv.Value.Where(a => a != ActionNames.RoomAdd).ToList()
+                kv => kv.Key.Equals("QuanLy", StringComparison.OrdinalIgnoreCase)
+                    ? kv.Value.Where(a => a != ActionNames.PhongThem).ToList()
                     : kv.Value.ToList(),
                 StringComparer.OrdinalIgnoreCase);
 
-            PermissionMatrix.ApplyMatrix(updated);
+            MaTranPhanQuyen.ApplyMatrix(updated);
 
-            // Giờ Manager bị từ chối RoomAdd
-            Assert.IsFalse(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Manager));
+            // Giờ QuanLy bị từ chối PhongThem
+            Assert.IsFalse(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.QuanLy));
 
-            // Nhưng Landlord vẫn luôn được phép (bypass cứng trong code)
-            Assert.IsTrue(PermissionMatrix.IsAllowed(ActionNames.RoomAdd, UserRole.Landlord));
+            // Nhưng ChuTro vẫn luôn được phép (bypass cứng trong code)
+            Assert.IsTrue(MaTranPhanQuyen.IsAllowed(ActionNames.PhongThem, VaiTroNguoiDung.ChuTro));
         }
         finally
         {
             // Khôi phục lại ma trận mặc định
-            PermissionMatrix.ResetToDefaults();
+            MaTranPhanQuyen.ResetToDefaults();
         }
     }
 }

@@ -55,10 +55,10 @@ public sealed class TcpClientService : IDisposable
     }
 
     /// <summary>
-    /// Gửi một action với payload, đợi phản hồi đúng hạn 10s.
+    /// Gửi một hanh_dong với payload, đợi phản hồi đúng hạn 10s.
     /// Thread-safe: Semaphore(1,1) bảo đảm không bao giờ xáo trộn cặp request/response.
     /// </summary>
-    public async Task<TResp> SendAsync<TReq, TResp>(string action, TReq data, CancellationToken ct = default)
+    public async Task<TResp> SendAsync<TReq, TResp>(string hanh_dong, TReq data, CancellationToken ct = default)
     {
         if (_stream is null || _reader is null || _client is null || !_client.Connected)
         {
@@ -72,7 +72,7 @@ public sealed class TcpClientService : IDisposable
         await _gate.WaitAsync(token);
         try
         {
-            var packet = RequestPacket.Create(action, Token, data);
+            var packet = RequestPacket.Create(hanh_dong, Token, data);
             var json = JsonSerializer.Serialize(packet, JsonDefaults.Options);
             var payload = Encoding.UTF8.GetBytes(json + "\n");
             if (payload.Length > MaxPacketBytes)
@@ -101,7 +101,7 @@ public sealed class TcpClientService : IDisposable
 
             if (!response.Success)
             {
-                // Thông điệp tiếng Việt từ BusinessRuleException được server giữ nguyên
+                // Thông điệp tiếng Việt từ LoiNghiepVu được server giữ nguyên
                 throw new ClientRequestException(response.Message);
             }
 
