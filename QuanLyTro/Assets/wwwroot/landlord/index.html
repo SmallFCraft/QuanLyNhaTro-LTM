@@ -31,7 +31,7 @@
     <div class="userbar">
       <div class="usr">
         <i class="fas fa-user-circle fa-lg"></i> <b id="uname">Nguyễn Văn A</b>
-        <span class="role"><i class="fas fa-crown"></i> Chủ trọ</span>
+        <span class="role" id="user-role-badge"><i class="fas fa-crown"></i> Chủ trọ</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
@@ -52,6 +52,7 @@
       <div class="tab" data-tab="utils" onclick="loadLandlordTab('utils')"><i class="fas fa-tachometer-alt"></i> Điện nước</div>
       <div class="tab" data-tab="invoices" onclick="loadLandlordTab('invoices')"><i class="fas fa-receipt"></i> Hóa đơn</div>
       <div class="tab" data-tab="reports" onclick="loadLandlordTab('reports')"><i class="fas fa-chart-bar"></i> Thống kê</div>
+      <div class="tab" id="tabbtn-perms" data-tab="perms" onclick="loadLandlordTab('perms')"><i class="fas fa-user-shield"></i> Phân quyền</div>
     </div>
     <div class="content">
 
@@ -294,10 +295,25 @@
         </table>
         </div>
       </div>
+
+      <!-- PERMS (RBAC) -->
+      <div id="tab-perms" hidden>
+        <div class="perms-bar">
+          <div class="perms-roles" id="permsRoles"></div>
+          <div class="perms-actions">
+            <button class="btn" onclick="resetPermsDraft()"><i class="fas fa-rotate-left"></i> Hoàn tác</button>
+            <button class="btn btn-primary" onclick="saveRolePermissions()"><i class="fas fa-floppy-disk"></i> Lưu phân quyền</button>
+          </div>
+        </div>
+        <p class="perms-hint" id="permsHint">
+          <i class="fas fa-circle-info"></i> Chủ trọ luôn có toàn quyền và không thể bị thu hồi. Thay đổi áp dụng ngay cho mọi phiên đang mở của vai trò đó.
+        </p>
+        <div id="permsGroups"></div>
+      </div>
     </div>
   </div>
   <div class="statusstrip">
-    <div class="l"><i class="fas fa-shield-alt" style="color:var(--terracotta)"></i><span>Chủ trọ (Landlord)</span></div>
+    <div class="l"><i class="fas fa-shield-alt" style="color:var(--terracotta)"></i><span id="statusRole">Chủ trọ (Landlord)</span></div>
     <div class="r"><span>.NET 8.0 CLR</span></div>
   </div>
 </div>
@@ -314,5 +330,6 @@
 <script src="js/utils.js"></script>
 <script src="js/invoices.js"></script>
 <script src="js/reports.js"></script>
+<script src="js/perms.js"></script>
 </body>
 </html>

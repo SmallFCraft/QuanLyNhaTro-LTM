@@ -6,7 +6,8 @@ const LANDLORD_TITLES = {
   contracts: 'Hợp đồng & khách thuê',
   utils: 'Chốt chỉ số điện nước',
   invoices: 'Hóa đơn & thu tiền',
-  reports: 'Thống kê doanh thu'
+  reports: 'Thống kê doanh thu',
+  perms: 'Quản lý phân quyền'
 };
 
 const LANDLORD_LOADERS = {
@@ -16,7 +17,8 @@ const LANDLORD_LOADERS = {
   contracts: () => loadContracts(),
   utils: () => loadUtils(),
   invoices: () => loadInvoices(),
-  reports: () => loadReports()
+  reports: () => loadReports(),
+  perms: () => loadPerms()
 };
 
 async function loadLandlordTab(tabKey) {
@@ -42,8 +44,32 @@ async function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // auth.js điều hướng sang đây kèm ?u=<tên đã encode>.
-  const name = new URLSearchParams(window.location.search).get('u');
+  // auth.js điều hướng sang đây kèm ?u=<tên đã encode> và ?role=Landlord|Manager.
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('u');
   if (name) document.getElementById('uname').textContent = name;
+  applyLandlordRoleView(params.get('role') || 'Landlord');
   loadLandlordTab('dash');
 });
+
+/**
+ * Giao diện thích ứng theo vai trò. Server vẫn là nơi quyết định quyền cuối cùng ở mọi TCP action —
+ * đây chỉ là ẩn/hiện cho đúng trải nghiệm.
+ * - Landlord: hiện tab Phân quyền, huy hiệu Chủ trọ (Toàn quyền).
+ * - Manager: ẩn tab Phân quyền, huy hiệu Quản lý cơ sở.
+ */
+function applyLandlordRoleView(role) {
+  const isManager = role === 'Manager';
+  const badge = document.getElementById('user-role-badge');
+  const statusRole = document.getElementById('statusRole');
+  const permsBtn = document.getElementById('tabbtn-perms');
+
+  if (badge) {
+    badge.innerHTML = isManager
+      ? '<i class="fas fa-user-tie"></i> Quản lý cơ sở'
+      : '<i class="fas fa-crown"></i> Chủ trọ (Toàn quyền)';
+  }
+  if (statusRole) statusRole.textContent = isManager ? 'Quản lý cơ sở' : 'Chủ trọ (Landlord)';
+  if (permsBtn) permsBtn.style.display = isManager ? 'none' : '';
+  document.title = isManager ? 'Quản Lý Khu Trọ — Quản lý cơ sở' : 'Quản Lý Khu Trọ — Chủ trọ';
+}
