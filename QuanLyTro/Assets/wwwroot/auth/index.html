@@ -20,13 +20,8 @@
     <div class="app-name">Ký Túc Xá &amp; Nhà Trọ Số</div>
     <div class="app-sub">Phường Ngũ Hành Sơn · TP. Đà Nẵng</div>
     <form onsubmit="doLogin();return false">
-      <div class="roleseg" style="grid-column:1/-1">
-        <label><input type="radio" name="role" value="LANDLORD" checked><i class="fas fa-shield-alt"></i><span>Chủ trọ / Quản lý</span></label>
-        <label><input type="radio" name="role" value="POLICE"><i class="fas fa-user-shield"></i><span>Công an phường</span></label>
-        <label><input type="radio" name="role" value="TENANT"><i class="fas fa-user"></i><span>Khách thuê phòng</span></label>
-      </div>
       <label id="lblAcc"><i class="fas fa-user"></i> Tài khoản</label>
-      <input class="inp mono" id="lu" placeholder="admin (chủ trọ) / caphuong (công an) / CCCD (người thuê)">
+      <input class="inp mono" id="lu" placeholder="Tên tài khoản hoặc số CCCD của người thuê">
       <label><i class="fas fa-lock"></i> Mật khẩu</label>
       <input class="inp mono" type="password" id="lp" placeholder="••••••••">
       <label></label>
