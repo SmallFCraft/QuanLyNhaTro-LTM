@@ -33,7 +33,7 @@ public sealed class UserRepository(Database database) : IUserRepository
             ParseRole(reader.IsDBNull(reader.GetOrdinal("role")) ? null : reader.GetString("role")));
     }
 
-    /// <summary>Cột `role` là ENUM chuỗi; giá trị lạ (DB cũ) coi như Landlord để không chặn đăng nhập.</summary>
+    /// <summary>Cột `role` là ENUM chuỗi; giá trị lạ/null không bao giờ được fallback Landlord để tránh leo thang đặc quyền.</summary>
     private static UserRole ParseRole(string? raw) =>
-        Enum.TryParse<UserRole>(raw, ignoreCase: true, out var role) ? role : UserRole.Landlord;
+        Enum.TryParse<UserRole>(raw, ignoreCase: true, out var role) ? role : UserRole.Tenant;
 }

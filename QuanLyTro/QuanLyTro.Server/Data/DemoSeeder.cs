@@ -122,20 +122,22 @@ public static class DemoSeeder
 
     private static async Task SeedDefaultPermissionsAsync(MySqlConnection connection, CancellationToken ct)
     {
-        const string checkSql = "SELECT COUNT(*) FROM role_permissions";
-        await using (var checkCmd = new MySqlCommand(checkSql, connection))
+        // Kiểm tra theo từng vai trò: nếu bảng đã có dữ liệu nhưng thiếu vai trò mới (ví dụ Manager vừa bổ sung),
+        // vẫn gieo đủ cho vai trò đó mà không đè cấu hình của vai trò đã tùy biến.
+        const string checkRoleSql = "SELECT COUNT(*) FROM role_permissions WHERE role = @role";
+        const string insertSql = "INSERT IGNORE INTO role_permissions (role, action) VALUES (@role, @action)";
+
+        foreach (var (role, actions) in DefaultRolePermissions.All)
         {
+            await using var checkCmd = new MySqlCommand(checkRoleSql, connection);
+            checkCmd.Parameters.AddWithValue("@role", role);
             var count = Convert.ToInt64(await checkCmd.ExecuteScalarAsync(ct));
             if (count > 0)
             {
-                // Đã có dữ liệu quyền (có thể do Chủ trọ đã tùy chỉnh) — không ghi đè.
-                return;
+                // Vai trò này đã có dòng trong DB — không ghi đè cấu hình hiện tại.
+                continue;
             }
-        }
 
-        const string insertSql = "INSERT IGNORE INTO role_permissions (role, action) VALUES (@role, @action)";
-        foreach (var (role, actions) in DefaultRolePermissions.All)
-        {
             foreach (var action in actions)
             {
                 await ExecuteAsync(connection, insertSql, ct, ("@role", role), ("@action", action));

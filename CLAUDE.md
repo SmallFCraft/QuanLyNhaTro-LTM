@@ -177,58 +177,24 @@ All agents post:
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **QuanLyNhaTro-LTM** (1974 symbols, 5004 relationships, 170 execution flows, verified 2026-09-30). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **QuanLyNhaTro-LTM** (1886 symbols, 4595 relationships, 159 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> **CLI Version Trap:** Global CLI on PATH is `1.6.4-rc.48` while the MCP server runs `1.6.10`. Always use `npx gitnexus <cmd>` in terminal instead of bare `gitnexus`, to avoid storage version mismatches.
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
-## Mandatory Rules
+## Always Do
 
-- **`repo` argument is REQUIRED on every GitNexus call:** omitting `repo: "QuanLyNhaTro-LTM"` fails with validation error.
-- **Disambiguate common symbol names:** methods like `LoginAsync` return multiple candidates. Use `file_path`, `kind`, or `target_uid` to target the exact symbol.
-- **MUST run impact analysis before editing any symbol:**
-  ```json
-  mcp__plugin_gitnexus_gitnexus__impact({
-    "repo": "QuanLyNhaTro-LTM",
-    "target": "symbolName",
-    "direction": "upstream"
-  })
-  ```
-- **MUST run `detect_changes` before committing:**
-  ```json
-  mcp__plugin_gitnexus_gitnexus__detect_changes({
-    "repo": "QuanLyNhaTro-LTM"
-  })
-  ```
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use query with `search_query` (not `query`):
-  ```json
-  mcp__plugin_gitnexus_gitnexus__query({
-    "repo": "QuanLyNhaTro-LTM",
-    "search_query": "concept"
-  })
-  ```
-  *(Note: keyword/FTS search may degrade if DuckDB FTS extension is missing; `context` and `impact` remain fully functional).*
-- Full context on a symbol:
-  ```json
-  mcp__plugin_gitnexus_gitnexus__context({
-    "repo": "QuanLyNhaTro-LTM",
-    "name": "symbolName"
-  })
-  ```
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running impact analysis on it with `repo: "QuanLyNhaTro-LTM"`.
-- NEVER omit the `repo` parameter from any GitNexus tool call.
-- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph:
-  ```json
-  mcp__plugin_gitnexus_gitnexus__rename({
-    "repo": "QuanLyNhaTro-LTM",
-    "symbol_name": "OldName",
-    "new_name": "NewName"
-  })
-  ```
-- NEVER commit changes without running `detect_changes` to check affected scope.
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
 
 ## Resources
 
@@ -239,10 +205,10 @@ This project is indexed by GitNexus as **QuanLyNhaTro-LTM** (1974 symbols, 5004 
 | `gitnexus://repo/QuanLyNhaTro-LTM/processes` | All execution flows |
 | `gitnexus://repo/QuanLyNhaTro-LTM/process/{name}` | Step-by-step execution trace |
 
-## CLI Skills Reference
+## CLI
 
-| Task | Skill path |
-|------|------------|
+| Task | Read this skill file |
+|------|---------------------|
 | Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
 | Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
 | Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |

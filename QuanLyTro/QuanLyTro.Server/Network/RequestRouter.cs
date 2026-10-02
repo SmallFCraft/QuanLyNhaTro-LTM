@@ -117,7 +117,7 @@ public sealed class RequestRouter
             [ActionNames.ExportResidenceHistory] = (r, _, ct) =>
                 Ok(_residence.ExportHistoryAsync(r.GetData<ExportHistoryRequest>(), ct)),
 
-            [ActionNames.PermissionGetMatrix] = (_, _, ct) => GetPermissionMatrixAsync(ct),
+            [ActionNames.PermissionGetMatrix] = (_, s, ct) => GetPermissionMatrixAsync(s, ct),
             [ActionNames.PermissionUpdateRole] = (r, s, ct) => UpdateRolePermissionsAsync(r, s, ct),
         };
     }
@@ -213,10 +213,15 @@ public sealed class RequestRouter
 
     /// <summary>
     /// Ma trận quyền động hiện tại + danh mục action có thể gán (màn Phân quyền của Chủ trọ).
-    /// Chỉ Chủ trọ gọi được — PermissionMatrix đã chặn ở tầng trên.
+    /// Chỉ Chủ trọ gọi được — kiểm tra kép qua PermissionMatrix và session.Role.
     /// </summary>
-    private async Task<ResponsePacket> GetPermissionMatrixAsync(CancellationToken ct)
+    private async Task<ResponsePacket> GetPermissionMatrixAsync(Session session, CancellationToken ct)
     {
+        if (session.Role != UserRole.Landlord)
+        {
+            throw new UnauthorizedAccessException("Chỉ Chủ trọ mới có quyền xem phân quyền.");
+        }
+
         if (_permissions is null)
         {
             throw new BusinessRuleException("Server chưa cấu hình kho phân quyền.");
@@ -253,9 +258,15 @@ public sealed class RequestRouter
             throw new BusinessRuleException($"Không thể phân quyền cho vai trò '{payload.Role}'.");
         }
 
+        // Thiếu mảng Actions ≠ mảng rỗng: null từ chối, rỗng mới xóa sạch.
+        if (payload.Actions is null)
+        {
+            throw new BusinessRuleException("Thiếu danh sách quyền cần cập nhật.");
+        }
+
         // Chỉ nhận action có thật trong danh mục — chặn Client gửi tên bịa để tự mở quyền.
         var known = DefaultRolePermissions.Catalog.Select(c => c.Action).ToHashSet(StringComparer.Ordinal);
-        var requested = payload.Actions ?? [];
+        var requested = payload.Actions;
         var rejected = requested.Where(a => !known.Contains(a)).ToList();
         if (rejected.Count > 0)
         {

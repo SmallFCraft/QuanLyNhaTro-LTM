@@ -135,43 +135,48 @@ public sealed class TcpRoundTripTests
     [TestMethod]
     public async Task TcpRoundTrip_LandlordCanGetAndSetPermissions_ManagerCannot()
     {
-        // 1. Chủ trọ đăng nhập -> lấy ma trận quyền thành công
-        var landlordLogin = await LoginAsync(LandlordUser, LandlordPassword);
-        Assert.AreEqual(UserRole.Landlord, landlordLogin.Role);
+        try
+        {
+            // 1. Chủ trọ đăng nhập -> lấy ma trận quyền thành công
+            var landlordLogin = await LoginAsync(LandlordUser, LandlordPassword);
+            Assert.AreEqual(UserRole.Landlord, landlordLogin.Role);
 
-        var getResponse = await SendAsync(RequestPacket.Create(
-            ActionNames.PermissionGetMatrix, landlordLogin.Token, new { }));
-        Assert.IsTrue(getResponse.Success, getResponse.Message);
+            var getResponse = await SendAsync(RequestPacket.Create(
+                ActionNames.PermissionGetMatrix, landlordLogin.Token, new { }));
+            Assert.IsTrue(getResponse.Success, getResponse.Message);
 
-        var matrix = getResponse.GetData<RolePermissionsMatrixDto>();
-        Assert.IsNotNull(matrix);
-        Assert.IsTrue(matrix.RoleActions.ContainsKey("Manager"));
-        Assert.IsTrue(matrix.AvailableActions.Count > 0);
+            var matrix = getResponse.GetData<RolePermissionsMatrixDto>();
+            Assert.IsNotNull(matrix);
+            Assert.IsTrue(matrix.RoleActions.ContainsKey("Manager"));
+            Assert.IsTrue(matrix.AvailableActions.Count > 0);
 
-        // 2. Chủ trọ cập nhật quyền của Manager
-        var updateResponse = await SendAsync(RequestPacket.Create(
-            ActionNames.PermissionUpdateRole, landlordLogin.Token,
-            new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll, ActionNames.InvoiceGetAll])));
-        Assert.IsTrue(updateResponse.Success, updateResponse.Message);
+            // 2. Chủ trọ cập nhật quyền của Manager
+            var updateResponse = await SendAsync(RequestPacket.Create(
+                ActionNames.PermissionUpdateRole, landlordLogin.Token,
+                new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll, ActionNames.InvoiceGetAll])));
+            Assert.IsTrue(updateResponse.Success, updateResponse.Message);
 
-        // 3. Quản lý đăng nhập
-        var managerLogin = await LoginAsync(ManagerUser, ManagerPassword);
-        Assert.AreEqual(UserRole.Manager, managerLogin.Role);
+            // 3. Quản lý đăng nhập
+            var managerLogin = await LoginAsync(ManagerUser, ManagerPassword);
+            Assert.AreEqual(UserRole.Manager, managerLogin.Role);
 
-        // Quản lý gọi action quản lý phân quyền -> Bị từ chối vì không có quyền
-        var managerGetAttempt = await SendAsync(RequestPacket.Create(
-            ActionNames.PermissionGetMatrix, managerLogin.Token, new { }));
-        Assert.IsFalse(managerGetAttempt.Success);
-        StringAssert.Contains(managerGetAttempt.Message, "quyền");
+            // Quản lý gọi action quản lý phân quyền -> Bị từ chối vì không có quyền
+            var managerGetAttempt = await SendAsync(RequestPacket.Create(
+                ActionNames.PermissionGetMatrix, managerLogin.Token, new { }));
+            Assert.IsFalse(managerGetAttempt.Success);
+            StringAssert.Contains(managerGetAttempt.Message, "quyền");
 
-        var managerUpdateAttempt = await SendAsync(RequestPacket.Create(
-            ActionNames.PermissionUpdateRole, managerLogin.Token,
-            new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll])));
-        Assert.IsFalse(managerUpdateAttempt.Success);
-        StringAssert.Contains(managerUpdateAttempt.Message, "quyền");
-
-        // Khôi phục quyền mặc định sau test
-        PermissionMatrix.ResetToDefaults();
+            var managerUpdateAttempt = await SendAsync(RequestPacket.Create(
+                ActionNames.PermissionUpdateRole, managerLogin.Token,
+                new UpdateRolePermissionsRequest("Manager", [ActionNames.RoomGetAll])));
+            Assert.IsFalse(managerUpdateAttempt.Success);
+            StringAssert.Contains(managerUpdateAttempt.Message, "quyền");
+        }
+        finally
+        {
+            // Khôi phục quyền mặc định sau test — luôn chạy dù assert phía trên fail
+            PermissionMatrix.ResetToDefaults();
+        }
     }
 
     [TestMethod]

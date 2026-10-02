@@ -34,11 +34,18 @@ function renderPermsRoleSelector() {
   }).join('');
 }
 
+function actionsForRole(role) {
+  const map = (_permsData && _permsData.roleActions) || {};
+  if (map[role]) return map[role];
+  // Khóa JSON có thể lệch hoa/thường so với ROLE_LABELS ('POLICE' vs 'Police') — so khớp không phân biệt.
+  const key = Object.keys(map).find(k => k.toLowerCase() === String(role).toLowerCase());
+  return (key && map[key]) || [];
+}
+
 function selectPermsRole(role) {
   _currentRole = role;
   renderPermsRoleSelector();
-  const currentActions = (_permsData.roleActions && _permsData.roleActions[role]) || [];
-  _permsDraft = new Set(currentActions);
+  _permsDraft = new Set(actionsForRole(role));
   renderPermsCheckboxes();
 }
 

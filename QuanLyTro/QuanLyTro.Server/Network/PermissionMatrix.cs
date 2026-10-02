@@ -62,7 +62,7 @@ public static class PermissionMatrix
 
     private static Dictionary<string, HashSet<UserRole>> Build(IReadOnlyDictionary<string, List<string>> roleActions)
     {
-        var next = new Dictionary<string, HashSet<UserRole>>(StringComparer.Ordinal)
+        var next = new Dictionary<string, HashSet<UserRole>>(StringComparer.OrdinalIgnoreCase)
         {
             // Đăng nhập ai cũng phải gọi được, không phụ thuộc cấu hình phân quyền.
             [ActionNames.AuthLogin] = [UserRole.Landlord, UserRole.Manager, UserRole.Police, UserRole.Tenant],
