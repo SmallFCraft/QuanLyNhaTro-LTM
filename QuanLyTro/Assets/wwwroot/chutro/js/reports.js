@@ -20,9 +20,14 @@ async function loadReports() {
 
 function fillReportKpis(s) {
   const vals = reportKpiVals();
-  const phong = Number(s.totalRooms) || 0;
-  const fill = phong > 0 ? Math.round((Number(s.rentedRooms) || 0) / phong * 100) : 0;
-  const texts = [`${fmtMoney(s.paidAmount)} đ`, `${fmtMoney(s.unpaidAmount)} đ`, `${fill}%`];
+  const phong = Number(s.tongSoPhong ?? s.totalRooms) || 0;
+  const daThue = Number(s.phongDaThue ?? s.rentedRooms) || 0;
+  const fill = phong > 0 ? Math.round(daThue / phong * 100) : 0;
+  const texts = [
+    `${fmtMoney(s.soTienDaThu ?? s.paidAmount)} đ`,
+    `${fmtMoney(s.soTienChuaThu ?? s.unpaidAmount)} đ`,
+    `${fill}%`
+  ];
   vals.slice(0, 3).forEach((el, i) => { el.textContent = texts[i]; });
   const meter = document.querySelector('#tab-reports .kpi .meter i');
   if (meter) meter.style.width = `${fill}%`;
@@ -35,7 +40,7 @@ async function renderChartbar(month) {
   const months = lastMonths(month, 4);
   const sums = await Promise.all(months.map(m =>
     window.bridge.call('BAO_CAO_TONG_QUAN', { kyCuoc: m }).catch(() => null)));
-  const paids = sums.map(s => Number(s?.paidAmount) || 0);
+  const paids = sums.map(s => Number(s?.soTienDaThu ?? s?.paidAmount) || 0);
   const max = Math.max(...paids, 1);
   bar.innerHTML = months.map((m, i) => `
     <div class="b ${m === month ? 'on' : ''}" style="height:${Math.round(paids[i] / max * 100)}%">
@@ -64,7 +69,7 @@ async function exportResidence() {
     const rows = await window.bridge.call('XUAT_HO_SO_TAM_TRU', {}) || [];
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = ['Họ tên,Ngày sinh,CCCD,Quê quán,Số phòng']
-      .concat(rows.map(r => [r.hoTen, fmtDateOnly(r.ngaySinh), r.cccd, r.que_quan, r.soPhong]
+      .concat(rows.map(r => [r.hoTen, fmtDateOnly(r.ngaySinh), r.cccd, r.queQuan ?? r.que_quan, r.soPhong]
         .map(cell).join(',')))
       .join('\r\n');
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));

@@ -41,7 +41,25 @@ public partial class Form1 : Form
 
     private async Task InitializeWebViewAsync()
     {
-        await webView.EnsureCoreWebView2Async();
+        var userDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "QuanLyTro",
+            "WebView2");
+        var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+        await webView.EnsureCoreWebView2Async(env);
+
+        var settings = webView.CoreWebView2.Settings;
+        settings.AreDevToolsEnabled = false;
+        settings.AreDefaultContextMenusEnabled = false;
+        settings.AreBrowserAcceleratorKeysEnabled = false;
+        settings.IsStatusBarEnabled = false;
+
+        var assetsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot");
+        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+            "app.quanlytro.local",
+            assetsFolder,
+            CoreWebView2HostResourceAccessKind.Allow);
+
         webView.CoreWebView2.WebMessageReceived += async (_, args) =>
         {
             var rawJson = args.TryGetWebMessageAsString();
@@ -51,8 +69,7 @@ public partial class Form1 : Form
             }
         };
 
-        var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot", "auth", "index.html");
-        webView.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
+        webView.CoreWebView2.Navigate("https://app.quanlytro.local/auth/index.html");
     }
 
     private Task PostToPage(string msg)
@@ -84,7 +101,7 @@ public partial class Form1 : Form
             BeginInvoke(() =>
             {
                 if (IsDisposed || webView.IsDisposed) return;
-                _ = webView.CoreWebView2?.ExecuteScriptAsync("alert('Mất kết nối máy chủ TCP. Vui lòng thử lại.');");
+                _ = webView.CoreWebView2?.ExecuteScriptAsync("if (typeof alertDialog === 'function') alertDialog('Mất kết nối máy chủ TCP. Vui lòng thử lại.', 'Mất kết nối'); else if (typeof toast === 'function') toast('Mất kết nối máy chủ TCP. Vui lòng thử lại.', 'err');");
             });
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException)

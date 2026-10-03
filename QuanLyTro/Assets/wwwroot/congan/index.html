@@ -15,7 +15,7 @@
 <body>
 
 <!-- ====== POLICE SHELL ====== -->
-<div class="win" id="police">
+<div class="win" id="congan">
   <div class="app">
     <!-- menu strip -->
     <div class="menustrip">
@@ -41,7 +41,6 @@
         <span class="badge-module police">Module Lưu trú</span>
         <h1 id="ptitle">Tra cứu công dân</h1>
       </div>
-      <span class="vchip"><i class="fas fa-lock"></i> ReadOnly</span>
     </div>
     <div class="tabs">
       <div class="tab on" data-ptab="citizens" onclick="loadPoliceTab('citizens')"><i class="fas fa-id-card"></i> Công dân</div>
@@ -54,7 +53,7 @@
       <div id="ptab-citizens">
         <div class="kpis">
           <div class="kpi"><div class="lbl"><i class="fas fa-door-closed"></i> Tổng số phòng</div><div class="val">24</div><div class="sub">Khu Ngũ Hành Sơn</div></div>
-          <div class="kpi green"><div class="lbl"><i class="fas fa-tai_khoan"></i> Người đang lưu trú</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
+          <div class="kpi green"><div class="lbl"><i class="fas fa-users"></i> Người đang lưu trú</div><div class="val">41</div><div class="sub">Trên 24 phòng</div></div>
           <div class="kpi amber"><div class="lbl"><i class="fas fa-id-card"></i> Đã đăng ký tạm trú</div><div class="val">36</div><div class="sub">87,8%</div></div>
           <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Chưa đăng ký</div><div class="val">5</div><div class="sub">Cần kiểm tra</div></div>
         </div>
@@ -78,10 +77,6 @@
         </table>
         <div class="tblfoot"><span>Tổng: 41 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
         </div>
-        <div class="rowbn">
-          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: mở khung xem chi tiết công dân"><i class="fas fa-eye"></i> Xem hồ sơ</button>
-          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: lọc theo phòng đã chọn"><i class="fas fa-door-open"></i> Phòng đang ở</button>
-        </div>
       </div>
 
       <!-- PM-04: BÁO CÁO TẠM TRÚ -->
@@ -90,8 +85,7 @@
           <select class="inp" style="width:170px"><option>Tất cả phòng</option><option>P101</option><option>P102</option></select>
           <select class="inp" style="width:180px"><option>Chỉ chưa đăng ký</option><option>Tất cả</option></select>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra CSV"><i class="fas fa-file-csv"></i> CSV</button>
-          <button class="btn btn-primary btn-sm" disabled title="Task 12 triển khai: xuất báo cáo lưu trú ra Excel"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="exportResidence()"><i class="fas fa-file-export"></i> Xuất danh sách</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -135,7 +129,7 @@
     </div>
   </div>
   <div class="statusstrip">
-    <div class="l"><i class="fas fa-user-shield" style="color:#70A9FF"></i><span>Công an phường · Phường Ngũ Hành Sơn (CongAn · ReadOnly)</span></div>
+    <div class="l"><i class="fas fa-user-shield" style="color:#70A9FF"></i><span>Công an phường · Phường Ngũ Hành Sơn</span></div>
     <div class="r"><span>.NET 8.0 CLR</span></div>
   </div>
 </div>

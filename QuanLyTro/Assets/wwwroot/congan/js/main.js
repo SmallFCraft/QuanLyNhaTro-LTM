@@ -1,4 +1,4 @@
-// Màn hình Công an phường (ReadOnly — BR-16): khung 3 tab + điều hướng.
+// Màn hình Công an phường (BR-16): khung 3 tab + điều hướng.
 // Tiện ích dùng chung ở ../shared/js/ui.js.
 const POLICE_TITLES = {
   citizens: 'Tra cứu công dân',
@@ -17,7 +17,7 @@ async function loadPoliceTab(tabKey) {
     const el = document.getElementById('ptab-' + k);
     if (el) el.hidden = (k !== tabKey);
   });
-  document.querySelectorAll('#police .tabs .tab').forEach(t => {
+  document.querySelectorAll('#congan .tabs .tab').forEach(t => {
     t.classList.toggle('on', t.dataset.ptab === tabKey);
   });
 

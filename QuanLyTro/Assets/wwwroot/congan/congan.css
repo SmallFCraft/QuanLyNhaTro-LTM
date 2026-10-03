@@ -1,4 +1,4 @@
-/* police.css — khung màn hình Công an phường (ReadOnly). Tokens: ../shared/css/tokens.css, reset/component: base.css */
+/* police.css — khung màn hình Công an phường. Tokens: ../shared/css/tokens.css, reset/component: base.css */
 
 /* ===== window chrome ===== */
 .win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}

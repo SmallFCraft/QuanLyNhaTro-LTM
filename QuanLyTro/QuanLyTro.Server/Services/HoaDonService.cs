@@ -28,7 +28,10 @@ public sealed class HoaDonService(IHoaDonRepository hoa_don)
 
         var tienPhong = contract.GiaThue;
         var tienDien = (reading.DienMoi - reading.DienCu) * reading.GiaDien;
-        var tienNuoc = (reading.NuocMoi - reading.NuocCu) * reading.GiaNuoc;
+        // Nước có 2 hình thức: theo khối (m³ tiêu thụ) hoặc theo đầu người (số người × đơn giá/người).
+        var tienNuoc = string.Equals(reading.HinhThucNuoc, "Nguoi", StringComparison.OrdinalIgnoreCase)
+            ? reading.SoNguoiNuoc * reading.GiaNuoc
+            : (reading.NuocMoi - reading.NuocCu) * reading.GiaNuoc;
 
         var invoice = new HoaDonDto(
             0,

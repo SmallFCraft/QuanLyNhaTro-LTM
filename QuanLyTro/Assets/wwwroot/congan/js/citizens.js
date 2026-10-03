@@ -8,7 +8,7 @@ function filterCitizens(rows) {
   return (rows || []).filter(t =>
     (t.hoTen || '').toLowerCase().includes(q) ||
     (t.cccd || '').toLowerCase().includes(q) ||
-    (t.so_dien_thoai || '').includes(q));
+    ((t.soDienThoai ?? t.so_dien_thoai) || '').includes(q));
 }
 
 function renderCitizens(rows) {
@@ -19,7 +19,7 @@ function renderCitizens(rows) {
       <td><b>${esc(t.hoTen)}</b></td>
       <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
       <td class="mono">${esc(t.cccd)}</td>
-      <td>${esc(t.que_quan)}</td>
+      <td>${esc(t.queQuan ?? t.que_quan)}</td>
       <td><b>${esc(t.soPhong)}</b></td>
       <td class="num"><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">
         ${t.daDangKyTamTru ? 'Đã đăng ký' : 'Chưa đăng ký'}</span></td>
@@ -39,7 +39,7 @@ async function exportCitizens() {
     t.hoTen || '',
     fmtDateOnly(t.ngaySinh),
     t.cccd || '',
-    t.que_quan || '',
+    t.queQuan ?? t.que_quan ?? '',
     t.soPhong || '',
     t.daDangKyTamTru ? 'Đã đăng ký' : 'Chưa đăng ký'
   ]);

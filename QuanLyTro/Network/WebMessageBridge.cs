@@ -141,7 +141,7 @@ public sealed class WebMessageBridge
         return JsonSerializer.SerializeToElement(new
         {
             hoTen,
-            vai_tro = roleVal
+            vaiTro = roleVal
         }, JsonDefaults.Options);
     }
 

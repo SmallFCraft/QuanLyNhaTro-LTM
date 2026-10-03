@@ -98,7 +98,8 @@ public sealed class WebMessageBridgeTests
         Assert.IsFalse(data.TryGetProperty("token", out _), "C2: trường 'token' không được lộ xuống JS.");
         Assert.IsFalse(data.TryGetProperty("Token", out _), "C2: trường 'Token' không được lộ xuống JS.");
         Assert.AreEqual("Thiếu úy Nguyễn Văn A", data.GetProperty("hoTen").GetString());
-        Assert.AreEqual("CongAn", data.GetProperty("vai_tro").GetString());
+        var role = data.TryGetProperty("vaiTro", out var vt) ? vt.GetString() : data.GetProperty("vai_tro").GetString();
+        Assert.AreEqual("CongAn", role);
     }
 
     [TestMethod]
@@ -235,7 +236,9 @@ public sealed class WebMessageBridgeTests
         using (var doc = JsonDocument.Parse(loginResp))
         {
             Assert.IsTrue(doc.RootElement.GetProperty("success").GetBoolean());
-            Assert.AreEqual("ChuTro", doc.RootElement.GetProperty("data").GetProperty("vai_tro").GetString());
+            var d = doc.RootElement.GetProperty("data");
+            var role = d.TryGetProperty("vaiTro", out var vt) ? vt.GetString() : d.GetProperty("vai_tro").GetString();
+            Assert.AreEqual("ChuTro", role);
         }
 
         // Bước 2: Chuyển sang tab Điện Nước -> gọi PHONG_LAY_TAT_CA

@@ -15,7 +15,7 @@
 <body>
 
 <!-- ====== LANDLORD SHELL ====== -->
-<div class="win" id="landlord">
+<div class="win" id="chutro">
   <div class="app">
     <!-- menu strip -->
     <div class="menustrip">
@@ -47,7 +47,7 @@
     <div class="tabs">
       <div class="tab on" data-tab="dash" onclick="loadLandlordTab('dash')"><i class="fas fa-th-large"></i> Tổng quan</div>
       <div class="tab" data-tab="phong" onclick="loadLandlordTab('phong')"><i class="fas fa-door-open"></i> Phòng <span class="cnt">24</span></div>
-      <div class="tab" data-tab="khach_thue" onclick="loadLandlordTab('khach_thue')"><i class="fas fa-tai_khoan"></i> Người thuê</div>
+      <div class="tab" data-tab="khach_thue" onclick="loadLandlordTab('khach_thue')"><i class="fas fa-users"></i> Người thuê</div>
       <div class="tab" data-tab="hop_dong" onclick="loadLandlordTab('hop_dong')"><i class="fas fa-file-signature"></i> Hợp đồng</div>
       <div class="tab" data-tab="utils" onclick="loadLandlordTab('utils')"><i class="fas fa-tachometer-alt"></i> Điện nước</div>
       <div class="tab" data-tab="hoa_don" onclick="loadLandlordTab('hoa_don')"><i class="fas fa-receipt"></i> Hóa đơn</div>
@@ -100,8 +100,8 @@
           <select class="inp" id="room-trang_thai" onchange="renderRooms(_roomsCache)"><option value="">Tất cả trạng thái</option><option value="Trong">Trống</option><option value="DaThue">Đang thuê</option><option value="BaoTri">Bảo trì</option></select>
           <span class="spacer"></span>
           <button class="btn btn-outline btn-sm" onclick="addRoom()"><i class="fas fa-plus"></i> Thêm (F1)</button>
-          <button class="btn btn-outline btn-sm" disabled title="Chức năng sửa trên từng dòng"><i class="fas fa-edit"></i> Sửa (F2)</button>
-          <button class="btn btn-danger btn-sm" disabled title="Chức năng xóa trên từng dòng (chỉ phòng trống)"><i class="fas fa-trash"></i> Xóa</button>
+          <button class="btn btn-outline btn-sm" id="btn-edit-room" onclick="editSelectedRoom()" disabled title="Chọn một phòng trong bảng để sửa"><i class="fas fa-edit"></i> Sửa (F2)</button>
+          <button class="btn btn-danger btn-sm" id="btn-del-room" onclick="deleteSelectedRoom()" disabled title="Chọn một phòng trong bảng để xóa (chỉ phòng trống)"><i class="fas fa-trash"></i> Xóa</button>
         </div>
         <div class="tblwrap">
         <table class="tbl">
@@ -124,28 +124,28 @@
       <div id="tab-khach_thue" hidden>
         <div class="toolbar">
           <label style="color:var(--muted);font-size:11.5px">Phòng</label>
-          <select class="inp" id="tenant-room" style="width:150px" onchange="loadTenants()"></select>
+          <select class="inp" id="tenant-room" style="width:170px" onchange="loadTenants()"></select>
           <button class="btn btn-primary btn-sm" onclick="addTenant()"><i class="fas fa-user-plus"></i> Thêm</button>
           <span class="spacer"></span>
           <span style="font-size:10.5px;color:var(--dim)"><i class="fas fa-key" style="color:var(--terracotta)"></i> Mật khẩu mặc định = 6 số cuối CCCD</span>
         </div>
         <div class="tblwrap">
         <table class="tbl">
-          <thead><tr><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
+          <thead><tr><th>Phòng</th><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
           <tbody id="khach_thue-body">
             <tr>
-              <td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
+              <td><span class="tag rent">P101</span></td><td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
               <td><span class="tag done">Đã nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(1)"><i class="fas fa-key"></i></button></td>
             </tr>
             <tr>
-              <td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
+              <td><span class="tag rent">P102</span></td><td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
               <td><span class="tag warn">Chưa nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(2)"><i class="fas fa-key"></i></button></td>
             </tr>
           </tbody>
         </table>
-        <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: Trần Văn B</span></span><span>Đã đồng bộ với Server</span></div>
+        <div class="tblfoot"><span>Tổng: 0 bản ghi</span><span>Đã đồng bộ với Server</span></div>
         </div>
         <div class="rowbn">
           <button class="btn btn-outline btn-sm" onclick="editTenant(selectedTenantId())"><i class="fas fa-edit"></i> Sửa</button>
@@ -209,16 +209,27 @@
         <div class="calc">
           <div class="row">
             <i class="fas fa-bolt" style="color:var(--amber)"></i> <span style="color:var(--muted)">Điện</span>
-            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-elec-old" value="350" disabled>
+            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-elec-old" value="350" placeholder="0" oninput="recalcUtils()">
             <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" id="util-elec-new" value="425" oninput="recalcUtils()">
+            <span style="color:var(--dim);font-size:11px">= chữ</span> <span class="mono" id="util-elec-kwh" style="color:var(--amber);font-weight:600;min-width:44px">75 kWh</span>
             <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" id="util-elec-rate" value="3500" oninput="recalcUtils()">
             <span class="tot">262.500 đ</span>
           </div>
           <div class="row">
             <i class="fas fa-tint" style="color:var(--dim)"></i> <span style="color:var(--muted)">Nước</span>
-            <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-water-old" value="12" disabled>
-            <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" id="util-water-new" value="15" oninput="recalcUtils()">
-            <span style="color:var(--dim);font-size:11px">× giá</span> <input class="inp mono" id="util-water-rate" value="10000" oninput="recalcUtils()">
+            <select class="inp" id="util-water-mode" style="width:125px;height:28px;font-size:12px;padding:2px 6px" onchange="onWaterModeChange()">
+              <option value="Khoi">Theo khối (m³)</option>
+              <option value="Nguoi">Theo người</option>
+            </select>
+            <span id="util-water-block-khoi" style="display:inline-flex;align-items:center;gap:9px">
+              <span style="color:var(--dim);font-size:11px">cũ</span> <input class="inp mono" id="util-water-old" value="12" placeholder="0" oninput="recalcUtils()">
+              <span style="color:var(--dim);font-size:11px">mới</span> <input class="inp mono" id="util-water-new" value="15" oninput="recalcUtils()">
+              <span style="color:var(--dim);font-size:11px">= khối</span> <span class="mono" id="util-water-m3" style="color:var(--tint);font-weight:600;min-width:36px">3 m³</span>
+            </span>
+            <span id="util-water-block-nguoi" style="display:none;align-items:center;gap:9px">
+              <span style="color:var(--dim);font-size:11px">số người</span> <input class="inp mono" id="util-water-people" value="1" type="number" min="1" style="width:60px" oninput="recalcUtils()">
+            </span>
+            <span style="color:var(--dim);font-size:11px" id="util-water-rate-lbl">× giá</span> <input class="inp mono" id="util-water-rate" value="10000" oninput="recalcUtils()">
             <span class="tot">30.000 đ</span>
           </div>
         </div>
@@ -253,7 +264,7 @@
             </tr>
           </tbody>
         </table>
-        <div class="tblfoot"><span>Tổng: 2 bản ghi <span class="sep">|</span> <span class="sel-txt">Chọn: P101</span></span><span>Đã đồng bộ với Server</span></div>
+        <div class="tblfoot"><span>Tổng: 0 bản ghi</span><span>Đã đồng bộ với Server</span></div>
         </div>
       </div>
 

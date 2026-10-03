@@ -39,7 +39,8 @@ public sealed class DienNuocService(IDienNuocRepository banGhi)
         {
             throw new LoiNghiepVu("Chỉ số cũ điện phải tiếp nối chỉ số mới của kỳ trước.");
         }
-        if (previous is not null && reading.NuocCu != previous.NuocMoi)
+        var isNguoi = string.Equals(reading.HinhThucNuoc, "Nguoi", StringComparison.OrdinalIgnoreCase);
+        if (!isNguoi && previous is not null && reading.NuocCu != previous.NuocMoi)
         {
             throw new LoiNghiepVu("Chỉ số cũ nước phải tiếp nối chỉ số mới của kỳ trước.");
         }
@@ -59,9 +60,20 @@ public sealed class DienNuocService(IDienNuocRepository banGhi)
             throw new LoiNghiepVu("Chỉ số điện mới phải lớn hơn hoặc bằng chỉ số cũ.");
         }
 
-        if (reading.NuocMoi < reading.NuocCu)
+        var isNguoi = string.Equals(reading.HinhThucNuoc, "Nguoi", StringComparison.OrdinalIgnoreCase);
+        if (isNguoi)
         {
-            throw new LoiNghiepVu("Chỉ số nước mới phải lớn hơn hoặc bằng chỉ số cũ.");
+            if (reading.SoNguoiNuoc <= 0)
+            {
+                throw new LoiNghiepVu("Số người dùng nước phải lớn hơn 0.");
+            }
+        }
+        else
+        {
+            if (reading.NuocMoi < reading.NuocCu)
+            {
+                throw new LoiNghiepVu("Chỉ số nước mới phải lớn hơn hoặc bằng chỉ số cũ.");
+            }
         }
 
         if (reading.GiaDien <= 0 || reading.GiaNuoc <= 0)

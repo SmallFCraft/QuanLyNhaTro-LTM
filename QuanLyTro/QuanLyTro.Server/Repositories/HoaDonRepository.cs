@@ -68,7 +68,9 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
     {
         const string sql = """
             SELECT id, phong_id, ky_cuoc, dien_cu, dien_moi, gia_dien,
-                   nuoc_cu, nuoc_moi, gia_nuoc
+                   nuoc_cu, nuoc_moi, gia_nuoc,
+                   COALESCE(hinh_thuc_nuoc, 'Khoi') AS hinh_thuc_nuoc,
+                   COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
             FROM chi_so_dien_nuoc
             WHERE phong_id = @phongId AND ky_cuoc = @kyCuoc
             LIMIT 1
@@ -94,7 +96,9 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             reader.GetDecimal("gia_dien"),
             reader.GetInt32("nuoc_cu"),
             reader.GetInt32("nuoc_moi"),
-            reader.GetDecimal("gia_nuoc"));
+            reader.GetDecimal("gia_nuoc"),
+            reader.GetString("hinh_thuc_nuoc"),
+            reader.GetInt32("so_nguoi_nuoc"));
     }
 
     /// <summary>BR-13: insert nằm trong giao_dich của chính nó.</summary>

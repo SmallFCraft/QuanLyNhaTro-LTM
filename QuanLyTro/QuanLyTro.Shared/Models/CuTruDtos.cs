@@ -10,8 +10,8 @@ public sealed record LichSuCuTruDto(
     string? GhiChu);
 
 public sealed record YeuCauXuatLichSu(
-    DateTime TuNgay,
-    DateTime DenNgay,
+    DateTime? TuNgay,
+    DateTime? DenNgay,
     string DinhDang, // "CSV", "Excel", "PDF"
     string? SoPhong,
     string? LoaiBienDong);

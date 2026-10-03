@@ -28,9 +28,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\wwwroot\**">
+    <Content Include="Assets\wwwroot\**" Exclude="Assets\wwwroot\**\*.map">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
+
+  <!-- FE chỉ là tài nguyên hiển thị: nếu thiếu file do quên copy, build fail rõ ràng thay vì WebView2 trắng trang. -->
+  <Target Name="KiemTraAssetsWwwroot" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <WwwrootFiles Include="Assets\wwwroot\auth\index.html;Assets\wwwroot\chutro\index.html;Assets\wwwroot\congan\index.html;Assets\wwwroot\khachthue\index.html;Assets\wwwroot\shared\js\bridge.js;Assets\wwwroot\shared\js\ui.js" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(WwwrootFiles.Identity)')" Text="Thiếu file FE: %(WwwrootFiles.Identity)" />
+  </Target>
 
 </Project>

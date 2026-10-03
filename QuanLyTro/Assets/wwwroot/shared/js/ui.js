@@ -25,8 +25,12 @@ function fmtDateOnly(iso) {
 }
 
 function toast(msg, kind) {
-  const root = document.getElementById('modal-root');
-  if (!root) { alert(msg); return; }
+  let root = document.getElementById('modal-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'modal-root';
+    document.body.appendChild(root);
+  }
   const el = document.createElement('div');
   el.className = `toast ${kind || 'info'}`;
   el.textContent = msg;
@@ -67,7 +71,7 @@ function openModal({ title, fields, onSubmit }) {
       ctrl = `<select class="inp" id="${id}" name="${esc(f.name)}"${f.disabled ? ' disabled' : ''}>${opts}</select>`;
     } else {
       ctrl = `<input class="inp" id="${id}" name="${esc(f.name)}" type="${f.type || 'text'}"
-        value="${esc(f.value ?? '')}"${f.disabled ? ' disabled' : ''}${f.required ? ' required' : ''}>`;
+        value="${esc(f.value ?? '')}"${f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : ''}${f.disabled ? ' disabled' : ''}${f.required ? ' required' : ''}>`;
     }
     return `<div class="modal-row"><label for="${id}">${esc(f.label)}</label>${ctrl}</div>`;
   }).join('');
@@ -103,15 +107,86 @@ function openModal({ title, fields, onSubmit }) {
   return close;
 }
 
-function confirmDialog(msg) {
-  return Promise.resolve(window.confirm(msg));
+/**
+ * Hộp thoại thông báo nội bộ — thay window.alert (Chromium chèn tiêu đề tên miền).
+ * kind: 'info' (mặc định) | 'ok' | 'warn' | 'err' — đổi màu icon + tiêu đề theo theme.
+ */
+function alertDialog(msg, title, kind) {
+  const root = document.getElementById('modal-root');
+  if (!root) { toast(msg, kind === 'ok' ? 'ok' : 'err'); return Promise.resolve(); }
+  const tone = kind || 'info';
+  const icons = { info: 'fa-circle-info', ok: 'fa-circle-check', warn: 'fa-triangle-exclamation', err: 'fa-circle-exclamation' };
+  const titles = { info: 'Thông báo', ok: 'Thành công', warn: 'Cảnh báo', err: 'Lỗi' };
+  const back = document.createElement('div');
+  back.className = 'modal-back';
+  back.innerHTML = `
+    <div class="modal dlg dlg-${esc(tone)}" role="alertdialog" aria-modal="true">
+      <div class="dlg-body">
+        <div class="dlg-icon"><i class="fas ${icons[tone] || icons.info}"></i></div>
+        <div class="dlg-text">
+          <div class="dlg-title">${esc(title || titles[tone] || titles.info)}</div>
+          <div class="dlg-msg">${esc(msg)}</div>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button type="button" class="btn btn-primary btn-sm" data-ok>Đã hiểu</button>
+      </div>
+    </div>`;
+  return new Promise(resolve => {
+    const close = () => { back.remove(); document.removeEventListener('keydown', onKey); resolve(); };
+    const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') close(); };
+    back.querySelector('[data-ok]').addEventListener('click', close);
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    document.addEventListener('keydown', onKey);
+    root.appendChild(back);
+    back.querySelector('[data-ok]').focus();
+  });
 }
+
+/** Hộp thoại xác nhận nội bộ — thay window.confirm. Trả về Promise<boolean>. */
+function confirmDialog(msg, title, kind) {
+  const root = document.getElementById('modal-root');
+  if (!root) return Promise.resolve(false);
+  const tone = kind || 'warn';
+  const icons = { info: 'fa-circle-info', warn: 'fa-triangle-exclamation', err: 'fa-circle-exclamation' };
+  const back = document.createElement('div');
+  back.className = 'modal-back';
+  back.innerHTML = `
+    <div class="modal dlg dlg-${esc(tone)}" role="alertdialog" aria-modal="true">
+      <div class="dlg-body">
+        <div class="dlg-icon"><i class="fas ${icons[tone] || icons.warn}"></i></div>
+        <div class="dlg-text">
+          <div class="dlg-title">${esc(title || 'Xác nhận thao tác')}</div>
+          <div class="dlg-msg">${esc(msg)}</div>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button type="button" class="btn btn-outline btn-sm" data-cancel>Hủy</button>
+        <button type="button" class="btn btn-danger btn-sm" data-ok>Đồng ý</button>
+      </div>
+    </div>`;
+  return new Promise(resolve => {
+    const done = v => { back.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => {
+      if (e.key === 'Escape') done(false);
+      if (e.key === 'Enter') done(true);
+    };
+    back.querySelector('[data-cancel]').addEventListener('click', () => done(false));
+    back.querySelector('[data-ok]').addEventListener('click', () => done(true));
+    back.addEventListener('click', e => { if (e.target === back) done(false); });
+    document.addEventListener('keydown', onKey);
+    root.appendChild(back);
+    back.querySelector('[data-ok]').focus();
+  });
+}
+
+window.alert = msg => toast(msg, 'err');
 
 // ===== Thanh menu =====
 const MENU_ITEMS = {
-  landlord: [
+  chutro: [
     { icon: 'fa-door-open', label: 'Phòng', tab: 'phong' },
-    { icon: 'fa-tai_khoan', label: 'Người thuê', tab: 'khach_thue' },
+    { icon: 'fa-users', label: 'Người thuê', tab: 'khach_thue' },
     { icon: 'fa-file-signature', label: 'Hợp đồng', tab: 'hop_dong' },
     { icon: 'fa-tachometer-alt', label: 'Điện nước', tab: 'utils' },
     { icon: 'fa-receipt', label: 'Hóa đơn', tab: 'hoa_don' }
@@ -122,7 +197,7 @@ function toggleMenu(el) {
   const open = el.querySelector('.dropdown-menu');
   if (open) { open.remove(); return; }
 
-  const shell = el.closest('.win')?.id || 'landlord';
+  const shell = el.closest('.win')?.id || 'chutro';
   const items = MENU_ITEMS[shell] || [];
   if (items.length === 0) return;
 

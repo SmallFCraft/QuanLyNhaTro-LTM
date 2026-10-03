@@ -2,42 +2,56 @@
 async function loadDash() {
   const month = new Date().toISOString().slice(0, 7); // yyyy-MM
   try {
-    const [summary, hoa_don, hop_dong] = await Promise.all([
+    const [summary, hoaDon, hopDong] = await Promise.all([
       window.bridge.call('BAO_CAO_TONG_QUAN', { kyCuoc: month }),
       window.bridge.call('HOA_DON_LAY_TAT_CA', { kyCuoc: month }),
       window.bridge.call('HOP_DONG_LAY_TAT_CA', {})
     ]);
 
     if (summary) {
-      setKpi('kpi-total-phong', summary.totalRooms);
-      setKpi('kpi-available', summary.availableRooms);
-      setKpi('kpi-khach_thue', summary.currentTenants);
-      setKpi('kpi-unpaid', fmtMoney(summary.unpaidAmount));
+      const totalRooms = summary.tongSoPhong ?? summary.totalRooms;
+      const availableRooms = summary.phongTrong ?? summary.availableRooms;
+      const currentTenants = summary.khachHienTai ?? summary.currentTenants;
+      const unpaidAmount = summary.soTienChuaThu ?? summary.unpaidAmount;
+      const rentedRooms = summary.phongDaThue ?? summary.rentedRooms ?? 0;
+
+      setKpi('kpi-total-phong', totalRooms);
+      setKpi('kpi-available', availableRooms);
+      setKpi('kpi-khach_thue', currentTenants);
+      setKpi('kpi-unpaid', fmtMoney(unpaidAmount));
       const el = document.getElementById('kpi-available-sub');
-      if (el) el.textContent =
-        `Thuê ${summary.rentedRooms ?? 0} · Trống ${summary.availableRooms ?? 0}`;
+      if (el) el.textContent = `Thuê ${rentedRooms} · Trống ${availableRooms ?? 0}`;
     }
 
-    const overdue = (hoa_don || []).filter(i => i.trang_thai !== 'DaThu');
+    const overdue = (hoaDon || []).filter(i => (i.trangThai ?? i.trang_thai) !== 'DaThu');
     const ob = document.getElementById('dash-overdue-rows');
-    if (ob) ob.innerHTML = overdue.map(i => `
-      <tr><td><b>${esc(i.soPhong ?? ('P' + i.phongId))}</b></td>
-      <td class="mono">${esc(i.kyCuoc)}</td>
-      <td class="num due-red">${fmtMoney(i.tongTien)}</td>
-      <td>${esc(i.representativeName ?? '—')}</td></tr>`).join('')
-      || '<tr><td colspan="4" style="color:var(--dim)">Không có phòng nào còn nợ.</td></tr>';
+    if (ob) ob.innerHTML = overdue.map(i => {
+      const room = i.soPhong ?? ('P' + i.phongId);
+      const rep = i.tenNguoiDaiDien ?? i.representativeName ?? '—';
+      const tong = i.tongTien ?? i.totalAmount ?? 0;
+      return `
+        <tr><td><b>${esc(room)}</b></td>
+        <td class="mono">${esc(i.kyCuoc)}</td>
+        <td class="num due-red">${fmtMoney(tong)}</td>
+        <td>${esc(rep)}</td></tr>`;
+    }).join('') || '<tr><td colspan="4" style="color:var(--dim)">Không có phòng nào còn nợ.</td></tr>';
 
-    const soon = (hop_dong || []).filter(c => {
-      if (c.trang_thai !== 'HieuLuc') return false;
-      const days = (new Date(c.ngayKetThuc) - new Date()) / 86400000;
+    const soon = (hopDong || []).filter(c => {
+      const st = c.trangThai ?? c.trang_thai;
+      if (st !== 'HieuLuc') return false;
+      const end = c.ngayKetThuc ?? c.endDate;
+      const days = (new Date(end) - new Date()) / 86400000;
       return days >= 0 && days <= 30;
     });
     const sb = document.getElementById('dash-expiring-rows');
     if (sb) sb.innerHTML = soon.map(c => {
-      const days = Math.ceil((new Date(c.ngayKetThuc) - new Date()) / 86400000);
-      return `<tr><td><b>${esc(c.soPhong ?? ('P' + c.phongId))}</b></td>
-        <td>${esc(c.representativeName ?? '—')}</td>
-        <td class="mono">${fmtDateOnly(c.ngayKetThuc)}</td>
+      const end = c.ngayKetThuc ?? c.endDate;
+      const days = Math.ceil((new Date(end) - new Date()) / 86400000);
+      const room = c.soPhong ?? ('P' + c.phongId);
+      const rep = c.tenNguoiDaiDien ?? c.representativeName ?? '—';
+      return `<tr><td><b>${esc(room)}</b></td>
+        <td>${esc(rep)}</td>
+        <td class="mono">${fmtDateOnly(end)}</td>
         <td class="num due-red">${days} ngày</td></tr>`;
     }).join('') || '<tr><td colspan="4" style="color:var(--dim)">Không có hợp đồng nào sắp hết hạn.</td></tr>';
   } catch (err) {

@@ -35,7 +35,9 @@ public sealed class DienNuocRepository(Database database) : IDienNuocRepository
     {
         const string sql = """
             SELECT id, phong_id, ky_cuoc, dien_cu, dien_moi, gia_dien,
-                   nuoc_cu, nuoc_moi, gia_nuoc
+                   nuoc_cu, nuoc_moi, gia_nuoc,
+                   COALESCE(hinh_thuc_nuoc, 'Khoi') AS hinh_thuc_nuoc,
+                   COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
             FROM chi_so_dien_nuoc
             WHERE phong_id = @phongId
             ORDER BY ky_cuoc DESC
@@ -61,7 +63,9 @@ public sealed class DienNuocRepository(Database database) : IDienNuocRepository
     {
         const string sql = """
             SELECT id, phong_id, ky_cuoc, dien_cu, dien_moi, gia_dien,
-                   nuoc_cu, nuoc_moi, gia_nuoc
+                   nuoc_cu, nuoc_moi, gia_nuoc,
+                   COALESCE(hinh_thuc_nuoc, 'Khoi') AS hinh_thuc_nuoc,
+                   COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
             FROM chi_so_dien_nuoc
             WHERE phong_id = @phongId AND ky_cuoc < @kyCuoc
             ORDER BY ky_cuoc DESC
@@ -81,9 +85,11 @@ public sealed class DienNuocRepository(Database database) : IDienNuocRepository
     {
         const string sql = """
             INSERT INTO chi_so_dien_nuoc (phong_id, ky_cuoc, dien_cu, dien_moi,
-                                          gia_dien, nuoc_cu, nuoc_moi, gia_nuoc)
+                                          gia_dien, nuoc_cu, nuoc_moi, gia_nuoc,
+                                          hinh_thuc_nuoc, so_nguoi_nuoc)
             VALUES (@phongId, @kyCuoc, @dienCu, @dienMoi,
-                    @giaDien, @nuocCu, @nuocMoi, @giaNuoc);
+                    @giaDien, @nuocCu, @nuocMoi, @giaNuoc,
+                    @hinhThucNuoc, @soNguoiNuoc);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -99,6 +105,8 @@ public sealed class DienNuocRepository(Database database) : IDienNuocRepository
             command.Parameters.AddWithValue("@nuocCu", reading.NuocCu);
             command.Parameters.AddWithValue("@nuocMoi", reading.NuocMoi);
             command.Parameters.AddWithValue("@giaNuoc", reading.GiaNuoc);
+            command.Parameters.AddWithValue("@hinhThucNuoc", string.IsNullOrWhiteSpace(reading.HinhThucNuoc) ? "Khoi" : reading.HinhThucNuoc);
+            command.Parameters.AddWithValue("@soNguoiNuoc", reading.SoNguoiNuoc);
 
             var id = Convert.ToInt32(await command.ExecuteScalarAsync(ct));
             return reading with { Id = id };
@@ -118,5 +126,7 @@ public sealed class DienNuocRepository(Database database) : IDienNuocRepository
         reader.GetDecimal("gia_dien"),
         reader.GetInt32("nuoc_cu"),
         reader.GetInt32("nuoc_moi"),
-        reader.GetDecimal("gia_nuoc"));
+        reader.GetDecimal("gia_nuoc"),
+        reader.GetString("hinh_thuc_nuoc"),
+        reader.GetInt32("so_nguoi_nuoc"));
 }
