@@ -15,22 +15,22 @@ async function doLogin() {
   const tenDangNhap = document.getElementById('lu').value.trim();
   const matKhau = document.getElementById('lp').value;
   if (!tenDangNhap || !matKhau) {
-    alert('Vui lòng nhập tài khoản và mật khẩu.');
+    alertDialog('Vui lòng nhập tài khoản và mật khẩu.', 'Thiếu thông tin', 'warn');
     return;
   }
   try {
     const user = await window.bridge.call('DANG_NHAP', { TenDangNhap: tenDangNhap, MatKhau: matKhau });
     if (!user) return;
-    const vaiTro = user.vaiTro ?? user.VaiTro;
+    const vaiTro = user.vaiTro;
     const target = ROLE_ROUTES[vaiTro];
     if (!target) {
-      alert('Tài khoản chưa được gán vai trò hợp lệ. Liên hệ Chủ trọ.');
+      alertDialog('Tài khoản chưa được gán vai trò hợp lệ. Vui lòng liên hệ Chủ trọ.', 'Không thể truy cập', 'err');
       return;
     }
     const name = encodeURIComponent(user.hoTen ?? user.HoTen ?? '');
     const sep = target.includes('?') ? '&' : '?';
     window.location.href = `${target}${sep}u=${name}`;
   } catch (err) {
-    alert(err.message);
+    alertDialog(err.message, 'Đăng nhập không thành công', 'err');
   }
 }

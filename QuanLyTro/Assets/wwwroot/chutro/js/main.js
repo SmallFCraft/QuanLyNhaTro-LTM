@@ -30,7 +30,7 @@ async function loadLandlordTab(tabKey) {
     const el = document.getElementById('tab-' + k);
     if (el) el.hidden = (k !== _currentTab);
   });
-  document.querySelectorAll('#landlord .tabs .tab').forEach(t => {
+  document.querySelectorAll('#chutro .tabs .tab').forEach(t => {
     t.classList.toggle('on', t.dataset.tab === _currentTab);
   });
   try {

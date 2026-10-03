@@ -14,19 +14,25 @@ async function loadTenants() {
     const phong = await window.bridge.call('PHONG_LAY_TAT_CA', {}) || [];
     // ponytail: KHACH_THUE_THEO_PHONG là hanh_dong đọc duy nhất (BR-16) nên phải hỏi từng phòng (N+1).
     // Thêm TENANT_GET_ALL vào ma trận quyền khi số phòng lớn.
-    const all = [];
-    for (const r of phong) {
+    const lists = await Promise.all(phong.map(async r => {
       const khach_thue = await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: r.id }) || [];
-      for (const t of khach_thue) all.push({ ...t, soPhong: r.soPhong });
-    }
-    tenantCache = all;
-    // Rebuild room filter dropdown, keep selection.
+      return khach_thue.map(t => ({ ...t, soPhong: r.soPhong }));
+    }));
+    tenantCache = lists.flat();
+    // Rebuild room filter dropdown, keep selection, có option "Tất cả các phòng".
     if (sel) {
       const keep = sel.value;
-      sel.innerHTML = phong.map(r =>
-        `<option value="${esc(r.id)}">${esc(r.soPhong)} (${r.soNguoiHienTai ?? 0}/${r.soNguoiToiDa})</option>`).join('');
-      if (keep) sel.value = keep;
-      if (!sel.value && phong.length) sel.value = String(phong[0].id);
+      const opts = [
+        `<option value="">-- Tất cả (${tenantCache.length} người) --</option>`,
+        ...phong.map(r =>
+          `<option value="${esc(r.id)}">${esc(r.soPhong)} (${r.soNguoiHienTai ?? 0}/${r.soNguoiToiDa})</option>`)
+      ];
+      sel.innerHTML = opts.join('');
+      if (keep !== undefined && keep !== null && keep !== '') {
+        sel.value = keep;
+      } else {
+        sel.value = '';
+      }
     }
     renderTenants();
   } catch (err) {
@@ -40,14 +46,15 @@ async function loadTenants() {
       : tenantCache;
     body.innerHTML = rows.map(t => `
       <tr data-id="${t.id}" onclick="this.parentNode.querySelectorAll('tr').forEach(r=>r.classList.remove('sel'));this.classList.add('sel')">
+        <td><span class="tag rent">${esc(t.soPhong || '—')}</span></td>
         <td><b>${esc(t.hoTen)}</b></td>
         <td class="mono">${esc(t.cccd)}</td>
         <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
-        <td class="mono">${esc(t.so_dien_thoai)}</td>
-        <td>${esc(t.que_quan)}</td>
+        <td class="mono">${esc(t.soDienThoai)}</td>
+        <td>${esc(t.queQuan)}</td>
         <td><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">${t.daDangKyTamTru ? 'Đã nộp' : 'Chưa nộp'}</span></td>
         <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();resetTenantPassword(${t.id})"><i class="fas fa-key"></i></button></td>
-      </tr>`).join('') || `<tr><td colspan="7">Không có người thuê nào</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="8">Không có người thuê nào</td></tr>`;
     updateTenantFoot(rows);
   }
 }
@@ -63,9 +70,10 @@ const tenantFields = (t, phong) => [
   { name: 'hoTen', label: 'Họ tên', value: t?.hoTen ?? '', required: true },
   { name: 'ngaySinh', label: 'Ngày sinh', type: 'date', value: (t?.ngaySinh ?? '').slice(0, 10), required: true },
   { name: 'cccd', label: 'CCCD (12 số)', value: t?.cccd ?? '', required: true },
-  { name: 'so_dien_thoai', label: 'SĐT', value: t?.so_dien_thoai ?? '', required: true },
-  { name: 'que_quan', label: 'Quê quán', value: t?.que_quan ?? '', required: true },
-  { name: 'noi_lam_viec', label: 'Nơi học/làm', value: t?.noi_lam_viec ?? '' },
+  { name: 'matKhau', label: 'Mật khẩu', type: 'text', value: '', placeholder: t ? 'Để trống = giữ nguyên' : 'Để trống = 6 số cuối CCCD' },
+  { name: 'soDienThoai', label: 'SĐT', value: t?.soDienThoai ?? t?.so_dien_thoai ?? '', required: true },
+  { name: 'queQuan', label: 'Quê quán', value: t?.queQuan ?? t?.que_quan ?? '', required: true },
+  { name: 'noiLamViec', label: 'Nơi học/làm', value: t?.noiLamViec ?? t?.noi_lam_viec ?? '' },
   {
     name: 'phongId', label: 'Phòng', type: 'select', value: String(t?.phongId ?? phong[0]?.value ?? ''),
     options: phong.map(r => ({ value: r.value, label: r.label }))
@@ -84,9 +92,9 @@ function tenantPayload(values, id) {
     hoTen: values.hoTen,
     ngaySinh: values.ngaySinh,
     cccd: values.cccd,
-    so_dien_thoai: values.so_dien_thoai,
-    que_quan: values.que_quan,
-    noi_lam_viec: values.noi_lam_viec || null,
+    soDienThoai: values.soDienThoai ?? values.so_dien_thoai,
+    queQuan: values.queQuan ?? values.que_quan,
+    noiLamViec: (values.noiLamViec ?? values.noi_lam_viec) || null,
     daDangKyTamTru: values.daDangKyTamTru === 'true'
   };
 }
@@ -106,8 +114,10 @@ async function addTenant() {
       title: 'Thêm người thuê',
       fields: tenantFields(null, phong),
       onSubmit: async v => {
-        await window.bridge.call('KHACH_THUE_THEM', { tenant: tenantPayload(v), plainPassword: null });
-        toast('Đã thêm người thuê.', 'ok');
+        const pwd = (v.matKhau || '').trim() || null;
+        await window.bridge.call('KHACH_THUE_THEM', { tenant: tenantPayload(v), plainPassword: pwd });
+        const defaultPwd = String(v.cccd || '').trim().slice(-6);
+        toast(`Đã thêm ${v.hoTen}. Đăng nhập: CCCD ${v.cccd} | MK: ${pwd || defaultPwd}`, 'ok');
         await loadTenants();
       }
     });
@@ -127,7 +137,8 @@ function editTenant(id) {
     title: `Sửa — ${t.hoTen}`,
     fields: tenantFields(t, [{ value: String(t.phongId), label: t.soPhong }]),
     onSubmit: async v => {
-      await window.bridge.call('KHACH_THUE_CAP_NHAT', { tenant: tenantPayload(v, t.id), plainPassword: null });
+      const pwd = (v.matKhau || '').trim() || null;
+      await window.bridge.call('KHACH_THUE_CAP_NHAT', { tenant: tenantPayload(v, t.id), plainPassword: pwd });
       toast('Đã lưu hồ sơ.', 'ok');
       await loadTenants();
     }

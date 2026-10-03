@@ -92,6 +92,28 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
   background:#1A1F24;border:1px solid #262A2E;color:#F4EFEA;z-index:60;max-width:min(380px,calc(100vw - 32px))}
 .toast.ok{border-color:rgba(139,215,163,.5);color:#8BD7A3}
 .toast.err{border-color:rgba(217,93,57,.5);color:#D95D39}
+.toast.warn{border-color:rgba(224,175,104,.5);color:var(--amber)}
+
+/* hộp thoại thông báo / xác nhận — dùng token theme, không phải hàng nhập liệu */
+.modal.dlg{min-width:min(400px,calc(100vw - 24px));max-width:min(460px,calc(100vw - 24px));overflow:visible}
+.dlg-body{padding:22px 22px 18px;display:flex;gap:14px;align-items:flex-start}
+.dlg-icon{
+  flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:15px;
+  background:var(--field);border:1px solid var(--hairline);color:var(--dim)
+}
+.dlg-text{flex:1;min-width:0;padding-top:2px}
+.dlg-title{font-size:14.5px;font-weight:600;color:var(--cream-light);letter-spacing:-.01em}
+.dlg-msg{margin-top:6px;font-size:13px;line-height:1.6;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.dlg-ft{display:flex;justify-content:flex-end;gap:8px;padding:0 22px 18px}
+.dlg-ft .btn{min-width:84px;justify-content:center}
+.modal.dlg.dlg-err .dlg-icon{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+.modal.dlg.dlg-err .dlg-title{color:var(--danger)}
+.modal.dlg.dlg-ok .dlg-icon{background:rgba(139,215,163,.12);border-color:var(--sage-line);color:var(--sage)}
+.modal.dlg.dlg-ok .dlg-title{color:var(--sage)}
+.modal.dlg.dlg-warn .dlg-icon{background:#2A2319;border-color:var(--amber-line);color:var(--amber)}
+.modal.dlg.dlg-warn .dlg-title{color:var(--amber)}
+.modal.dlg.dlg-info .dlg-icon{background:rgba(217,93,57,.12);border-color:rgba(217,93,57,.35);color:var(--terracotta)}
+.modal.dlg.dlg-info .dlg-title{color:var(--terracotta)}
 
 /* ===== responsive: điện thoại dọc ===== */
 @media (max-width:640px){

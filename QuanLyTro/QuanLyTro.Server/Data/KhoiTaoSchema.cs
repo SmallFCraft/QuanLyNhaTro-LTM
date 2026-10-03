@@ -1,4 +1,5 @@
 using System.Reflection;
+using MySqlConnector;
 
 namespace QuanLyTro.Server.Data;
 
@@ -18,6 +19,33 @@ public sealed class KhoiTaoSchema(Database database)
             await using var command = connection.CreateCommand();
             command.CommandText = statement;
             await command.ExecuteNonQueryAsync(ct);
+        }
+
+        await EnsureMigrationColumnsAsync(connection, ct);
+    }
+
+    private static async Task EnsureMigrationColumnsAsync(MySqlConnection connection, CancellationToken ct)
+    {
+        const string checkSql = """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'chi_so_dien_nuoc'
+              AND COLUMN_NAME = 'hinh_thuc_nuoc';
+            """;
+        await using var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = checkSql;
+        var count = Convert.ToInt32(await checkCmd.ExecuteScalarAsync(ct));
+        if (count == 0)
+        {
+            const string alterSql = """
+                ALTER TABLE chi_so_dien_nuoc
+                ADD COLUMN hinh_thuc_nuoc VARCHAR(10) NOT NULL DEFAULT 'Khoi',
+                ADD COLUMN so_nguoi_nuoc INT NOT NULL DEFAULT 0;
+                """;
+            await using var alterCmd = connection.CreateCommand();
+            alterCmd.CommandText = alterSql;
+            await alterCmd.ExecuteNonQueryAsync(ct);
         }
     }
 

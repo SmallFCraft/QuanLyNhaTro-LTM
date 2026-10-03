@@ -27,14 +27,23 @@ const plusYearIso = () => {
 };
 
 const daysLeft = c => Math.round(
-  (new Date(String(c.ngayKetThuc).slice(0, 10)) - new Date(todayIso())) / 86400000);
+  (new Date(String(c.ngayKetThuc ?? c.endDate).slice(0, 10)) - new Date(todayIso())) / 86400000);
 
-// One rule drives both the due-red cell and the "Sắp hết ≤ 30 ngày" KPI (brief: ≤ 30).
-const isExpiring = c => c.trang_thai === 'HieuLuc' && daysLeft(c) >= 0 && daysLeft(c) <= EXPIRING_DAYS;
+const isExpiring = c => (c.trangThai ?? c.trang_thai) === 'HieuLuc' && daysLeft(c) >= 0 && daysLeft(c) <= EXPIRING_DAYS;
 
-// HOP_DONG_LAY_TAT_CA trả về MucHopDongItem { contract, soPhong, representativeName } (Server
-// gộp tên phòng + tên đại diện). Phẳng hóa để không phụ thuộc vị trí dữ liệu từng hanh_dong.
-const flatten = item => ({ ...(item.contract || item), soPhong: item.soPhong });
+// MucHopDongItem: { contract/hopDong, soPhong/roomNumber, representativeName/tenNguoiDaiDien }
+const flatten = item => {
+  const inner = item.contract || item.hopDong || item.HopDong || item;
+  return {
+    ...inner,
+    soPhong: item.soPhong ?? item.roomNumber ?? inner.soPhong,
+    representativeName: item.representativeName ?? item.tenNguoiDaiDien ?? inner.representativeName ?? inner.tenNguoiDaiDien ?? '—',
+    trangThai: inner.trangThai ?? inner.trang_thai,
+    giaThue: inner.giaThue ?? inner.gia_thue,
+    tienCoc: inner.tienCoc ?? inner.tien_coc,
+    ghiChu: inner.ghiChu ?? inner.ghi_chu
+  };
+};
 
 async function loadContracts() {
   try {
@@ -52,9 +61,9 @@ function buildContractFilter() {
   if (!sel) return;
   const count = {
     All: contractCache.length,
-    HieuLuc: contractCache.filter(c => c.trang_thai === 'HieuLuc').length,
+    HieuLuc: contractCache.filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc').length,
     Expiring: contractCache.filter(isExpiring).length,
-    Closed: contractCache.filter(c => c.trang_thai === 'ChamDut').length
+    Closed: contractCache.filter(c => (c.trangThai ?? c.trang_thai) === 'ChamDut').length
   };
   sel.innerHTML = [
     ['All', `Tất cả hợp đồng (${count.All})`],
@@ -69,20 +78,20 @@ function buildContractFilter() {
 function filteredContracts() {
   const q = (document.querySelector('#tab-hop_dong .toolbar input.inp')?.value || '').trim().toLowerCase();
   let rows = contractCache;
-  if (contractFilter === 'HieuLuc') rows = rows.filter(c => c.trang_thai === 'HieuLuc');
+  if (contractFilter === 'HieuLuc') rows = rows.filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc');
   else if (contractFilter === 'Expiring') rows = rows.filter(isExpiring);
-  else if (contractFilter === 'Closed') rows = rows.filter(c => c.trang_thai === 'ChamDut');
+  else if (contractFilter === 'Closed') rows = rows.filter(c => (c.trangThai ?? c.trang_thai) === 'ChamDut');
   if (q) rows = rows.filter(c =>
     (c.soPhong || '').toLowerCase().includes(q) ||
     (c.representativeName || '').toLowerCase().includes(q) ||
-    (c.ghi_chu || '').toLowerCase().includes(q));
+    (c.ghiChu || c.ghi_chu || '').toLowerCase().includes(q));
   return rows;
 }
 
 function updateContractKpis() {
   const vals = document.querySelectorAll('#tab-hop_dong .kpis .kpi .val');
   if (vals.length < 3) return;
-  const active = contractCache.filter(c => c.trang_thai === 'HieuLuc');
+  const active = contractCache.filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc');
   const deposit = active.reduce((sum, c) => sum + Number(c.tienCoc || 0), 0);
   vals[0].innerHTML = `${active.length} <span style="font-size:11px;font-weight:400;color:var(--muted)">/ ${contractCache.length} HĐ</span>`;
   vals[1].innerHTML = `${String(contractCache.filter(isExpiring).length).padStart(2, '0')} <span style="font-size:11px;font-weight:400;color:var(--muted)">≤ ${EXPIRING_DAYS} ngày</span>`;
@@ -94,9 +103,10 @@ function renderContracts() {
   if (!body) return;
   const rows = filteredContracts();
   body.innerHTML = rows.map(c => {
-    const left = c.trang_thai === 'HieuLuc' ? daysLeft(c) : null;
+    const stVal = c.trangThai ?? c.trang_thai;
+    const left = stVal === 'HieuLuc' ? daysLeft(c) : null;
     const leftText = left === null ? '—' : left >= 0 ? `${left} ngày` : 'Quá hạn';
-    const st = CONTRACT_STATUS[c.trang_thai] || { label: c.trang_thai, tag: 'warn' };
+    const st = CONTRACT_STATUS[stVal] || { label: stVal, tag: 'warn' };
     const urgent = isExpiring(c);
     const tag = urgent ? 'warn' : st.tag;
     const label = urgent ? 'Sắp hết hạn' : st.label;
@@ -130,16 +140,15 @@ function findContract(id) {
 async function createContract() {
   try {
     const phong = await window.bridge.call('PHONG_LAY_TAT_CA', {}) || [];
-    const busy = new Set(contractCache.filter(c => c.trang_thai === 'HieuLuc').map(c => c.phongId));
+    const busy = new Set(contractCache.filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc').map(c => c.phongId));
     const free = phong.filter(r => !busy.has(r.id));
     if (!free.length) { toast('Không có phòng nào còn trống để lập hợp đồng.', 'err'); return; }
 
-    // openModal không hỗ trợ select phụ thuộc -> 2 bước: chọn phòng, rồi mới ra danh sách người đại diện.
     openModal({
       title: 'Lập hợp đồng — chọn phòng',
       fields: [{
         name: 'phongId', label: 'Phòng', type: 'select', value: String(free[0].id),
-        options: free.map(r => ({ value: String(r.id), label: `${r.soPhong} (${fmtMoney(r.gia_thue)} đ)` }))
+        options: free.map(r => ({ value: String(r.id), label: `${r.soPhong} (${fmtMoney(r.giaThue ?? r.gia_thue)} đ)` }))
       }],
       onSubmit: async v => openContractForm(Number(v.phongId), phong.find(r => r.id === Number(v.phongId)))
     });
@@ -151,6 +160,7 @@ async function createContract() {
 async function openContractForm(phongId, room) {
   const khach_thue = await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId }) || [];
   if (!khach_thue.length) { toast('Phòng này chưa có người thuê.', 'err'); return; }
+  const roomPrice = room.giaThue ?? room.gia_thue ?? '';
   openModal({
     title: `Hợp đồng — ${room.soPhong}`,
     fields: [
@@ -160,9 +170,9 @@ async function openContractForm(phongId, room) {
       },
       { name: 'ngayBatDau', label: 'Ngày bắt đầu', type: 'date', value: todayIso(), required: true },
       { name: 'ngayKetThuc', label: 'Ngày kết thúc', type: 'date', value: plusYearIso(), required: true },
-      { name: 'giaThue', label: 'Giá thuê', type: 'number', value: String(room.gia_thue ?? ''), required: true },
+      { name: 'giaThue', label: 'Giá thuê', type: 'number', value: String(roomPrice), required: true },
       { name: 'tienCoc', label: 'Tiền cọc', type: 'number', value: '0' },
-      { name: 'ghi_chu', label: 'Ghi chú', value: '' }
+      { name: 'ghiChu', label: 'Ghi chú', value: '' }
     ],
     onSubmit: async v => {
       await window.bridge.call('HOP_DONG_TAO', {
@@ -173,8 +183,8 @@ async function openContractForm(phongId, room) {
         ngayKetThuc: v.ngayKetThuc,
         giaThue: Number(v.giaThue),
         tienCoc: Number(v.tienCoc || 0),
-        trang_thai: 'HieuLuc',
-        ghi_chu: v.ghi_chu || null
+        trangThai: 'HieuLuc',
+        ghiChu: v.ghiChu || null
       });
       toast(`Đã lập hợp đồng cho phòng ${room.soPhong}.`, 'ok');
       await loadContracts();
@@ -201,16 +211,15 @@ function terminateContract(id) {
   if (!c) { toast('Vui lòng chọn hợp đồng cần chấm dứt.', 'err'); return; }
   openModal({
     title: `Chấm dứt — phòng ${c.soPhong ?? c.phongId}`,
-    fields: [{ name: 'ghi_chu', label: 'Lý do chấm dứt', value: c.ghi_chu ?? '' }],
+    fields: [{ name: 'ghiChu', label: 'Lý do chấm dứt', value: c.ghiChu ?? c.ghi_chu ?? '' }],
     onSubmit: async v => {
-      await window.bridge.call('HOP_DONG_CHAM_DUT', { hopDongId: c.id, ghi_chu: v.ghi_chu || null });
+      await window.bridge.call('HOP_DONG_CHAM_DUT', { hopDongId: c.id, ghi_chu: v.ghiChu || null });
       toast('Đã chấm dứt hợp đồng.', 'ok');
       await loadContracts();
     }
   });
 }
 
-// Toolbar #tab-hop_dong không có id -> bám theo vị trí, không sửa index.html.
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#tab-hop_dong .toolbar select')
     ?.addEventListener('change', e => { contractFilter = e.target.value; renderContracts(); });

@@ -173,6 +173,48 @@ public sealed class InvoiceServiceTests
         Assert.AreEqual(2, repo.LastPage);
         Assert.AreEqual(3, repo.LastPageSize);
     }
+
+    [TestMethod]
+    public async Task InvoiceService_ComputesWaterByPerson_WhenHinhThucNuocIsNguoi()
+    {
+        var readingByPerson = new ChiSoDienNuocDto(
+            4, 101, "2026-09",
+            DienCu: 100, DienMoi: 150, GiaDien: 3500m,
+            NuocCu: 0, NuocMoi: 0, GiaNuoc: 60_000m,
+            HinhThucNuoc: "Nguoi", SoNguoiNuoc: 3);
+
+        var repo = new StubInvoiceRepo { BanGhi = readingByPerson };
+        var service = new HoaDonService(repo);
+
+        var created = await service.CreateAsync(new YeuCauTaoHoaDon(101, "2026-09", 0m));
+
+        // 3 người * 60.000 = 180.000 đ
+        Assert.AreEqual(180_000m, created.TienNuoc);
+        // Điện: (150 - 100) * 3500 = 175.000 đ (Chữ điện = 50 kWh)
+        Assert.AreEqual(175_000m, created.TienDien);
+        Assert.AreEqual(2_500_000m + 175_000m + 180_000m, created.TongTien);
+    }
+
+    [TestMethod]
+    public void UtilityService_Validate_RejectsWaterByPerson_WhenSoNguoiZeroOrNegative()
+    {
+        var reading = new ChiSoDienNuocDto(
+            1, 101, "2026-09", 100, 150, 3500m, 0, 0, 60_000m,
+            HinhThucNuoc: "Nguoi", SoNguoiNuoc: 0);
+
+        var ex = Assert.ThrowsException<LoiNghiepVu>(() => DienNuocService.Validate(reading));
+        StringAssert.Contains(ex.Message, "Số người");
+    }
+
+    [TestMethod]
+    public void UtilityService_Validate_AcceptsWaterByPerson_WhenSoNguoiGreaterThanZero()
+    {
+        var reading = new ChiSoDienNuocDto(
+            1, 101, "2026-09", 100, 150, 3500m, 10, 10, 60_000m,
+            HinhThucNuoc: "Nguoi", SoNguoiNuoc: 2);
+
+        DienNuocService.Validate(reading);
+    }
 }
 
 [TestClass]

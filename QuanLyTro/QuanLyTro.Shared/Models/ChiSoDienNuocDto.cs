@@ -9,5 +9,7 @@ public sealed record ChiSoDienNuocDto(
     decimal GiaDien,
     int NuocCu,
     int NuocMoi,
-    decimal GiaNuoc
+    decimal GiaNuoc,
+    string HinhThucNuoc = "Khoi",
+    int SoNguoiNuoc = 0
 );

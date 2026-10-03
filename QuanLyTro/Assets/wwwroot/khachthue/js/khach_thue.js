@@ -1,4 +1,4 @@
-// ponytail: tenant read-only shell — server derives room from token. Pagination is server-side (page/soLuongMoiTrang).
+// ponytail: shell khách thuê — server tự suy ra phòng từ token. Phân trang phía server (page/soLuongMoiTrang).
 let currentTenantInvoices = [];
 let tenantHistoryPage = 1;
 let tenantHistoryPageSize = 10;
@@ -8,11 +8,7 @@ async function loadTenantInvoices() {
   try {
     await loadTenantHistoryPage(tenantHistoryPage, tenantHistoryPageSize);
   } catch (err) {
-    if (typeof toast === 'function') {
-      toast(err.message, 'err');
-    } else {
-      alert(err.message);
-    }
+    toast(err.message, 'err');
     renderTenantEmpty();
   }
   await refreshTenantSummary();
@@ -45,21 +41,23 @@ function normalizeHistoryDto(res) {
   if (Array.isArray(res)) {
     return { items: res, tongSo: res.length, page: 1, soLuongMoiTrang: res.length || 10 };
   }
-  if (res.items || res.DanhSach) {
-    const items = res.items || res.DanhSach || [];
+  const list = res.danhSach || res.items || res.DanhSach || res.Items;
+  if (list) {
+    const items = list || [];
     const i = n => (n === undefined || n === null) ? undefined : Number(n);
     return {
       items,
-      tongSo: i(res.tongSo ?? res.TongSo) ?? items.length,
-      page: i(res.page ?? res.Trang) ?? 1,
-      soLuongMoiTrang: i(res.soLuongMoiTrang ?? res.SoLuongMoiTrang) ?? 10
+      tongSo: i(res.tongSo ?? res.TongSo ?? res.totalCount ?? res.TotalCount) ?? items.length,
+      page: i(res.trang ?? res.Trang ?? res.page ?? res.Page) ?? 1,
+      soLuongMoiTrang: i(res.soLuongMoiTrang ?? res.SoLuongMoiTrang ?? res.pageSize ?? res.PageSize) ?? 10
     };
   }
   return null;
 }
 
 function isPaidInvoice(i) {
-  return i.isPaid === true || i.trang_thai === 'DaThu' || i.trang_thai === 'paid' || i.trang_thai === 1;
+  const st = i.trangThai ?? i.trang_thai;
+  return i.isPaid === true || st === 'DaThu' || st === 'paid' || st === 1;
 }
 
 function renderTenantHistory(rows) {
@@ -177,7 +175,7 @@ function switchTenantTab(name) {
 }
 
 async function copyTransfer() {
-  const isPaid = i => i.isPaid === true || i.trang_thai === 'DaThu' || i.trang_thai === 'paid' || i.trang_thai === 1;
+  const isPaid = i => i.isPaid === true || (i.trangThai ?? i.trang_thai) === 'DaThu' || (i.trangThai ?? i.trang_thai) === 'paid' || (i.trangThai ?? i.trang_thai) === 1;
   const target = (currentTenantInvoices || []).find(i => !isPaid(i)) || (currentTenantInvoices || [])[0];
   if (!target) {
     if (typeof toast === 'function') toast('Không có hóa đơn để sao chép', 'warn');

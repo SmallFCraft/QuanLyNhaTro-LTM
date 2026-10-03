@@ -26,7 +26,7 @@ async function loadInvoices() {
     const rows = await window.bridge.call('HOA_DON_LAY_TAT_CA', payload) || [];
     body.innerHTML = rows.map(i => {
       // BR-11: hóa đơn đã thu bất biến — nút Thu khóa.
-      const paid = i.trang_thai === 'DaThu';
+      const paid = (i.trangThai ?? i.trang_thai) === 'DaThu';
       return `<tr>
         <td><b>${esc(i.soPhong ?? `#${i.phongId}`)}</b></td>
         <td class="num">${fmtMoney(i.tienPhong)}</td>
@@ -40,6 +40,9 @@ async function loadInvoices() {
             <i class="fas fa-hand-holding-usd"></i> Thu</button></td>
       </tr>`;
     }).join('') || `<tr><td colspan="8">Chưa có hóa đơn nào</td></tr>`;
+
+    const foot = document.querySelector('#tab-hoa_don .tblfoot span');
+    if (foot) foot.textContent = `Tổng: ${rows.length} bản ghi`;
   } catch (err) {
     toast(err.message, 'err');
   }

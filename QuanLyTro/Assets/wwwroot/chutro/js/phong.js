@@ -10,51 +10,100 @@ async function loadRooms() {
   }
 }
 
+function selectedRoomId() {
+  const sel = document.querySelector('#phong-body tr.sel');
+  return sel ? Number(sel.dataset.id) : null;
+}
+
+function refreshRoomToolbar() {
+  const id = selectedRoomId();
+  const r = id == null ? null : _roomsCache.find(x => x.id === id) ?? null;
+  const editBtn = document.getElementById('btn-edit-room');
+  const delBtn = document.getElementById('btn-del-room');
+  const full = r != null && (r.soNguoiHienTai ?? 0) > 0;
+  if (editBtn) editBtn.disabled = r == null;
+  if (delBtn) {
+    delBtn.disabled = r == null || full;
+    delBtn.title = r == null
+      ? 'Chọn một phòng trong bảng để xóa'
+      : full ? 'Chỉ xóa được phòng trống (BR-12)' : 'Xóa phòng đang chọn';
+  }
+}
+
 function renderRooms(rows) {
   const body = document.querySelector('#tab-phong tbody');
   if (!body) return;
+  const keep = selectedRoomId();
   const q = (document.getElementById('room-search')?.value || '').toLowerCase().trim();
-  const trang_thai = document.getElementById('room-trang_thai')?.value || '';
-  const list = (rows || []).filter(r =>
-    (!q || String(r.soPhong).toLowerCase().includes(q)) &&
-    (!trang_thai || r.trang_thai === trang_thai));
+  const trangThaiFilter = document.getElementById('room-trang_thai')?.value || '';
+  const list = (rows || []).filter(r => {
+    const st = r.trangThai ?? r.trang_thai;
+    return (!q || String(r.soPhong).toLowerCase().includes(q)) &&
+           (!trangThaiFilter || st === trangThaiFilter);
+  });
 
   body.innerHTML = list.map(r => {
     const full = (r.soNguoiHienTai ?? 0) > 0;
-    return `<tr>
+    const st = r.trangThai ?? r.trang_thai;
+    const gia = r.giaThue ?? r.gia_thue;
+    const moTa = r.moTa ?? r.mo_ta ?? '';
+    return `<tr data-id="${r.id}"${r.id === keep ? ' class="sel"' : ''} onclick="this.parentNode.querySelectorAll('tr').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');refreshRoomToolbar()">
       <td><b>${esc(r.soPhong)}</b></td>
-      <td class="num">${fmtMoney(r.gia_thue)}</td>
+      <td class="num">${fmtMoney(gia)}</td>
       <td class="num">${r.soNguoiToiDa}</td>
       <td class="num ${full ? 'due-red' : ''}">${r.soNguoiHienTai ?? 0}/${r.soNguoiToiDa}</td>
-      <td><span class="tag ${r.trang_thai === 'DaThue' ? 'rent' : r.trang_thai === 'BaoTri' ? 'warn' : 'avail'}">
-        ${r.trang_thai === 'DaThue' ? 'Đang thuê' : r.trang_thai === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span></td>
-      <td>${esc(r.mo_ta ?? '')}</td>
+      <td><span class="tag ${st === 'DaThue' ? 'rent' : st === 'BaoTri' ? 'warn' : 'avail'}">
+        ${st === 'DaThue' ? 'Đang thuê' : st === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span></td>
+      <td>${esc(moTa)}</td>
       <td>
-        <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRoom(${r.id})"${full ? ' disabled title="Chỉ xóa được phòng trống (BR-12)"' : ''}><i class="fas fa-trash"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editRoom(${r.id})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteRoom(${r.id})"${full ? ' disabled title="Chỉ xóa được phòng trống (BR-12)"' : ''}><i class="fas fa-trash"></i></button>
       </td></tr>`;
   }).join('') || '<tr><td colspan="7" style="color:var(--dim)">Chưa có phòng nào.</td></tr>';
 
   const foot = document.querySelector('#tab-phong .tblfoot span');
   if (foot) foot.textContent = `Tổng: ${list.length} bản ghi`;
+  refreshRoomToolbar();
 }
+
+function editSelectedRoom() {
+  const id = selectedRoomId();
+  if (id == null) { toast('Vui lòng chọn một phòng trong bảng.', 'info'); return; }
+  editRoom(id);
+}
+
+function deleteSelectedRoom() {
+  const id = selectedRoomId();
+  if (id == null) { toast('Vui lòng chọn một phòng trong bảng.', 'info'); return; }
+  deleteRoom(id);
+}
+
+document.addEventListener('keydown', e => {
+  const pane = document.getElementById('tab-phong');
+  if (!pane || pane.hidden) return;
+  if (document.querySelector('#modal-root .modal-back, #modal-root .modal')) return;
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+  if (e.key === 'F1') { e.preventDefault(); addRoom(); }
+  if (e.key === 'F2') { e.preventDefault(); editSelectedRoom(); }
+});
 
 function addRoom() {
   openModal({
     title: 'Thêm phòng mới',
     fields: [
       { name: 'soPhong', label: 'Số phòng', type: 'text', required: true },
-      { name: 'gia_thue', label: 'Giá thuê (đ)', type: 'number', required: true },
+      { name: 'giaThue', label: 'Giá thuê (đ)', type: 'number', required: true },
       { name: 'soNguoiToiDa', label: 'Sức chứa', type: 'number', value: '2', required: true },
-      { name: 'mo_ta', label: 'Mô tả', type: 'text' }
+      { name: 'moTa', label: 'Mô tả', type: 'text' }
     ],
     onSubmit: async v => {
       await window.bridge.call('PHONG_THEM', {
         soPhong: v.soPhong,
-        gia_thue: Number(v.gia_thue),
+        giaThue: Number(v.giaThue),
         soNguoiToiDa: Number(v.soNguoiToiDa),
-        trang_thai: 'Trong',
-        mo_ta: v.mo_ta || null
+        trangThai: 'Trong',
+        moTa: v.moTa || null
       });
       toast('Đã thêm phòng ' + v.soPhong, 'ok');
       await loadRooms();
@@ -65,26 +114,29 @@ function addRoom() {
 function editRoom(id) {
   const r = _roomsCache.find(x => x.id === id);
   if (!r) return;
+  const st = r.trangThai ?? r.trang_thai;
+  const gia = r.giaThue ?? r.gia_thue;
+  const moTa = r.moTa ?? r.mo_ta ?? '';
   openModal({
     title: 'Sửa phòng ' + r.soPhong,
     fields: [
       { name: 'soPhong', label: 'Số phòng', type: 'text', value: r.soPhong, required: true },
-      { name: 'gia_thue', label: 'Giá thuê (đ)', type: 'number', value: r.gia_thue, required: true },
+      { name: 'giaThue', label: 'Giá thuê (đ)', type: 'number', value: gia, required: true },
       { name: 'soNguoiToiDa', label: 'Sức chứa', type: 'number', value: r.soNguoiToiDa, required: true },
-      { name: 'trang_thai', label: 'Trạng thái', type: 'select', value: r.trang_thai, options: [
+      { name: 'trangThai', label: 'Trạng thái', type: 'select', value: st, options: [
         { value: 'Trong', label: 'Phòng trống' },
         { value: 'DaThue', label: 'Đang thuê' },
         { value: 'BaoTri', label: 'Bảo trì' }] },
-      { name: 'mo_ta', label: 'Mô tả', type: 'text', value: r.mo_ta ?? '' }
+      { name: 'moTa', label: 'Mô tả', type: 'text', value: moTa }
     ],
     onSubmit: async v => {
       await window.bridge.call('PHONG_CAP_NHAT', {
         id: r.id,
         soPhong: v.soPhong,
-        gia_thue: Number(v.gia_thue),
+        giaThue: Number(v.giaThue),
         soNguoiToiDa: Number(v.soNguoiToiDa),
-        trang_thai: v.trang_thai,
-        mo_ta: v.mo_ta || null
+        trangThai: v.trangThai,
+        moTa: v.moTa || null
       });
       toast('Đã cập nhật phòng ' + v.soPhong, 'ok');
       await loadRooms();

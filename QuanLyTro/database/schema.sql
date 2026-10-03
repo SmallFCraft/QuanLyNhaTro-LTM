@@ -87,9 +87,11 @@ CREATE TABLE IF NOT EXISTS chi_so_dien_nuoc (
     nuoc_cu INT NOT NULL,
     nuoc_moi INT NOT NULL,
     gia_nuoc DECIMAL(10, 2) NOT NULL DEFAULT 10000,
+    hinh_thuc_nuoc VARCHAR(10) NOT NULL DEFAULT 'Khoi',
+    so_nguoi_nuoc INT NOT NULL DEFAULT 0,
     ngay_ghi DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_chi_so_dien CHECK (dien_moi >= dien_cu),
-    CONSTRAINT chk_chi_so_nuoc CHECK (nuoc_moi >= nuoc_cu),
+    CONSTRAINT chk_chi_so_nuoc CHECK (hinh_thuc_nuoc = 'Nguoi' OR nuoc_moi >= nuoc_cu),
     CONSTRAINT fk_chi_so_phong FOREIGN KEY (phong_id) REFERENCES phong(id),
     UNIQUE KEY uq_phong_ky (phong_id, ky_cuoc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

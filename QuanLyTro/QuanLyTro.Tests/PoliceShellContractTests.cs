@@ -26,8 +26,8 @@ public sealed class PoliceShellContractTests
     public void PoliceShell_HasThreeTabs_AndNoWriteButtons()
     {
         var html = File.ReadAllText(PoliceHtml);
-        var start = html.IndexOf("id=\"police\"", System.StringComparison.Ordinal);
-        Assert.IsTrue(start >= 0, "congan/index.html thiếu cửa sổ #police");
+        var start = html.IndexOf("id=\"congan\"", System.StringComparison.Ordinal);
+        Assert.IsTrue(start >= 0, "congan/index.html thiếu cửa sổ #congan");
 
         var policeBlock = html.Substring(start, html.Length - start);
         string[] tabKeys = { "citizens", "residence", "history" };
@@ -120,5 +120,17 @@ public sealed class PoliceShellContractTests
         var firstExport = html.IndexOf("onclick=\"export", citizens, System.StringComparison.Ordinal);
         Assert.IsTrue(firstExport > 0 && firstExport < history,
             "nút export đầu tiên trong vùng Công dân phải là exportCitizens()");
+    }
+
+    /// <summary>Tab Tạm trú phải có nút Xuất danh sách hoạt động, nối sang exportResidence.</summary>
+    [TestMethod]
+    public void ResidenceTab_ExportButton_ExportsPendingResidence()
+    {
+        var html = File.ReadAllText(PoliceHtml);
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "residence.js"));
+
+        Assert.IsTrue(js.Contains("function exportResidence"), "residence.js thiếu exportResidence()");
+        Assert.IsTrue(html.Contains("onclick=\"exportResidence()\""),
+            "congan/index.html chưa nối nút Xuất danh sách sang exportResidence()");
     }
 }

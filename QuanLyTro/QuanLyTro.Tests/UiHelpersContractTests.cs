@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace QuanLyTro.Tests;
@@ -15,10 +16,36 @@ public sealed class UiHelpersContractTests
         var js = File.ReadAllText(Path.Combine(Wwwroot, "shared", "js", "ui.js"));
         foreach (var fn in new[] { "function esc", "function fmtMoney", "function fmtDate",
                                    "function fmtDateOnly", "function toast", "function openModal",
-                                   "function confirmDialog" })
+                                   "function confirmDialog", "function alertDialog" })
         {
             Assert.IsTrue(js.Contains(fn), $"ui.js thiếu {fn}");
         }
+    }
+
+    /// <summary>
+    /// Không còn hộp thoại mặc định của WebView2 (Chromium tự chèn tiêu đề
+    /// "app.quanlytro.local says"). Mọi thông báo đi qua modal/toast nội bộ.
+    /// </summary>
+    [TestMethod]
+    public void Frontend_DoesNotCallNativeAlertOrConfirm()
+    {
+        foreach (var file in Directory.GetFiles(Wwwroot, "*.js", SearchOption.AllDirectories))
+        {
+            var js = File.ReadAllText(file);
+            var relative = Path.GetRelativePath(Wwwroot, file);
+            Assert.IsFalse(Regex.IsMatch(js, @"(?<![\w.])alert\s*\("),
+                $"{relative} còn gọi alert() gốc — dùng alertDialog()/toast().");
+            Assert.IsFalse(Regex.IsMatch(js, @"(?<![\w.])confirm\s*\("),
+                $"{relative} còn gọi confirm() gốc — dùng confirmDialog().");
+        }
+    }
+
+    /// <summary>window.alert bị thay bằng toast nội bộ trong ui.js — không lộ tên miền.</summary>
+    [TestMethod]
+    public void UiJs_ReplacesNativeAlertWithToast()
+    {
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "shared", "js", "ui.js"));
+        Assert.IsTrue(js.Contains("window.alert ="), "ui.js chưa thay window.alert");
     }
 
     /// <summary>

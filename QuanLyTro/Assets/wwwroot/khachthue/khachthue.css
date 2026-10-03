@@ -1,4 +1,4 @@
-/* tenant.css — màn hình Khách thuê (KhachThue ReadOnly). Tokens: ../shared/css/tokens.css, base: ../shared/css/base.css */
+/* tenant.css — màn hình Khách thuê. Tokens: ../shared/css/tokens.css, base: ../shared/css/base.css */
 
 /* ===== window chrome ===== */
 .win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}

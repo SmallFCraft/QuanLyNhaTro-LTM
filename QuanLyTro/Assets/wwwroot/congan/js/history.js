@@ -11,15 +11,20 @@ async function loadHistory() {
   const rows = await window.bridge.call('LICH_SU_CU_TRU_LAY', { from, to });
   const body = document.querySelector('#ptab-history tbody');
   if (!body) return;
-  body.innerHTML = (rows || []).map(h => `
-    <tr>
-      <td><b>${esc(h.hoTen)}</b></td>
-      <td><b>${esc(h.soPhong)}</b></td>
-      <td><span class="tag rent">${esc(h.eventType)}</span></td>
-      <td class="mono">${fmtDateOnly(h.eventDate)}</td>
-      <td class="mono">—</td>
-      <td>${esc(h.ghi_chu) || '—'}</td>
-    </tr>`).join('') || `<tr class="empty"><td colspan="6">Không có biến động nào</td></tr>`;
+  body.innerHTML = (rows || []).map(h => {
+    const loai = h.loaiBienDong ?? h.eventType ?? 'Vào';
+    const ngay = h.ngayBienDong ?? h.eventDate;
+    const ghiChu = h.ghiChu ?? h.ghi_chu ?? '—';
+    return `
+      <tr>
+        <td><b>${esc(h.hoTen)}</b></td>
+        <td><b>${esc(h.soPhong)}</b></td>
+        <td><span class="tag rent">${esc(loai)}</span></td>
+        <td class="mono">${fmtDateOnly(ngay)}</td>
+        <td class="mono">—</td>
+        <td>${esc(ghiChu)}</td>
+      </tr>`;
+  }).join('') || `<tr class="empty"><td colspan="6">Không có biến động nào</td></tr>`;
 
   const foot = document.querySelector('#ptab-history .tblfoot span');
   if (foot) foot.textContent = `Tổng: ${(rows || []).length} bản ghi`;
@@ -28,16 +33,18 @@ async function loadHistory() {
 async function exportHistory() {
   const { from, to } = historyRange();
   const payload = {
-    fromDate: from,
-    toDate: to,
-    format: 'CSV',
+    tuNgay: from || null,
+    denNgay: to || null,
+    dinhDang: 'CSV',
     soPhong: null,
-    eventType: null
+    loaiBienDong: null
   };
   try {
     const res = await window.bridge.call('XUAT_LICH_SU_CU_TRU', payload);
-    alert(`Đã xuất ${res.rowCount} bản ghi tới:\n${res.filePath}`);
+    const count = res.soDong ?? res.rowCount ?? 0;
+    const path = res.duongDanFile ?? res.filePath ?? '';
+    toast(`Đã xuất ${count} bản ghi tới: ${path}`, 'ok');
   } catch (err) {
-    alert(err.message);
+    alertDialog(err.message, 'Xuất thất bại');
   }
 }

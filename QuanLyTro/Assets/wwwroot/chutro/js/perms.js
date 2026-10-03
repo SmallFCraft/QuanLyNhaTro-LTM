@@ -24,9 +24,9 @@ async function loadPerms() {
 function renderPermsRoleSelector() {
   const c = document.getElementById('permsRoles');
   if (!c || !_permsData) return;
-  c.innerHTML = Object.entries(ROLE_LABELS).map(([vai_tro, meta]) => {
-    const on = vai_tro === _currentRole ? ' active' : '';
-    return `<button type="button" class="perms-vai_tro-btn${on}" onclick="selectPermsRole('${vai_tro}')">
+  c.innerHTML = Object.entries(ROLE_LABELS).map(([vaiTro, meta]) => {
+    const on = vaiTro === _currentRole ? ' active' : '';
+    return `<button type="button" class="perms-vai_tro-btn${on}" onclick="selectPermsRole('${vaiTro}')">
       <i class="fas ${meta.icon}"></i>
       <span class="vai_tro-title">${meta.name}</span>
       <span class="vai_tro-desc">${meta.desc}</span>
@@ -34,26 +34,25 @@ function renderPermsRoleSelector() {
   }).join('');
 }
 
-function actionsForRole(vai_tro) {
-  const map = (_permsData && _permsData.quyenTheoVaiTro) || {};
-  if (map[vai_tro]) return map[vai_tro];
-  // Khóa JSON có thể lệch hoa/thường so với ROLE_LABELS ('POLICE' vs 'CongAn') — so khớp không phân biệt.
-  const key = Object.keys(map).find(k => k.toLowerCase() === String(vai_tro).toLowerCase());
+function actionsForRole(vaiTro) {
+  const map = (_permsData && (_permsData.quyenTheoVaiTro || _permsData.QuyenTheoVaiTro)) || {};
+  if (map[vaiTro]) return map[vaiTro];
+  const key = Object.keys(map).find(k => k.toLowerCase() === String(vaiTro).toLowerCase());
   return (key && map[key]) || [];
 }
 
-function selectPermsRole(vai_tro) {
-  _currentRole = vai_tro;
+function selectPermsRole(vaiTro) {
+  _currentRole = vaiTro;
   renderPermsRoleSelector();
-  _permsDraft = new Set(actionsForRole(vai_tro));
+  _permsDraft = new Set(actionsForRole(vaiTro));
   renderPermsCheckboxes();
 }
 
-function togglePermAction(hanh_dong, checked) {
+function togglePermAction(hanhDong, checked) {
   if (checked) {
-    _permsDraft.add(hanh_dong);
+    _permsDraft.add(hanhDong);
   } else {
-    _permsDraft.delete(hanh_dong);
+    _permsDraft.delete(hanhDong);
   }
 }
 
@@ -61,22 +60,27 @@ function renderPermsCheckboxes() {
   const container = document.getElementById('permsGroups');
   if (!container || !_permsData) return;
 
-  // Gom nhóm hanh_dong theo Nhom
+  const catalog = _permsData.danhSachHanhDong || _permsData.DanhSachHanhDong || [];
+
+  // Gom nhóm hanhDong theo Nhom
   const groups = {};
-  (_permsData.danhSachHanhDong || []).forEach(item => {
-    if (!groups[item.group]) groups[item.group] = [];
-    groups[item.group].push(item);
+  catalog.forEach(item => {
+    const nhom = item.nhom || item.Nhom || item.group || 'Khác';
+    if (!groups[nhom]) groups[nhom] = [];
+    groups[nhom].push(item);
   });
 
   const html = Object.entries(groups).map(([groupName, items]) => {
     const itemsHtml = items.map(item => {
-      const isChecked = _permsDraft.has(item.hanh_dong) ? 'checked' : '';
+      const code = item.hanhDong || item.HanhDong || item.action || '';
+      const desc = item.moTa || item.MoTa || item.description || code;
+      const isChecked = _permsDraft.has(code) ? 'checked' : '';
       return `
         <label class="perm-item">
-          <input type="checkbox" ${isChecked} onchange="togglePermAction('${item.hanh_dong}', this.checked)">
+          <input type="checkbox" ${isChecked} onchange="togglePermAction(this.dataset.code, this.checked)" data-code="${esc(code)}">
           <div class="perm-info">
-            <span class="perm-desc">${esc(item.mo_ta)}</span>
-            <code class="perm-hanh_dong">${esc(item.hanh_dong)}</code>
+            <span class="perm-desc">${esc(desc)}</span>
+            <code class="perm-hanh_dong">${esc(code)}</code>
           </div>
         </label>
       `;
@@ -106,15 +110,14 @@ function resetPermsDraft() {
 
 async function saveRolePermissions() {
   if (!_permsData) return;
-  const hanh_dong = Array.from(_permsDraft);
+  const list = Array.from(_permsDraft);
   try {
     const res = await window.bridge.call('PHAN_QUYEN_CAP_NHAT_VAI_TRO', {
       VaiTro: _currentRole,
-      Actions: hanh_dong
+      DanhSachHanhDong: list
     });
-    // Cập nhật bộ đệm cục bộ
     if (!_permsData.quyenTheoVaiTro) _permsData.quyenTheoVaiTro = {};
-    _permsData.quyenTheoVaiTro[_currentRole] = hanh_dong;
+    _permsData.quyenTheoVaiTro[_currentRole] = list;
     toast(res?.message || `Đã cập nhật phân quyền cho vai trò ${ROLE_LABELS[_currentRole]?.name || _currentRole}!`, 'ok');
   } catch (err) {
     toast(err.message, 'err');
