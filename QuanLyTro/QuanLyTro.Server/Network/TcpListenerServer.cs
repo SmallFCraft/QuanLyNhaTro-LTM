@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using QuanLyTro.Shared;
 
 namespace QuanLyTro.Server.Network;
 
@@ -9,7 +10,7 @@ namespace QuanLyTro.Server.Network;
 /// </summary>
 public sealed class TcpListenerServer(DieuPhoiYeuCau router)
 {
-    public const int DefaultPort = 8888;
+    public const int DefaultPort = SharedConstants.DefaultPort;
 
     /// <summary>Cổng thực tế đang lắng nghe — truyền 0 để OS cấp cổng ngẫu nhiên (dùng cho test).</summary>
     public int Port { get; private set; }

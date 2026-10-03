@@ -40,12 +40,18 @@ public sealed class CuTruService
         await writer.WriteLineAsync("Họ tên,CCCD,Số phòng,Sự kiện,Ngày,Ghi chú");
         foreach (var r in data)
         {
-            await writer.WriteLineAsync(
-                $"{r.HoTen},{r.Cccd},{r.SoPhong},{r.LoaiBienDong},{r.NgayBienDong:dd/MM/yyyy},{r.GhiChu}");
+            await writer.WriteLineAsync(string.Join(",",
+            [
+                CsvCell(r.HoTen), CsvCell(r.Cccd), CsvCell(r.SoPhong),
+                CsvCell(r.LoaiBienDong), r.NgayBienDong.ToString("dd/MM/yyyy"), CsvCell(r.GhiChu)
+            ]));
         }
 
         return new KetQuaXuatFile(path, data.Count);
     }
+
+    private static string CsvCell(string? value) =>
+        $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";
 
     /// <summary>
     /// Thiếu/để trống ngày → mặc định <see cref="DefaultWindowDays"/> ngày gần nhất; ngày cuối

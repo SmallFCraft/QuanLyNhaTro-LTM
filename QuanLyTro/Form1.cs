@@ -36,7 +36,18 @@ public partial class Form1 : Form
             // Cho phép mở UI, JS sẽ báo khi bấm login
         }
 
-        await InitializeWebViewAsync();
+        try
+        {
+            await InitializeWebViewAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Không thể khởi tạo trình duyệt WebView2. Vui lòng kiểm tra đã cài đặt Microsoft Edge WebView2 Runtime.\n\nChi tiết: {ex.Message}",
+                "Lỗi khởi tạo",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
     }
 
     private async Task InitializeWebViewAsync()

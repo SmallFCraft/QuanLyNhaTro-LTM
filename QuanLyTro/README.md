@@ -12,13 +12,13 @@
 │  (net8.0-windows)  │ ◄──────────────────────── │  Console App        │             │  Laragon     │
 │  KHÔNG chạm DB     │   ResponsePacket(JSON)    │  Router→Service→Repo│             │  cổng 3306   │
 └────────────────────┘                           └─────────────────────┘             └──────────────┘
-        Form1 + 8 UserControl                        DieuPhoiYeuCau
+        Form1 + WebView2 (Assets/wwwroot)            DieuPhoiYeuCau
         TcpClientService                             MaTranPhanQuyen (BR-14)
         App.config: ServerHost/ServerPort            SessionStore, XacThucService
 ```
 
-- **Client** chỉ gửi `RequestPacket` và hiển thị kết quả; mọi business rule BR-01..BR-14 enforce tại **Server**.
-- **Server** sở hữu toàn bộ nghiệp vụ, giao_dich MySQL, phân quyền 2 vai.
+- **Client** chỉ gửi `RequestPacket` và hiển thị kết quả; mọi business rule BR-01..BR-16 enforce tại **Server**.
+- **Server** sở hữu toàn bộ nghiệp vụ, giao_dich MySQL, phân quyền 4 vai trò.
 - **MySQL** là nguồn dữ liệu duy nhất; ràng buộc UNIQUE/CHECK/FK bảo vệ tầng cuối.
 
 ---
@@ -49,6 +49,8 @@ Cấu hình kết nối nằm ở `QuanLyTro.Server/appsettings.json`:
 ## 3. Chạy lần đầu (đúng thứ tự)
 
 **Bước 1 — Bật Laragon / MySQL** (Start All, đảm bảo MySQL 8.0.30 đang chạy ở 3306).
+
+> Mọi lệnh `dotnet` dưới đây dùng đường dẫn tính từ **thư mục gốc repository** (`LapTrinhMang/`), không phải từ `QuanLyTro/`.
 
 **Bước 2 — Tạo schema** (idempotent, chạy lại được nhiều lần):
 
@@ -125,7 +127,7 @@ là cách chính thức tạo dữ liệu mẫu.
 
 ---
 
-## 5. 22 hanh_dong TCP & ma trận phân quyền
+## 5. 26 hanh_dong TCP & ma trận phân quyền
 
 Server enforce tại `DieuPhoiYeuCau` → `MaTranPhanQuyen.IsAllowed(hanh_dong, vai_tro)` (BR-14). Mọi hanh_dong ngoài `DANG_NHAP` đều cần token hợp lệ; thiếu/sai token → `"Phiên đăng nhập không hợp lệ hoặc đã hết hạn."`; sai vai → `"Không có quyền."`.
 
@@ -224,7 +226,7 @@ Artifact `.coverage` nằm trong `QuanLyTro/QuanLyTro.Tests/TestResults/<guid>/`
 **Acceptance test** (`AcceptanceTests.cs`, 10 test, MySQL thật + router thật):
 
 - Luồng tháng SRS §7 đầu-cuối (tạo phòng → tenant → HĐ → điện nước → hóa đơn → thu → báo cáo → xuất tạm trú), assert DB sau từng bước.
-- Ma trận phân quyền đủ 22 hanh_dong qua `DieuPhoiYeuCau`; tenant bị chặn `"Không có quyền."`; landlord bị chặn `HOA_DON_CUA_TOI`.
+- Ma trận phân quyền đủ 26 hanh_dong qua `DieuPhoiYeuCau`; tenant bị chặn `"Không có quyền."`; landlord bị chặn `HOA_DON_CUA_TOI`.
 - BR-14 room-isolation của `HOA_DON_CUA_TOI` (seed 2 phòng + 2 hóa đơn).
 - Khóa đăng nhập US-23 với clock injectable (không sleep thật).
 - BR-04, BR-05, BR-06, BR-09, BR-10, BR-11 trên MySQL thật.

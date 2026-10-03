@@ -195,13 +195,20 @@ public sealed class KhachThueRepository(Database database)
         const string existsSql = "SELECT COUNT(*) FROM khach_thue WHERE id = @id";
 
         await using var connection = await database.OpenAsync(ct);
-        await using (var command = new MySqlCommand(sql, connection))
+        try
         {
-            command.Parameters.AddWithValue("@id", khachThueId);
-            if (Convert.ToInt32(await command.ExecuteScalarAsync(ct)) > 0)
+            await using (var command = new MySqlCommand(sql, connection))
             {
-                return KetQuaXoaKhachThue.DaXoa;
+                command.Parameters.AddWithValue("@id", khachThueId);
+                if (Convert.ToInt32(await command.ExecuteScalarAsync(ct)) > 0)
+                {
+                    return KetQuaXoaKhachThue.DaXoa;
+                }
             }
+        }
+        catch (MySqlException ex) when (ex.Number == 1451)
+        {
+            throw new Services.LoiNghiepVu("Không thể xóa: người thuê còn đứng tên trên hợp đồng lưu trữ.");
         }
 
         await using var existsCommand = new MySqlCommand(existsSql, connection);

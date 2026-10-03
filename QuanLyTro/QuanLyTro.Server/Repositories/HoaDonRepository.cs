@@ -213,11 +213,14 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
 
         await using var connection = await database.OpenAsync(ct);
 
+        // BR-14: hóa đơn thuộc về người thuê QUA HỢP ĐỒNG (hop_dong.nguoi_dai_dien_id),
+        // không phải qua phòng hiện tại — join theo phong_id sẽ lộ hóa đơn của khách cũ
+        // ở cùng phòng và làm mất lịch sử của khách sau khi trả phòng (phong_id = NULL).
         const string countSql = """
             SELECT COUNT(*)
             FROM hoa_don i
-            JOIN khach_thue t ON t.phong_id = i.phong_id
-            WHERE t.id = @khachThueId
+            JOIN hop_dong c ON c.id = i.hop_dong_id
+            WHERE c.nguoi_dai_dien_id = @khachThueId
             """;
         await using var countCmd = new MySqlCommand(countSql, connection);
         countCmd.Parameters.AddWithValue("@khachThueId", khachThueId);
@@ -227,8 +230,8 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             SELECT i.id, i.phong_id, i.hop_dong_id, i.ky_cuoc, i.tien_phong, i.tien_dien,
                    i.tien_nuoc, i.phi_khac, i.tong_tien, i.trang_thai, i.ngay_dong
             FROM hoa_don i
-            JOIN khach_thue t ON t.phong_id = i.phong_id
-            WHERE t.id = @khachThueId
+            JOIN hop_dong c ON c.id = i.hop_dong_id
+            WHERE c.nguoi_dai_dien_id = @khachThueId
             ORDER BY i.ky_cuoc DESC
             LIMIT @limit OFFSET @offset
             """;

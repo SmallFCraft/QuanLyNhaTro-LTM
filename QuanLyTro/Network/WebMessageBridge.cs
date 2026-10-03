@@ -33,10 +33,11 @@ public sealed class WebMessageBridge
     public async Task DispatchAsync(string rawJson, Func<string, Task> postBack)
     {
         string? reqId = null;
+        string? action = null;
         try
         {
             var env = JsonSerializer.Deserialize<ClientEnvelope>(rawJson, JsonDefaults.Options);
-            var action = env?.EffectiveAction;
+            action = env?.EffectiveAction;
             if (env is null || string.IsNullOrWhiteSpace(action))
             {
                 await PostErrorAsync(postBack, null, "Gói tin JSON không hợp lệ hoặc thiếu Action.");
@@ -88,6 +89,13 @@ public sealed class WebMessageBridge
         }
         catch (ClientRequestException ex)
         {
+            // Đăng nhập thất bại không được giữ token của phiên trước đó — tránh dùng nhầm
+            // danh tính cũ ở các request tiếp theo sau khi thông tin sai.
+            if (reqId is not null && string.Equals(action, ActionNames.DangNhap, StringComparison.Ordinal))
+            {
+                _client.Token = null;
+            }
+
             await PostErrorAsync(postBack, reqId, ex.Message);
         }
         catch (JsonException ex)

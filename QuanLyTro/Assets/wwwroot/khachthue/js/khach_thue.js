@@ -194,11 +194,7 @@ async function copyTransfer() {
   }
 }
 
-async function logout() {
-  await window.bridge.call('UI_LOGOUT', {});
-  window.location.href = '../auth/index.html';
-}
-
+// logout() khai báo ở shared/js/ui.js, tải trước file này.
 document.addEventListener('DOMContentLoaded', () => {
   // auth.js điều hướng sang đây kèm ?u=<tên đã encode>.
   const params = new URLSearchParams(window.location.search);

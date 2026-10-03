@@ -6,22 +6,6 @@
 
 /* ===== app shell ===== */
 .app{background:var(--base)}
-.menustrip{height:38px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;
-  background:#14191D;border-bottom:1px solid var(--hair-subtle)}
-.menustrip .mi{position:relative;height:28px;padding:0 12px;border-radius:4px;display:inline-flex;align-items:center;gap:7px;
-  background:#1C2126;border:1px solid #2B3239;color:var(--muted);font-size:12px;font-weight:500;
-  cursor:pointer;transition:.15s}
-.menustrip .mi i{font-size:12px}
-.menustrip .mi:hover{border-color:rgba(217,93,57,.6);color:var(--cream-light)}
-.menustrip .mi.cur{background:#242A30;border-color:rgba(217,93,57,.4);color:var(--cream-light)}
-.menustrip .mi.cur i{color:var(--terracotta)}
-.dropdown-menu{position:fixed;background:#181C1F;border:1px solid #262A2E;
-  border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.6);z-index:40;min-width:170px;padding:4px 0}
-.dropdown-item{padding:9px 14px;color:var(--cream);font-size:12.5px;cursor:pointer;
-  display:flex;align-items:center;gap:8px;transition:background .15s}
-.dropdown-item:hover{background:var(--hover);color:var(--cream-light)}
-.dropdown-item i{font-size:12px;color:var(--muted);width:14px;text-align:center}
-
 .userbar{
   display:flex;justify-content:space-between;align-items:center;
   padding:10px 16px;background:#14191D;border-bottom:1px solid var(--hair-subtle);font-size:13px
@@ -61,12 +45,6 @@
 .tabs::-webkit-scrollbar-thumb:hover{background:var(--terracotta)}
 .tabs::-webkit-scrollbar-thumb:active{background:var(--terracotta-hi)}
 .tabs::-webkit-scrollbar-corner{background:var(--canvas)}
-.hscroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--hair-strong) transparent;
-  overscroll-behavior-x:contain;scroll-behavior:smooth}
-.hscroll::-webkit-scrollbar{height:4px}
-.hscroll::-webkit-scrollbar-track{background:transparent}
-.hscroll::-webkit-scrollbar-thumb{background:#2B3239;border-radius:2px}
-.hscroll::-webkit-scrollbar-thumb:hover{background:var(--terracotta)}
 .tab{
   padding:6px 12px;font-size:12.5px;color:var(--muted);border-radius:4px;border:1px solid transparent;
   cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:.15s;font-weight:500

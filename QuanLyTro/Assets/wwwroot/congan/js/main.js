@@ -47,11 +47,6 @@ async function ensurePoliceCache() {
   policeCache = all;
 }
 
-async function logout() {
-  await window.bridge.call('UI_LOGOUT', {});
-  window.location.href = '../auth/index.html';
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   // auth.js điều hướng sang đây kèm ?u=<tên đã encode>.
   const name = new URLSearchParams(window.location.search).get('u');

@@ -124,6 +124,4 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
   .statusstrip .r{display:none}
 }
 
-/* Ngăn vỡ chữ menustrip và tags trên màn hẹp */
-.menustrip .mi{white-space:nowrap;flex-shrink:0}
 .tbl th,.tbl td{white-space:nowrap}

@@ -278,6 +278,17 @@ public sealed class DieuPhoiYeuCau
             throw new LoiNghiepVu($"Hành động không hợp lệ: {string.Join(", ", rejected)}");
         }
 
+        // BR-16: Công an phường là vai trò CHỈ ĐỌC (read-only). Không được phân bất kỳ quyền ghi nào.
+        if (string.Equals(payload.VaiTro, nameof(VaiTroNguoiDung.CongAn), StringComparison.OrdinalIgnoreCase))
+        {
+            var allowedForPolice = QuyenMacDinhTheoVaiTro.CongAn.ToHashSet(StringComparer.Ordinal);
+            var writeForbidden = requested.Where(a => !allowedForPolice.Contains(a)).ToList();
+            if (writeForbidden.Count > 0)
+            {
+                throw new LoiNghiepVu($"Công an phường là vai trò chỉ đọc (BR-16), không thể gán quyền: {string.Join(", ", writeForbidden)}");
+            }
+        }
+
         await _permissions.UpdateRoleActionsAsync(payload.VaiTro, requested, ct);
 
         // Nạp lại cache ngay lập tức.
@@ -318,26 +329,7 @@ public sealed class DieuPhoiYeuCau
             : throw new LoiNghiepVu("Ngày không hợp lệ.");
     }
 
-    /// <summary>Đọc ngày dạng chuỗi ISO (yyyy-MM-dd) theo tên đầu tiên có mặt.</summary>
-    private static DateTime ReadDateTime(JsonElement data, params string[] names)
-    {
-        foreach (var name in names)
-        {
-            var raw = ReadString(data, name);
-            if (raw is null)
-            {
-                continue;
-            }
-
-            return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
-                ? date
-                : throw new LoiNghiepVu("Ngày không hợp lệ.");
-        }
-
-        throw new LoiNghiepVu("Thiếu ngày trong yêu cầu.");
-    }
-
-    /// <summary>Như <see cref="ReadDateTime"/> nhưng thiếu/để trống → null để service áp khoảng mặc định.</summary>
+    /// <summary>Đọc ngày dạng chuỗi ISO (yyyy-MM-dd); thiếu/để trống → null để service áp khoảng mặc định.</summary>
     private static DateTime? ReadOptionalDateTime(JsonElement data, params string[] names)
     {
         foreach (var name in names)

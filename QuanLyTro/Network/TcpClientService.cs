@@ -107,8 +107,13 @@ public sealed class TcpClientService : IDisposable
 
             return response.GetData<TResp>()!;
         }
-        catch (Exception ex) when (ex is IOException or SocketException)
+        catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException)
         {
+            // Timeout giữa chừng cũng làm hỏng cặp request/response: phản hồi đến muộn sẽ nằm
+            // lại trong buffer và bị request sau đọc nhầm. Hủy kết nối để lần sau phải nối lại.
+            // Token phiên server vẫn còn giá trị 8 giờ, nhưng TcpClientService.Token đã bị
+            // xóa bởi Disconnect() nên vẫn phải đăng nhập lại — an toàn, không lộ phiên.
+            Disconnect();
             FireDisconnected();
             throw;
         }

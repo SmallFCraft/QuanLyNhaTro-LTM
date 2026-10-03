@@ -182,73 +182,7 @@ function confirmDialog(msg, title, kind) {
 
 window.alert = msg => toast(msg, 'err');
 
-// ===== Thanh menu =====
-const MENU_ITEMS = {
-  chutro: [
-    { icon: 'fa-door-open', label: 'Phòng', tab: 'phong' },
-    { icon: 'fa-users', label: 'Người thuê', tab: 'khach_thue' },
-    { icon: 'fa-file-signature', label: 'Hợp đồng', tab: 'hop_dong' },
-    { icon: 'fa-tachometer-alt', label: 'Điện nước', tab: 'utils' },
-    { icon: 'fa-receipt', label: 'Hóa đơn', tab: 'hoa_don' }
-  ]
-};
-
-function toggleMenu(el) {
-  const open = el.querySelector('.dropdown-menu');
-  if (open) { open.remove(); return; }
-
-  const shell = el.closest('.win')?.id || 'chutro';
-  const items = MENU_ITEMS[shell] || [];
-  if (items.length === 0) return;
-
-  const menu = document.createElement('div');
-  menu.className = 'dropdown-menu';
-  menu.innerHTML = items.map(i =>
-    `<div class="dropdown-item" onclick="loadLandlordTab('${i.tab}');this.closest('.dropdown-menu').remove()">
-       <i class="fas ${i.icon}"></i>${esc(i.label)}</div>`).join('');
-
-  // Gắn vào body với position:fixed — .hscroll của menustrip có overflow nên
-  // dropdown gắn trong đó sẽ bị cắt cụt.
-  const r = el.getBoundingClientRect();
-  menu.style.top = (r.bottom + 4) + 'px';
-  menu.style.left = r.left + 'px';
-  document.body.appendChild(menu);
-
-  const close = e => {
-    if (!menu.contains(e.target) && !el.contains(e.target)) {
-      menu.remove();
-      document.removeEventListener('click', close);
-    }
-  };
-  setTimeout(() => document.addEventListener('click', close), 0);
-}
-
-function showInfoDialog() {
-  openModal({
-    title: 'Thông tin phần mềm',
-    fields: [
-      { name: 'app', label: 'Ứng dụng', type: 'text',
-        value: 'Hệ Thống Quản Lý Phòng Trọ Phường Ngũ Hành Sơn', disabled: true },
-      { name: 'rt', label: 'Nền tảng', type: 'text',
-        value: '.NET 8.0 — WinForms + WebView2 Client', disabled: true },
-      { name: 'proto', label: 'Giao thức', type: 'text',
-        value: 'TCP Socket, gói tin JSON kết thúc bằng ký tự xuống dòng', disabled: true }
-    ],
-    onSubmit: async () => { /* chỉ để xem */ }
-  });
-}
-
-function showHelp() {
-  openModal({
-    title: 'Trợ giúp nhanh',
-    fields: [
-      { name: 'h1', label: 'Đăng nhập', type: 'text',
-        value: 'Chủ trọ dùng tài khoản admin; công an phường và người thuê dùng tài khoản được cấp.', disabled: true },
-      { name: 'h2', label: 'Dữ liệu', type: 'text',
-        value: 'Mọi thao tác đọc/ghi đều gửi qua máy chủ TCP — không truy cập cơ sở dữ liệu trực tiếp.', disabled: true },
-      { name: 'h3', label: 'Mất kết nối', type: 'text',
-        value: 'Nếu mất kết nối tới máy chủ, ứng dụng thông báo và giữ nguyên dữ liệu đã nhập.', disabled: true }
-    ],
-    onSubmit: async () => { /* chỉ để xem */ }
-  });
+async function logout() {
+  await window.bridge.call('UI_LOGOUT', {});
+  window.location.href = '../auth/index.html';
 }

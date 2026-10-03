@@ -41,11 +41,6 @@ async function loadLandlordTab(tabKey) {
   }
 }
 
-async function logout() {
-  await window.bridge.call('UI_LOGOUT', {});
-  window.location.href = '../auth/index.html';
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   // auth.js điều hướng sang đây kèm ?u=<tên đã encode> và ?vai_tro=ChuTro|QuanLy.
   const params = new URLSearchParams(window.location.search);

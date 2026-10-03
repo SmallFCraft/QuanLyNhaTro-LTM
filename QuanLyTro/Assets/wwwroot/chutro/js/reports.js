@@ -64,7 +64,7 @@ function lastMonths(month, count) {
 
 // US-08: server trả về List<XuatHoSoTamTruDto> (không phải filePath) → tự dựng CSV UTF-8 BOM
 // và tải xuống. Cột khớp ReportsForm.ExportResidenceCsvAsync, RFC 4180 escape.
-async function exportResidence() {
+async function exportResidenceCsv() {
   try {
     const rows = await window.bridge.call('XUAT_HO_SO_TAM_TRU', {}) || [];
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;

@@ -17,7 +17,7 @@ public class CuTruRepository(Database database)
     {
         const string sql = """
             SELECT t.id, t.ho_ten, t.cccd, COALESCE(r.so_phong, '') AS so_phong,
-                   t.ngay_tao, t.que_quan
+                   t.ngay_tao, t.que_quan, t.phong_id
             FROM khach_thue t
             LEFT JOIN phong r ON r.id = t.phong_id
             WHERE t.ngay_tao >= @from AND t.ngay_tao <= @to
@@ -38,14 +38,17 @@ public class CuTruRepository(Database database)
         var result = new List<LichSuCuTruDto>();
         while (await reader.ReadAsync(ct))
         {
+            // Suy loại biến động từ phòng hiện tại: null = đã trả phòng (Ra).
+            var loaiBienDong = reader.IsDBNull(reader.GetOrdinal("phong_id")) ? "Ra" : "Vào";
+            var queQuan = reader.IsDBNull(reader.GetOrdinal("que_quan")) ? null : reader.GetString("que_quan");
             result.Add(new LichSuCuTruDto(
                 reader.GetInt32("id"),
                 reader.GetString("ho_ten"),
                 reader.GetString("cccd"),
                 reader.GetString("so_phong"),
-                "Vào",
+                loaiBienDong,
                 reader.GetDateTime("ngay_tao"),
-                reader.IsDBNull(reader.GetOrdinal("que_quan")) ? null : reader.GetString("que_quan")));
+                string.IsNullOrWhiteSpace(queQuan) ? null : $"Quê: {queQuan}"));
         }
 
         return result;

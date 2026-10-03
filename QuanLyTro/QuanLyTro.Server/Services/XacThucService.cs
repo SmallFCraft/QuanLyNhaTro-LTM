@@ -68,7 +68,10 @@ public sealed class XacThucService(ITaiKhoanRepository tai_khoan, IKhachThueRepo
             _ => (1, DateTimeOffset.MinValue),
             (_, existing) =>
             {
-                var count = existing.Count + 1;
+                // Hết hạn khóa rồi mới sai tiếp → bắt đầu đếm lại từ 1, không kéo dài khóa vô lý.
+                var count = existing.LockedUntil > DateTimeOffset.MinValue && existing.LockedUntil <= _clock()
+                    ? 1
+                    : existing.Count + 1;
                 var lockedUntil = count >= MaxFailedAttempts ? _clock().Add(LockoutWindow) : existing.LockedUntil;
                 return (count, lockedUntil);
             });

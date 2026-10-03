@@ -17,16 +17,6 @@
 <!-- ====== LANDLORD SHELL ====== -->
 <div class="win" id="chutro">
   <div class="app">
-    <!-- menu strip -->
-    <div class="menustrip">
-      <div class="hscroll" style="display:flex;gap:6px">
-        <span class="mi" onclick="showInfoDialog()"><i class="fas fa-cog"></i> Hệ thống</span>
-        <span class="mi cur" onclick="toggleMenu(this)"><i class="fas fa-th-large"></i> Quản lý</span>
-        <span class="mi" onclick="loadLandlordTab('reports')"><i class="fas fa-chart-bar"></i> Báo cáo</span>
-        <span class="mi" onclick="showHelp()"><i class="fas fa-question-circle"></i> Trợ giúp</span>
-      </div>
-      <span style="color:var(--dim)"><i class="fas fa-user"></i></span>
-    </div>
     <!-- userbar -->
     <div class="userbar">
       <div class="usr">
@@ -275,7 +265,7 @@
           <select class="inp" id="rep-month" style="width:112px" onchange="loadReports()"><option>09/2026</option><option>08/2026</option></select>
           <button class="btn btn-outline btn-sm" onclick="loadReports()"><i class="fas fa-eye"></i> Xem</button>
           <span class="spacer"></span>
-          <button class="btn btn-outline btn-sm" onclick="exportResidence()"><i class="fas fa-file-csv"></i> Xuất CSV tạm trú</button>
+          <button class="btn btn-outline btn-sm" onclick="exportResidenceCsv()"><i class="fas fa-file-csv"></i> Xuất CSV tạm trú</button>
         </div>
         <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
           <div class="kpi green"><div class="lbl"><i class="fas fa-check-circle"></i> Đã thu 09/2026</div><div class="val">15.400.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div></div>
@@ -322,7 +312,7 @@
   </div>
   <div class="statusstrip">
     <div class="l"><i class="fas fa-shield-alt" style="color:var(--terracotta)"></i><span id="statusRole">Chủ trọ (ChuTro)</span></div>
-    <div class="r"><span>.NET 8.0 CLR</span></div>
+    <div class="r"><span>LẬP TRÌNH MẠNG</span></div>
   </div>
 </div>
 

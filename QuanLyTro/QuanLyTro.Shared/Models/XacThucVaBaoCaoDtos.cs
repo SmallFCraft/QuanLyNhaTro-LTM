@@ -15,8 +15,6 @@ public sealed record YeuCauDangNhap(string TenDangNhap, string MatKhau);
 /// <summary>Kết quả đăng nhập: { Token, HoTen, VaiTro }</summary>
 public sealed record KetQuaDangNhap(string Token, string HoTen, VaiTroNguoiDung VaiTro);
 
-/// <summary>Payload lấy chỉ số kỳ trước: { PhongId }</summary>
-public sealed record TruyVanPhong(int PhongId);
 
 /// <summary>Payload tạo hóa đơn</summary>
 public sealed record YeuCauTaoHoaDon(int PhongId, string KyCuoc, decimal PhiKhac);

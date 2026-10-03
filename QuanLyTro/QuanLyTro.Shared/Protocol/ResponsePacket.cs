@@ -11,9 +11,6 @@ public sealed record ResponsePacket(bool Success, string Message, JsonElement? D
     public static ResponsePacket Ok<T>(T data, string message = "Thành công.") =>
         new(true, message, JsonSerializer.SerializeToElement(data, JsonDefaults.Options));
 
-    public static ResponsePacket Ok(string message = "Thành công.") =>
-        new(true, message, null);
-
     public static ResponsePacket Fail(string message) =>
         new(false, message, null);
 

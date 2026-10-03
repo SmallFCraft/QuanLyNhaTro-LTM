@@ -36,10 +36,19 @@ async function loadDash() {
         <td>${esc(rep)}</td></tr>`;
     }).join('') || '<tr><td colspan="4" style="color:var(--dim)">Không có phòng nào còn nợ.</td></tr>';
 
-    const soon = (hopDong || []).filter(c => {
-      const st = c.trangThai ?? c.trang_thai;
+    const soon = (hopDong || []).map(item => {
+      const inner = item.contract || item.hopDong || item.HopDong || item;
+      return {
+        ...inner,
+        soPhong: item.soPhong ?? item.roomNumber ?? inner.soPhong,
+        representativeName: item.representativeName ?? item.tenNguoiDaiDien ?? inner.representativeName ?? inner.tenNguoiDaiDien ?? '—',
+        trangThai: inner.trangThai ?? inner.trang_thai,
+        ngayKetThuc: inner.ngayKetThuc ?? inner.endDate
+      };
+    }).filter(c => {
+      const st = c.trangThai;
       if (st !== 'HieuLuc') return false;
-      const end = c.ngayKetThuc ?? c.endDate;
+      const end = c.ngayKetThuc;
       const days = (new Date(end) - new Date()) / 86400000;
       return days >= 0 && days <= 30;
     });
