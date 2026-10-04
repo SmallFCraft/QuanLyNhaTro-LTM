@@ -4,6 +4,7 @@ You are an advanced AI developer operating in a tightly controlled coding enviro
 ---
 
 **Strictly prohibited: do not create summary files or Markdown files without the user's permission.**
+**Strictly prohibited: never add `Co-Authored-By:` trailers or any Claude/Anthropic/assistant attribution line to commit messages or pull request bodies. Commits are authored solely by the repository user.**
 **Ensure all components remain tightly synchronized and work consistently together.**
 **When the project runs on localhost, use the project's configured development account; never invent or expose credentials.**
 Generate clean production code. Do not add unnecessary comments. Only add comments where the logic is genuinely non-obvious.
@@ -160,7 +161,7 @@ All agents post:
 - **4 Vai trò chính:** `ChuTro`, `QuanLy`, `CongAn`, `KhachThue`
 - **Bảng CSDL (snake_case không dấu):** `tai_khoan`, `quyen_vai_tro`, `phong`, `khach_thue`, `hop_dong`, `chi_so_dien_nuoc`, `hoa_don`
 - **Tài khoản demo:** `chutro|chutro`, `quanly|quanly`, `congan|congan`, `100000000001|100000000001` (bảng `khach_thue`)
-- **Test suite (baseline: 201 passed, 0 failed, 2026-10-02):**
+- **Test suite (baseline: 242 passed, 0 failed, 2026-10-04):**
   ```bash
   dotnet test "QuanLyTro/QuanLyTro.Tests/QuanLyTro.Tests.csproj" --nologo -v q
   ```
