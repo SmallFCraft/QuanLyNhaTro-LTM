@@ -92,7 +92,7 @@
 - Test: `QuanLyTro/QuanLyTro.Tests/AuthShellContractTests.cs`
 
 - [ ] **Step 1: Bổ sung contract test kiểm tra nút đăng ký và form đăng ký trong auth shell**
-- [ ] **Step 2: Thêm tab chuyển đổi "Đăng nhập" / "Đăng ký người thuê" trong `auth/index.html`**
+- [ ] **Step 2: Thêm tab chuyển đổi "Đăng nhập" / "Đăng ký" trong `auth/index.html`**
 - [ ] **Step 3: Viết logic submit form gọi action `DANG_KY` trong `auth.js`**
 - [ ] **Step 4: Kiểm thử hiển thị trên Playwright**
 

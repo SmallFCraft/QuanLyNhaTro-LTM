@@ -41,6 +41,12 @@ public static class ActionNames
     public const string PhanQuyenLayMaTran = "PHAN_QUYEN_LAY_MA_TRAN";
     public const string PhanQuyenCapNhatVaiTro = "PHAN_QUYEN_CAP_NHAT_VAI_TRO";
 
+    // Tự đăng ký khách thuê & nhận phòng quét QR (BR-17..BR-19).
+    // DANG_KY là hành động công khai (không cần token) — xem DieuPhoiYeuCau.
+    public const string DangKy = "DANG_KY";
+    public const string HopDongSinhQr = "HOP_DONG_SINH_QR";
+    public const string KhachThueNhanPhongQr = "KHACH_THUE_NHAN_PHONG_QR";
+
     /// <summary>Toàn bộ tên hanh_dong hợp lệ — dùng cho test và kiểm tra router.</summary>
     public static readonly IReadOnlyList<string> All =
     [
@@ -53,5 +59,6 @@ public static class ActionNames
         BaoCaoTongQuan, XuatHoSoTamTru,
         LichSuCuTruLay, XuatLichSuCuTru,
         PhanQuyenLayMaTran, PhanQuyenCapNhatVaiTro,
+        DangKy, HopDongSinhQr, KhachThueNhanPhongQr,
     ];
 }

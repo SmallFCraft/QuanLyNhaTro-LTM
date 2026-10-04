@@ -11,6 +11,62 @@ const ROLE_ROUTES = {
   'QuanLy': '../chutro/index.html?vai_tro=QuanLy'
 };
 
+function switchAuthTab(mode) {
+  const dangKy = mode === 'register';
+  document.getElementById('formLogin').style.display = dangKy ? 'none' : '';
+  document.getElementById('formRegister').style.display = dangKy ? '' : 'none';
+  document.getElementById('tabLogin').classList.toggle('on', !dangKy);
+  document.getElementById('tabRegister').classList.toggle('on', dangKy);
+}
+
+/** BR-17: khách tự đăng ký tài khoản; thành công thì điền sẵn CCCD vào ô đăng nhập. */
+let regSubmitting = false;
+async function doRegister() {
+  if (regSubmitting) return;
+  const cccd = document.getElementById('regCccd').value.trim();
+  const matKhau = document.getElementById('regMatKhau').value;
+  const ngaySinh = document.getElementById('regNgaySinh').value;
+
+  if (!/^\d{12}$/.test(cccd)) {
+    alertDialog('Số CCCD phải gồm đúng 12 chữ số.', 'Dữ liệu chưa hợp lệ', 'warn');
+    return;
+  }
+  if (!ngaySinh) {
+    alertDialog('Vui lòng chọn ngày sinh.', 'Dữ liệu chưa hợp lệ', 'warn');
+    return;
+  }
+  if (!matKhau || matKhau.length < 6) {
+    alertDialog('Mật khẩu phải từ 6 ký tự trở lên.', 'Dữ liệu chưa hợp lệ', 'warn');
+    return;
+  }
+
+  const btn = document.querySelector('#formRegister button[type="submit"]');
+  regSubmitting = true;
+  if (btn) btn.disabled = true;
+  try {
+    await window.bridge.call('DANG_KY', {
+      HoTen: document.getElementById('regHoTen').value.trim(),
+      NgaySinh: ngaySinh,
+      Cccd: cccd,
+      SoDienThoai: document.getElementById('regSdt').value.trim(),
+      QueQuan: document.getElementById('regQueQuan').value.trim(),
+      NoiLamViec: document.getElementById('regNoiLamViec').value.trim() || null,
+      matKhau: matKhau
+    });
+
+    document.getElementById('lu').value = cccd;
+    document.getElementById('lp').value = '';
+    document.getElementById('regMatKhau').value = '';
+    switchAuthTab('login');
+    await alertDialog('Đăng ký thành công. Hãy đăng nhập và quét mã QR của phòng để nhận phòng.', 'Thành công', 'ok');
+  } catch (err) {
+    alertDialog(err.message, 'Đăng ký không thành công', 'err');
+  } finally {
+    regSubmitting = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function doLogin() {
   const tenDangNhap = document.getElementById('lu').value.trim();
   const matKhau = document.getElementById('lp').value;

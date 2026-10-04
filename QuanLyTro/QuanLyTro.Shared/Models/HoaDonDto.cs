@@ -14,10 +14,12 @@ public sealed record HoaDonDto(
     DateTime? NgayDong
 );
 
-/// <summary>Kết quả phân trang danh sách hóa đơn của khách thuê (BR-14).</summary>
+/// <summary>Kết quả phân trang danh sách hóa đơn của khách thuê (BR-14). PhongId null = chưa có phòng (BR-19).</summary>
 public sealed record TrangHoaDonCuaToiDto(
     List<HoaDonDto> DanhSach,
     int TongSo,
     int Trang,
-    int SoLuongMoiTrang
+    int SoLuongMoiTrang,
+    int? PhongId = null,
+    string? SoPhong = null
 );

@@ -193,5 +193,7 @@ public sealed class HopDongRenewalConcurrencyTests
         public Task<bool> UpdateEndDateAsync(int hopDongId, DateOnly newEndDate, CancellationToken ct = default) =>
             Task.FromResult(UpdateSucceeds);
         public Task<List<MucHopDongItem>> GetAllAsync(CancellationToken ct = default) => Task.FromResult(new List<MucHopDongItem>());
+        public Task<KetQuaNhanPhongDto> CheckinByQrAsync(int khachThueId, string tokenOrPin, CancellationToken ct = default) =>
+            Task.FromResult(new KetQuaNhanPhongDto(Existing.Id, "P1", Existing.GiaThue, Existing.NgayBatDau, Existing.NgayKetThuc));
     }
 }

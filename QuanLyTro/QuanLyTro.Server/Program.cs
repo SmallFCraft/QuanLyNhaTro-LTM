@@ -41,6 +41,16 @@ internal class Program
             return 0;
         }
 
+        // Tự động đảm bảo schema + quyền phân vai trò đồng bộ mỗi lần Server bật (idempotent, an toàn).
+        try
+        {
+            await new KhoiTaoSchema(database).InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Cảnh báo: không thể chạy khởi tạo schema/quyền tự động: {ex.Message}");
+        }
+
         var sessions = new SessionStore();
         var permissions = new PhanQuyenRepository(database);
 
@@ -67,7 +77,9 @@ internal class Program
             sessions,
             permissions);
 
-        Console.WriteLine($"QuanLyTro Server (.NET 8) - TCP Port {options.Port}");
+        // Bật log console cho Server thật (test để mặc định TẮT cho output gọn).
+        ServerLog.Enabled = true;
+        ServerLog.Info($"QuanLyTro Server (.NET 8) - TCP Port {options.Port}");
 
         using var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) =>

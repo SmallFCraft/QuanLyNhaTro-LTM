@@ -11,5 +11,7 @@ public sealed record HopDongDto(
     TrangThaiHopDong TrangThai,
     string? GhiChu,
     string? TenNguoiDaiDien = null,
-    string? SoPhong = null
+    string? SoPhong = null,
+    string? MaQrToken = null,
+    string? MaPin = null
 );

@@ -248,7 +248,31 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             hoa_don.Add(Map(reader));
         }
 
-        return new TrangHoaDonCuaToiDto(hoa_don, tongSo, safePage, safePageSize);
+        await reader.DisposeAsync();
+
+        // BR-19: khách CHƯA nhận phòng (phong_id IS NULL) → client hiện màn quét QR.
+        // Không suy từ số hóa đơn: khách vừa nhận phòng chưa có kỳ cước nào vẫn phải vào app.
+        const string roomSql = """
+            SELECT t.phong_id, r.so_phong
+            FROM khach_thue t
+            LEFT JOIN phong r ON r.id = t.phong_id
+            WHERE t.id = @khachThueId
+            """;
+        await using var roomCmd = new MySqlCommand(roomSql, connection);
+        roomCmd.Parameters.AddWithValue("@khachThueId", khachThueId);
+        await using var roomReader = await roomCmd.ExecuteReaderAsync(ct);
+
+        int? phongId = null;
+        string? soPhong = null;
+        if (await roomReader.ReadAsync(ct) && !roomReader.IsDBNull(roomReader.GetOrdinal("phong_id")))
+        {
+            phongId = roomReader.GetInt32("phong_id");
+            soPhong = roomReader.IsDBNull(roomReader.GetOrdinal("so_phong"))
+                ? null
+                : roomReader.GetString("so_phong");
+        }
+
+        return new TrangHoaDonCuaToiDto(hoa_don, tongSo, safePage, safePageSize, phongId, soPhong);
     }
 
     private static HoaDonDto Map(MySqlDataReader reader) => new(

@@ -12,7 +12,7 @@ namespace QuanLyTro.Server.Network;
 
 /// <summary>
 /// Bộ định tuyến hanh_dong TCP. Thứ tự enforce mỗi request (BR-14, TRAP §2.4 #6):
-/// 1. `DANG_NHAP` không cần phiên; mọi hanh_dong khác phải có token hợp lệ trong <see cref="SessionStore"/>.
+/// 1. `DANG_NHAP` và `DANG_KY` (BR-17) không cần phiên; mọi hanh_dong khác phải có token hợp lệ trong <see cref="SessionStore"/>.
 /// 2. `MaTranPhanQuyen.IsAllowed(hanh_dong, vai_tro)` — Client chỉ ẩn/hiện menu cho UX, Server mới quyết định.
 /// 3. Gọi service; `LoiNghiepVu` → giữ nguyên message tiếng Việt cho người dùng.
 /// </summary>
@@ -58,13 +58,25 @@ public sealed class DieuPhoiYeuCau
         _handlers = new Dictionary<string, Handler>(StringComparer.Ordinal)
         {
             [ActionNames.DangNhap] = (r, _, ct) => Ok(_auth.LoginAsync(r.GetData<YeuCauDangNhap>(), ct)),
+            // BR-17: công khai, không cần phiên — xem danh sách miễn token ở HandleAsync.
+            [ActionNames.DangKy] = (r, _, ct) => RegisterTenantAsync(r, ct),
 
             [ActionNames.PhongLayTatCa] = (_, _, ct) => Ok(_rooms.GetAllAsync(ct)),
             [ActionNames.PhongThem] = (r, _, ct) => Ok(_rooms.AddAsync(r.GetData<PhongDto>(), ct)),
             [ActionNames.PhongCapNhat] = (r, _, ct) => Ok(_rooms.UpdateAsync(r.GetData<PhongDto>(), ct)),
             [ActionNames.PhongXoa] = (r, _, ct) => Ok(_rooms.DeleteAsync(ReadId(r.Data, "phongId", "id"), ct)),
 
-            [ActionNames.KhachThueTheoPhong] = (r, _, ct) => Ok(_tenants.GetByRoomAsync(ReadId(r.Data, "phongId", "id"), ct)),
+            [ActionNames.KhachThueTheoPhong] = (r, s, ct) =>
+            {
+                var phongId = ReadId(r.Data, "phongId", "id");
+                // Khách chưa gán phòng (phongId <= 0) chỉ phục vụ lập hợp đồng chờ nhận phòng của Chủ trọ / Quản lý.
+                // Công an chỉ được tra cứu theo phòng thật, không được lấy danh sách khách chưa gán phòng.
+                if (phongId <= 0 && s.VaiTro != VaiTroNguoiDung.ChuTro && s.VaiTro != VaiTroNguoiDung.QuanLy)
+                {
+                    return Ok(Task.FromResult<List<KhachThueDto>>([]));
+                }
+                return Ok(_tenants.GetByRoomAsync(phongId, ct));
+            },
             [ActionNames.KhachThueThem] = (r, _, ct) => AddTenantAsync(r, ct),
             [ActionNames.KhachThueCapNhat] = (r, _, ct) => UpdateTenantAsync(r, ct),
             [ActionNames.KhachThueTraPhong] = (r, _, ct) => Ok(_tenants.CheckoutAsync(ReadId(r.Data, "khachThueId", "id"), ct)),
@@ -80,6 +92,14 @@ public sealed class DieuPhoiYeuCau
                 ReadDate(r.Data, "newEndDate"),
                 ct)),
             [ActionNames.HopDongLayTatCa] = (_, _, ct) => Ok(_contracts.GetAllAsync(ct)),
+            // BR-18: chỉ trả QR/PIN khi HĐ đang chờ nhận phòng.
+            [ActionNames.HopDongSinhQr] = (r, _, ct) =>
+                Ok(_contracts.SinhQrAsync(ReadId(r.Data, "hopDongId", "id"), ct)),
+            // BR-19/14: khachThueId lấy TỪ PHIÊN, mã từ client (payload QR hoặc PIN).
+            [ActionNames.KhachThueNhanPhongQr] = (r, s, ct) => Ok(_contracts.CheckinByQrAsync(
+                s.UserId,
+                ReadString(r.Data, "tokenOrPin", "token", "maQr", "pin", "ma") ?? string.Empty,
+                ct)),
 
             // kyCuoc tuỳ chọn: có thì lấy chỉ số kỳ TRƯỚC tháng đó (US-13), không thì giữ
             // hành vi cũ (bản ghi mới nhất) để client cũ không vỡ.
@@ -140,15 +160,17 @@ public sealed class DieuPhoiYeuCau
             }
 
             var session = default(Session);
-            if (request.Action != ActionNames.DangNhap)
+            if (request.Action != ActionNames.DangNhap && request.Action != ActionNames.DangKy)
             {
                 if (!_sessions.TryGet(request.Token ?? string.Empty, out var found))
                 {
+                    ServerLog.Warn($"[AUTH] {request.Action} từ chối: phiên không hợp lệ hoặc đã hết hạn.");
                     return ResponsePacket.Fail("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
                 }
 
                 if (!MaTranPhanQuyen.IsAllowed(request.Action, found.VaiTro))
                 {
+                    ServerLog.Warn($"[RBAC] {request.Action} từ chối: vai trò '{found.VaiTro}' (userId={found.UserId}) không có quyền.");
                     return ResponsePacket.Fail("Không có quyền.");
                 }
 
@@ -176,13 +198,14 @@ public sealed class DieuPhoiYeuCau
         {
             // Lỗi hạ tầng DB phải nói rõ nguyên nhân: "Lỗi hệ thống" chung khiến người dùng
             // bấm thử lại vô ích trong khi thứ cần bật là MySQL.
-            Console.Error.WriteLine($"[{request.Action}] MySQL {ex.Number}: {ex.Message}");
+            ServerLog.Error($"[DB] {request.Action} — MySQL {ex.Number}", ex);
             return ResponsePacket.Fail(Database.DescribeFailure(ex.Number, ex.Message));
         }
         catch (Exception ex)
         {
             // TRAP §2.4 #7: không lộ stack trace ra Client.
-            Console.Error.WriteLine($"[{request.Action}] {ex}");
+            ServerLog.Error($"[{request.Action}] lỗi không mong muốn", ex);
+            Console.Error.WriteLine(ex.ToString());
             return ResponsePacket.Fail("Lỗi hệ thống, vui lòng thử lại.");
         }
     }
@@ -191,6 +214,16 @@ public sealed class DieuPhoiYeuCau
     {
         var (tenant, password) = ReadTenant(request.Data);
         return ResponsePacket.Ok(await _tenants.AddAsync(tenant, password, ct));
+    }
+
+    private async Task<ResponsePacket> RegisterTenantAsync(RequestPacket request, CancellationToken ct)
+    {
+        var (tenant, password) = ReadTenant(request.Data);
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            password = ReadString(request.Data, "matKhau");
+        }
+        return ResponsePacket.Ok(await _tenants.RegisterAsync(tenant, password ?? string.Empty, ct));
     }
 
     private async Task<ResponsePacket> UpdateTenantAsync(RequestPacket request, CancellationToken ct)
@@ -316,10 +349,17 @@ public sealed class DieuPhoiYeuCau
         return null;
     }
 
-    private static string? ReadString(JsonElement data, string name) =>
-        TryGetProperty(data, name, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
+    private static string? ReadString(JsonElement data, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (TryGetProperty(data, name, out var value) && value.ValueKind == JsonValueKind.String)
+            {
+                return value.GetString();
+            }
+        }
+        return null;
+    }
 
     private static DateOnly ReadDate(JsonElement data, string name)
     {

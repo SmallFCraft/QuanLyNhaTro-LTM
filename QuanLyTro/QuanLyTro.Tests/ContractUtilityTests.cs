@@ -264,6 +264,9 @@ file sealed class StubContractRepo : IHopDongRepository
 
     public Task<List<MucHopDongItem>> GetAllAsync(CancellationToken ct = default) =>
         Task.FromResult(Item is null ? [] : new List<MucHopDongItem> { Item });
+
+    public Task<KetQuaNhanPhongDto> CheckinByQrAsync(int khachThueId, string tokenOrPin, CancellationToken ct = default) =>
+        Task.FromResult(new KetQuaNhanPhongDto(7, "P101", 2_500_000m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31)));
 }
 
 file sealed class StubUtilityRepo : IDienNuocRepository

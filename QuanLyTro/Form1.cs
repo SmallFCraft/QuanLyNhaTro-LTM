@@ -71,6 +71,17 @@ public partial class Form1 : Form
             assetsFolder,
             CoreWebView2HostResourceAccessKind.Allow);
 
+        // BR-19: khách quét QR bằng webcam. WebView2 mặc định TỪ CHỐI mọi permission
+        // (kể cả camera) nếu host không trả lời — phải tự cấp Allow cho app nội bộ.
+        webView.CoreWebView2.PermissionRequested += (_, args) =>
+        {
+            if (args.PermissionKind == CoreWebView2PermissionKind.Camera)
+            {
+                args.State = CoreWebView2PermissionState.Allow;
+                args.Handled = true;
+            }
+        };
+
         webView.CoreWebView2.WebMessageReceived += async (_, args) =>
         {
             var rawJson = args.TryGetWebMessageAsString();

@@ -14,13 +14,22 @@ public sealed class TenantShellContractTests
     public void TenantShell_HasSingleTab_AndNoWriteButtons()
     {
         var html = File.ReadAllText(Path.Combine(Wwwroot, "khachthue", "index.html"));
+        // BR-19: tenantTabs chỉ có 1 tab dashboard chính; màn hình nhận phòng (tab-nhan-phong)
+        // là view thay thế riêng hiển thị khi khách chưa có phòng, không tính vào nav chính.
+        var navStart = html.IndexOf("id=\"tenantTabs\"", System.StringComparison.Ordinal);
+        Assert.IsTrue(navStart >= 0, "khachthue/index.html thiếu thanh điều hướng #tenantTabs");
+
+        var navEnd = html.IndexOf("id=\"tab-nhan-phong\"", System.StringComparison.Ordinal);
+        var navBlock = navEnd > navStart
+            ? html.Substring(navStart, navEnd - navStart)
+            : html.Substring(navStart);
+        Assert.AreEqual(1, Regex.Matches(navBlock, "class=\"tab on\"").Count,
+            "Thanh #tenantTabs phải có đúng 1 tab chính");
+
         var start = html.IndexOf("id=\"khachthue\"", System.StringComparison.Ordinal);
         Assert.IsTrue(start >= 0, "khachthue/index.html thiếu cửa sổ #khachthue");
 
         var tenantBlock = html.Substring(start, html.Length - start);
-        Assert.AreEqual(1, Regex.Matches(tenantBlock, "class=\"tab on\"").Count,
-            "Shell khách thuê phải có đúng 1 tab");
-
         foreach (var verb in new[] { "Thêm", "Sửa", "Xóa" })
         {
             Assert.IsFalse(Regex.IsMatch(tenantBlock, $">{verb}<"), $"Shell khách thuê có nút ghi: {verb}");

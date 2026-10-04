@@ -22,16 +22,28 @@ public sealed class KhachThueRepository(Database database)
 
     public async Task<List<KhachThueDto>> GetByRoomAsync(int phongId, CancellationToken ct = default)
     {
-        const string sql = $"""
-            SELECT {TenantColumns}
-            FROM khach_thue
-            WHERE phong_id = @phongId
-            ORDER BY ho_ten
-            """;
+        // phongId <= 0: khách tự đăng ký đang chờ gán phòng (phong_id IS NULL).
+        // CHỈ dùng cho màn lập hợp đồng của Chủ trọ/Quản lý — router đã chặn vai trò khác trước khi tới đây.
+        var sql = phongId <= 0
+            ? $"""
+                SELECT {TenantColumns}
+                FROM khach_thue
+                WHERE phong_id IS NULL
+                ORDER BY ngay_tao DESC, ho_ten
+                """
+            : $"""
+                SELECT {TenantColumns}
+                FROM khach_thue
+                WHERE phong_id = @phongId
+                ORDER BY ho_ten
+                """;
 
         await using var connection = await database.OpenAsync(ct);
         await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@phongId", phongId);
+        if (phongId > 0)
+        {
+            command.Parameters.AddWithValue("@phongId", phongId);
+        }
 
         await using var reader = await command.ExecuteReaderAsync(ct);
         var khach_thue = new List<KhachThueDto>();

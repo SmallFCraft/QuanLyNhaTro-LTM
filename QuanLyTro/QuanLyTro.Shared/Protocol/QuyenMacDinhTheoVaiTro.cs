@@ -15,7 +15,7 @@ public static class QuyenMacDinhTheoVaiTro
         ActionNames.KhachThueTheoPhong, ActionNames.KhachThueThem, ActionNames.KhachThueCapNhat,
         ActionNames.KhachThueTraPhong, ActionNames.KhachThueXoa,
         ActionNames.HopDongTao, ActionNames.HopDongChamDut, ActionNames.HopDongGiaHan,
-        ActionNames.HopDongLayTatCa,
+        ActionNames.HopDongLayTatCa, ActionNames.HopDongSinhQr,
         ActionNames.DienNuocLayKyTruoc, ActionNames.DienNuocGhiSo,
         ActionNames.HoaDonTao, ActionNames.HoaDonLayTatCa, ActionNames.HoaDonThanhToan,
         ActionNames.BaoCaoTongQuan,
@@ -32,10 +32,11 @@ public static class QuyenMacDinhTheoVaiTro
         ActionNames.XuatLichSuCuTru,
     ];
 
-    /// <summary>Người thuê: chỉ xem hóa đơn của chính mình.</summary>
+    /// <summary>Người thuê: chỉ xem hóa đơn của chính mình và nhận phòng bằng QR/PIN (BR-19).</summary>
     public static readonly IReadOnlyList<string> KhachThue =
     [
         ActionNames.HoaDonCuaToi,
+        ActionNames.KhachThueNhanPhongQr,
     ];
 
     /// <summary>Role (đúng chính tả ENUM) → danh sách action mặc định.</summary>
@@ -65,6 +66,7 @@ public static class QuyenMacDinhTheoVaiTro
         new(ActionNames.HopDongGiaHan, "Gia hạn hợp đồng", "Hợp đồng"),
         new(ActionNames.HopDongChamDut, "Chấm dứt hợp đồng", "Hợp đồng"),
         new(ActionNames.HopDongLayTatCa, "Xem danh sách hợp đồng", "Hợp đồng"),
+        new(ActionNames.HopDongSinhQr, "Sinh mã QR / PIN nhận phòng", "Hợp đồng"),
 
         new(ActionNames.DienNuocLayKyTruoc, "Xem chỉ số điện nước kỳ trước", "Điện nước"),
         new(ActionNames.DienNuocGhiSo, "Ghi chỉ số điện nước", "Điện nước"),
@@ -73,6 +75,7 @@ public static class QuyenMacDinhTheoVaiTro
         new(ActionNames.HoaDonLayTatCa, "Xem danh sách hóa đơn", "Hóa đơn"),
         new(ActionNames.HoaDonThanhToan, "Thu tiền / thanh toán hóa đơn", "Hóa đơn"),
         new(ActionNames.HoaDonCuaToi, "Xem hóa đơn của chính mình", "Hóa đơn"),
+        new(ActionNames.KhachThueNhanPhongQr, "Quét QR / PIN nhận phòng", "Hợp đồng"),
 
         new(ActionNames.BaoCaoTongQuan, "Xem thống kê doanh thu", "Báo cáo & cư trú"),
         new(ActionNames.XuatHoSoTamTru, "Xuất hồ sơ tạm trú", "Báo cáo & cư trú"),

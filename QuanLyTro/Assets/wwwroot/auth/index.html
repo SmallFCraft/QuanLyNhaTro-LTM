@@ -19,13 +19,42 @@
     <div class="app-icon"><i class="fas fa-warehouse"></i></div>
     <div class="app-name">Ký Túc Xá &amp; Nhà Trọ Số</div>
     <div class="app-sub">Phường Ngũ Hành Sơn · TP. Đà Nẵng</div>
-    <form onsubmit="doLogin();return false">
+
+    <div class="auth-tabs" role="tablist">
+      <button type="button" class="auth-tab on" id="tabLogin" role="tab" onclick="switchAuthTab('login')">
+        <i class="fas fa-sign-in-alt"></i> Đăng nhập
+      </button>
+      <button type="button" class="auth-tab" id="tabRegister" role="tab" onclick="switchAuthTab('register')">
+        <i class="fas fa-user-plus"></i> Đăng ký
+      </button>
+    </div>
+
+    <form id="formLogin" onsubmit="doLogin();return false">
       <label id="lblAcc"><i class="fas fa-user"></i> Tài khoản</label>
       <input class="inp mono" id="lu" placeholder="Tên tài khoản hoặc số CCCD của người thuê">
       <label><i class="fas fa-lock"></i> Mật khẩu</label>
       <input class="inp mono" type="password" id="lp" placeholder="••••••••">
       <label></label>
       <button type="submit" class="btn btn-primary" style="justify-content:center"><i class="fas fa-sign-in-alt"></i> Đăng nhập</button>
+    </form>
+
+    <form id="formRegister" style="display:none" onsubmit="doRegister();return false">
+      <label><i class="fas fa-id-card"></i> Họ tên</label>
+      <input class="inp" id="regHoTen" placeholder="Nguyễn Văn A">
+      <label><i class="fas fa-cake-candles"></i> Ngày sinh</label>
+      <input class="inp mono" type="date" id="regNgaySinh">
+      <label><i class="fas fa-address-card"></i> Số CCCD</label>
+      <input class="inp mono" id="regCccd" maxlength="12" placeholder="12 chữ số">
+      <label><i class="fas fa-phone"></i> Số điện thoại</label>
+      <input class="inp mono" id="regSdt" placeholder="09xxxxxxxx">
+      <label><i class="fas fa-location-dot"></i> Quê quán</label>
+      <input class="inp" id="regQueQuan" placeholder="Xã/Phường, Quận/Huyện, Tỉnh">
+      <label><i class="fas fa-briefcase"></i> Nơi làm việc</label>
+      <input class="inp" id="regNoiLamViec" placeholder="Không bắt buộc">
+      <label><i class="fas fa-lock"></i> Mật khẩu</label>
+      <input class="inp" type="password" id="regMatKhau" placeholder="Từ 6 ký tự trở lên">
+      <label></label>
+      <button type="submit" class="btn btn-primary" style="justify-content:center"><i class="fas fa-user-plus"></i> Đăng ký</button>
     </form>
   </div>
 </div>

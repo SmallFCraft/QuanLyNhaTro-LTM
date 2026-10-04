@@ -34,6 +34,32 @@ public sealed class KhachThueService(KhachThueRepository khach_thue)
         return await khach_thue.AddAsync(normalized, hash, ct);
     }
 
+    /// <summary>
+    /// BR-17: Khách thuê tự đăng ký tài khoản (DANG_KY). Mật khẩu bắt buộc >= 6 ký tự,
+    /// phong_id mặc định là null (chờ quét QR nhận phòng).
+    /// </summary>
+    public async Task<KhachThueDto> RegisterAsync(KhachThueDto tenant, string plainPassword, CancellationToken ct = default)
+    {
+        ValidateRegistration(tenant, plainPassword);
+        var normalized = Normalize(tenant) with { PhongId = null };
+        // Không trim trước khi băm: XacThucService.Verify phải nhận đúng chuỗi ký tự đã đăng ký.
+        var hash = PasswordHasher.Hash(plainPassword);
+        return await khach_thue.AddAsync(normalized, hash, ct);
+    }
+
+    public static void ValidateRegistration(KhachThueDto tenant, string? plainPassword)
+    {
+        Validate(tenant);
+        if (string.IsNullOrWhiteSpace(plainPassword))
+        {
+            throw new LoiNghiepVu("Mật khẩu không được để trống.");
+        }
+        if (plainPassword.Trim().Length < 6)
+        {
+            throw new LoiNghiepVu("Mật khẩu phải từ 6 ký tự trở lên.");
+        }
+    }
+
     public async Task<bool> UpdateAsync(KhachThueDto tenant, string? plainPassword, CancellationToken ct = default)
     {
         Validate(tenant);

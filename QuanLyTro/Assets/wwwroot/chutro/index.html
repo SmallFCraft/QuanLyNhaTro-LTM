@@ -183,6 +183,7 @@
         <div class="rowbn">
           <button class="btn btn-outline btn-sm" onclick="renewContract(selectedContractId())"><i class="fas fa-calendar-plus"></i> Gia hạn…</button>
           <button class="btn btn-outline btn-sm" onclick="terminateContract(selectedContractId())"><i class="fas fa-ban"></i> Chấm dứt…</button>
+          <button class="btn btn-outline btn-sm" onclick="showContractQr(selectedContractId())"><i class="fas fa-qrcode"></i> Xem QR / PIN…</button>
         </div>
       </div>
 
@@ -320,6 +321,7 @@
 
 <script src="../shared/js/bridge.js"></script>
 <script src="../shared/js/ui.js"></script>
+<script src="../shared/js/vendor/qrcode.min.js"></script>
 <script src="js/main.js"></script>
 <script src="js/dash.js"></script>
 <script src="js/phong.js"></script>

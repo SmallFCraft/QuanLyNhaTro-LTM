@@ -175,7 +175,10 @@ public sealed class AcceptanceTests
 
         foreach (var hanh_dong in ActionNames.All)
         {
-            if (hanh_dong is ActionNames.DangNhap or ActionNames.HoaDonCuaToi)
+            // DangNhap/DangKy: công khai, không cần phiên (BR-17).
+            // HoaDonCuaToi, KhachThueNhanPhongQr: hành động RIÊNG của KhachThue (US-24, BR-19) — không phải hành động chủ trọ.
+            if (hanh_dong is ActionNames.DangNhap or ActionNames.DangKy
+                or ActionNames.HoaDonCuaToi or ActionNames.KhachThueNhanPhongQr)
             {
                 continue;
             }

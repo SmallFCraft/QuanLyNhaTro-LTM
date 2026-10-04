@@ -24,7 +24,7 @@ public sealed class TcpListenerServer(DieuPhoiYeuCau router)
         var listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
         Port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        Console.WriteLine($"Server đang lắng nghe tại 0.0.0.0:{Port}");
+        ServerLog.Info($"Server đang lắng nghe tại 0.0.0.0:{Port}");
 
         var clients = new List<Task>();
         try
@@ -42,11 +42,11 @@ public sealed class TcpListenerServer(DieuPhoiYeuCau router)
                 }
                 catch (SocketException ex)
                 {
-                    Console.Error.WriteLine($"Listener dừng: {ex.Message}");
+                    ServerLog.Warn($"Listener dừng: {ex.Message}");
                     break;
                 }
 
-                Console.WriteLine($"Client kết nối: {client.Client.RemoteEndPoint}");
+                ServerLog.Info($"Client kết nối: {client.Client.RemoteEndPoint}");
                 clients.Add(new ClientHandler(client, router).RunAsync(ct));
                 clients.RemoveAll(t => t.IsCompleted);
             }

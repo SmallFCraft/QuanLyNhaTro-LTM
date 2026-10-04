@@ -23,13 +23,14 @@ public enum TrangThaiPhong
 }
 
 /// <summary>
-/// Trạng thái hợp đồng thuê.
+/// Trạng thái hợp đồng thuê. `ChoNhanPhong` = đã lập, đang chờ người đại diện quét QR/PIN nhận phòng (BR-18).
 /// </summary>
 public enum TrangThaiHopDong
 {
     HieuLuc,
     HetHan,
     ChamDut,
+    ChoNhanPhong,
 }
 
 /// <summary>

@@ -19,6 +19,7 @@ public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
 
     public async Task RunAsync(CancellationToken ct = default)
     {
+        var endpoint = client.Client.RemoteEndPoint?.ToString() ?? "?";
         using (client)
         await using (var stream = client.GetStream())
         using (var reader = new StreamReader(stream, Utf8NoBom, detectEncodingFromByteOrderMarks: false, bufferSize: 8192, leaveOpen: true))
@@ -53,7 +54,9 @@ public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
                     continue;
                 }
 
-                ResponsePacket response;
+                ResponsePacket response = ResponsePacket.Fail("Lỗi hệ thống, vui lòng thử lại.");
+                var hanh_dong = "?";
+                var started = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
                     var request = JsonSerializer.Deserialize<RequestPacket>(line, JsonDefaults.Options);
@@ -63,6 +66,7 @@ public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
                     }
                     else
                     {
+                        hanh_dong = request.Action ?? "?";
                         response = await router.HandleAsync(request, ct);
                     }
                 }
@@ -72,8 +76,14 @@ public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"[ClientHandler] Lỗi không mong muốn: {ex}");
+                    ServerLog.Error($"Lỗi không mong muốn khi xử lý {hanh_dong}", ex);
                     response = ResponsePacket.Fail("Lỗi hệ thống, vui lòng thử lại.");
+                }
+                finally
+                {
+                    started.Stop();
+                    ServerLog.Request(
+                        endpoint, hanh_dong, response.Success, response.Message, started.ElapsedMilliseconds);
                 }
 
                 try
@@ -86,6 +96,8 @@ public sealed class ClientHandler(TcpClient client, DieuPhoiYeuCau router)
                     break;
                 }
             }
+
+            ServerLog.Info($"Client ngắt kết nối: {endpoint}");
         }
     }
 
