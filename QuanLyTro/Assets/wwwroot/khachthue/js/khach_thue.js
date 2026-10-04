@@ -22,6 +22,7 @@ async function loadTenantInvoices() {
   } catch (err) {
     toast(err.message, 'err');
     renderTenantEmpty();
+    syncTenantRoomHeader();
   }
   await refreshTenantSummary();
 }
@@ -47,11 +48,34 @@ function showCheckinScreen(show) {
     });
   }
   if (navTabs) navTabs.style.display = show ? 'none' : '';
+  syncTenantRoomHeader();
   if (!show) {
     stopCamera();
     // KHÔNG ép switchTenantTab('overview') ở đây: caller tự quyết (load ban đầu mới về overview,
     // còn auto-refresh 30s giữ nguyên tab khách đang xem).
   }
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+// BR-19: đồng bộ userbar + headline + statusstrip theo trạng thái nhận phòng.
+// tenantRoomId === null → khách chưa có phòng, mọi cụm header phải nói "chưa nhận phòng",
+// KHÔNG được để lại số phòng / tiêu đề hóa đơn của shell tĩnh.
+function syncTenantRoomHeader() {
+  const hasRoom = tenantRoomId !== null;
+  const nameStr = tenantRoomName !== null && tenantRoomName !== undefined ? String(tenantRoomName).trim() : '';
+  const roomLabel = nameStr
+    ? (nameStr.startsWith('P') ? nameStr : `P.${nameStr}`)
+    : (hasRoom ? `P.${tenantRoomId}` : '');
+
+  setText('troom-userbar-text', hasRoom ? `Phòng ${roomLabel}` : 'Chưa nhận phòng');
+  setText('thead-badge', hasRoom ? 'Chứng từ thu cước' : 'Nhận phòng');
+  setText('thead-title', hasRoom ? 'Hóa Đơn Của Tôi' : 'Nhận Phòng Trọ');
+  setText('tstatus-text', hasRoom ? `Người thuê · ${roomLabel} (KhachThue)` : 'Người thuê (KhachThue)');
+  if (hasRoom) setText('troom-badge', roomLabel);
 }
 
 function switchCheckinTab(tabName) {
@@ -222,10 +246,7 @@ async function loadTenantHistoryPage(page, soLuongMoiTrang) {
     ? dto.phongId
     : (currentTenantInvoices.length > 0 ? tenantRoomId : null);
   tenantRoomName = (dto && dto.soPhong) || null;
-  if (tenantRoomName) {
-    const badge = document.getElementById('troom-badge');
-    if (badge) badge.textContent = tenantRoomName.startsWith('P') ? tenantRoomName : `P.${tenantRoomName}`;
-  }
+  syncTenantRoomHeader();
   renderTenantHistory(currentTenantInvoices);
   renderTenantPagination();
 }
@@ -255,7 +276,9 @@ function normalizeHistoryDto(res) {
       tongSo: i(res.tongSo ?? res.TongSo ?? res.totalCount ?? res.TotalCount) ?? items.length,
       page: i(res.trang ?? res.Trang ?? res.page ?? res.Page) ?? 1,
       soLuongMoiTrang: i(res.soLuongMoiTrang ?? res.SoLuongMoiTrang ?? res.pageSize ?? res.PageSize) ?? 10,
-      phongId: res.phongId ?? res.PhongId ?? null,
+      // Giữ undefined khi field VẮNG MẶT khác null THẬT: loadTenantHistoryPage dùng '!== undefined'
+      // để giữ phòng cũ cho server/mock cũ không trả phongId, không ép về "chưa nhận phòng".
+      phongId: 'phongId' in res ? res.phongId : ('PhongId' in res ? res.PhongId : undefined),
       soPhong: res.soPhong ?? res.SoPhong ?? null
     };
   }
@@ -321,30 +344,25 @@ async function refreshTenantSummary() {
 }
 
 function renderTenantSummary(unpaid) {
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  };
-
   // Khối Kỳ này
-  setVal('rc-room', fmtMoney(unpaid.tienPhong) + ' đ');
-  setVal('rc-elec', fmtMoney(unpaid.tienDien) + ' đ');
-  setVal('rc-water', fmtMoney(unpaid.tienNuoc) + ' đ');
-  setVal('rc-other', fmtMoney(unpaid.phiKhac) + ' đ');
-  setVal('rc-total', fmtMoney(unpaid.tongTien));
+  setText('rc-room', fmtMoney(unpaid.tienPhong) + ' đ');
+  setText('rc-elec', fmtMoney(unpaid.tienDien) + ' đ');
+  setText('rc-water', fmtMoney(unpaid.tienNuoc) + ' đ');
+  setText('rc-other', fmtMoney(unpaid.phiKhac) + ' đ');
+  setText('rc-total', fmtMoney(unpaid.tongTien));
   const paid = isPaidInvoice(unpaid);
-  setVal('rc-code', `MÃ SỐ BẢNG KÊ: HD-${String(unpaid.kyCuoc || '').replace('-', '')}-${unpaid.phongId || unpaid.id}`);
-  setVal('rc-title', `Chi tiết quyết toán cước tháng ${String(unpaid.kyCuoc || '').replace('-', '/')}`);
+  setText('rc-code', `MÃ SỐ BẢNG KÊ: HD-${String(unpaid.kyCuoc || '').replace('-', '')}-${unpaid.phongId || unpaid.id}`);
+  setText('rc-title', `Chi tiết quyết toán cước tháng ${String(unpaid.kyCuoc || '').replace('-', '/')}`);
   setTag('rc-trang_thai-tag', paid, 'Đã thanh toán', 'Chưa thanh toán');
   setTag('rc-due-tag', !paid, 'Chưa thu', 'Đã thu');
 
   // Khối Tổng quan
-  setVal('ov-month', String(unpaid.kyCuoc || '').replace('-', '/'));
-  setVal('ov-total', fmtMoney(unpaid.tongTien) + ' đ');
-  setVal('ov-trang_thai', paid ? 'Đã thanh toán' : 'Chưa nộp');
-  setVal('troom-badge', `P.${unpaid.phongId ?? ''}`);
-  setVal('tcontract-due', paid ? 'Hợp đồng: Đang hiệu lực' : 'Hợp đồng: Còn cước chưa nộp');
-  setVal('due-alert-text', paid
+  setText('ov-month', String(unpaid.kyCuoc || '').replace('-', '/'));
+  setText('ov-total', fmtMoney(unpaid.tongTien) + ' đ');
+  setText('ov-trang_thai', paid ? 'Đã thanh toán' : 'Chưa nộp');
+  // troom-badge dùng SỐ PHÒNG (soPhong), không phải phongId — syncTenantRoomHeader() đã gán.
+  setText('tcontract-due', paid ? 'Hợp đồng: Đang hiệu lực' : 'Hợp đồng: Còn cước chưa nộp');
+  setText('due-alert-text', paid
     ? `Kỳ cước ${unpaid.kyCuoc} đã được thanh toán. Cảm ơn bạn!`
     : `Kỳ cước ${unpaid.kyCuoc} chưa hoàn tất thanh toán. Tổng cần nộp: ${fmtMoney(unpaid.tongTien)} đ.`);
   setTag('due-alert-tag', paid, 'Đã nộp', 'Chưa nộp');

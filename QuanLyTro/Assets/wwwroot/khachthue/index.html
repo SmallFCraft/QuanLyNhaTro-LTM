@@ -19,15 +19,15 @@
   <div class="app">
     <div class="userbar">
       <div class="usr">
-        <i class="fas fa-user-circle fa-lg"></i> <b id="tname">Trần Văn B</b>
-        <span class="vai_tro tenant"><i class="fas fa-home"></i> Phòng P102</span>
+        <i class="fas fa-user-circle fa-lg"></i> <b id="tname">Khách thuê</b>
+        <span class="vai_tro tenant" id="troom-userbar"><i class="fas fa-home"></i> <span id="troom-userbar-text">Chưa nhận phòng</span></span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
     </div>
     <div class="headline">
       <div class="l">
-        <span class="badge-module">Chứng từ thu cước</span>
-        <h1>Hóa Đơn Của Tôi</h1>
+        <span class="badge-module" id="thead-badge">Chứng từ thu cước</span>
+        <h1 id="thead-title">Hóa Đơn Của Tôi</h1>
       </div>
     </div>
     <div class="tabs" id="tenantTabs">
@@ -239,7 +239,7 @@
     </div>
   </div>
   <div class="statusstrip">
-    <div class="l"><i class="fas fa-user" style="color:var(--sage)"></i><span>Người thuê · P102 (KhachThue)</span></div>
+    <div class="l"><i class="fas fa-user" style="color:var(--sage)"></i><span id="tstatus-text">Người thuê (KhachThue)</span></div>
     <div class="r"><span>LẬP TRÌNH MẠNG</span></div>
   </div>
 </div>

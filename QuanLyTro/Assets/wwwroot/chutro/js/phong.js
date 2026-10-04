@@ -16,6 +16,9 @@ async function loadRooms() {
         .map(c => Number(c.phongId ?? c.phong_id))
     );
     renderRooms(_roomsCache);
+    // Tab "Phòng" đếm động từ danh sách vừa tải — thay số tĩnh "24" trong index.html.
+    const badge = document.getElementById('cnt-phong');
+    if (badge) badge.textContent = _roomsCache.length;
   } catch (err) {
     toast(err.message, 'err');
   }

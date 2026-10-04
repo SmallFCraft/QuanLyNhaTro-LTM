@@ -56,4 +56,40 @@ public sealed class LandlordTabContractTests
         Assert.IsTrue(html.Contains("loadLandlordTab('reports')"),
             "Menu item Báo cáo chưa có onclick nhảy tới tab reports");
     }
+
+    [TestMethod]
+    public void LandlordTenantTab_IncludesUnassignedQuery_AndStatusColumn()
+    {
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "index.html"));
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "khach_thue.js"));
+
+        // 1. Phải đổi tên tab thành "Người dùng"
+        Assert.IsTrue(html.Contains("Người dùng"), "Tab khach_thue phải mang tên 'Người dùng'");
+        Assert.IsTrue(html.Contains("id=\"cnt-khach_thue\""), "Tab khach_thue phải có badge đếm id='cnt-khach_thue'");
+
+        // 2. Bảng người dùng (#tab-khach_thue) phải có cột Trạng thái — cô lập theo container
+        // để tránh xanh giả do ăn theo tab hop_dong / hoa_don.
+        var tenantTabHtml = ExtractContainer(html, "tab-khach_thue");
+        Assert.IsTrue(tenantTabHtml.Contains("<th>Trạng thái</th>"),
+            "Bảng người dùng (#tab-khach_thue) phải có cột header '<th>Trạng thái</th>'");
+
+        // 3. JS phải gọi lấy khách chưa có phòng (phongId: 0)
+        Assert.IsTrue(js.Contains("phongId: 0") || js.Contains("phongId:0"),
+            "khach_thue.js phải gọi KHACH_THUE_THEO_PHONG với phongId: 0 để lấy khách chưa gán phòng");
+
+        // 4. JS phải render trạng thái thuê
+        Assert.IsTrue(js.Contains("Chờ nhận phòng") && js.Contains("Đang thuê"),
+            "khach_thue.js phải render nhãn trạng thái 'Chờ nhận phòng' và 'Đang thuê'");
+    }
+
+    private static string ExtractContainer(string html, string containerId)
+    {
+        var marker = $"id=\"{containerId}\"";
+        var idx = html.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0) return string.Empty;
+        // Lấy đoạn HTML từ vị trí tab container đến container tab kế tiếp hoặc 1500 ký tự
+        var nextTabIdx = html.IndexOf("id=\"tab-", idx + marker.Length, StringComparison.Ordinal);
+        var end = nextTabIdx > idx ? nextTabIdx : Math.Min(html.Length, idx + 1500);
+        return html[idx..end];
+    }
 }

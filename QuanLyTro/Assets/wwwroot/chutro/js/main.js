@@ -2,7 +2,7 @@
 const LANDLORD_TITLES = {
   dash: 'Tổng quan vận hành cơ sở',
   phong: 'Danh sách phòng trọ',
-  khach_thue: 'Hồ sơ khách thuê',
+  khach_thue: 'Quản lý người dùng & khách thuê',
   hop_dong: 'Hợp đồng & khách thuê',
   utils: 'Chốt chỉ số điện nước',
   hoa_don: 'Hóa đơn & thu tiền',

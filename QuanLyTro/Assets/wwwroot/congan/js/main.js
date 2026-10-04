@@ -45,6 +45,9 @@ async function ensurePoliceCache() {
     for (const t of khach_thue) all.push({ ...t, soPhong: r.soPhong });
   }
   policeCache = all;
+  // Badge tab "Tạm trú" phải khớp với renderResidence: chỉ người CHƯA đăng ký, không phải tổng.
+  const cntRes = document.getElementById('cnt-residence');
+  if (cntRes) cntRes.textContent = all.filter(t => !t.daDangKyTamTru).length;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -11,19 +11,32 @@ async function loadTenants() {
   const sel = document.getElementById('tenant-room');
   const body = document.getElementById('khach_thue-body');
   try {
-    const phong = await window.bridge.call('PHONG_LAY_TAT_CA', {}) || [];
+    // BR-17/BR-19: khách tự đăng ký có phong_id IS NULL — phải hỏi riêng (phongId: 0),
+    // nếu không họ vô hình trong tab này dù màn lập hợp đồng vẫn thấy.
+    const [phong, pending] = await Promise.all([
+      (async () => (await window.bridge.call('PHONG_LAY_TAT_CA', {})) || [])(),
+      (async () => (await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: 0 })) || [])()
+    ]);
     // ponytail: KHACH_THUE_THEO_PHONG là hanh_dong đọc duy nhất (BR-16) nên phải hỏi từng phòng (N+1).
     // Thêm TENANT_GET_ALL vào ma trận quyền khi số phòng lớn.
     const lists = await Promise.all(phong.map(async r => {
-      const khach_thue = await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: r.id }) || [];
-      return khach_thue.map(t => ({ ...t, soPhong: r.soPhong }));
+      const khach_thue = (await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: r.id })) || [];
+      // Gán phongId từ phòng đang hỏi: ta biết chắc họ thuộc phòng này, không phụ thuộc field server trả.
+      return khach_thue.map(t => ({ ...t, phongId: t.phongId ?? r.id, soPhong: r.soPhong }));
     }));
-    tenantCache = lists.flat();
-    // Rebuild room filter dropdown, keep selection, có option "Tất cả các phòng".
+    // Khách chờ gán phòng đứng trước danh sách: chủ trọ thấy họ ngay khi mở tab.
+    tenantCache = [
+      ...pending.map(t => ({ ...t, phongId: null, soPhong: null })),
+      ...lists.flat()
+    ];
+    const cntBadge = document.getElementById('cnt-khach_thue');
+    if (cntBadge) cntBadge.textContent = tenantCache.length;
+    // Rebuild room filter dropdown, keep selection, có option "Tất cả" + "Chờ nhận phòng".
     if (sel) {
       const keep = sel.value;
       const opts = [
         `<option value="">-- Tất cả (${tenantCache.length} người) --</option>`,
+        `<option value="pending">-- Chờ nhận phòng (${pending.length}) --</option>`,
         ...phong.map(r =>
           `<option value="${esc(r.id)}">${esc(r.soPhong)} (${r.soNguoiHienTai ?? 0}/${r.soNguoiToiDa})</option>`)
       ];
@@ -40,21 +53,33 @@ async function loadTenants() {
   }
   function renderTenants() {
     if (!body) return;
-    const phongId = sel && sel.value ? String(sel.value) : '';
-    const rows = phongId
-      ? tenantCache.filter(t => String(t.phongId) === phongId)
-      : tenantCache;
-    body.innerHTML = rows.map(t => `
-      <tr data-id="${t.id}" onclick="this.parentNode.querySelectorAll('tr').forEach(r=>r.classList.remove('sel'));this.classList.add('sel')">
-        <td><span class="tag rent">${esc(t.soPhong || '—')}</span></td>
-        <td><b>${esc(t.hoTen)}</b></td>
-        <td class="mono">${esc(t.cccd)}</td>
-        <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
-        <td class="mono">${esc(t.soDienThoai)}</td>
-        <td>${esc(t.queQuan)}</td>
-        <td><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">${t.daDangKyTamTru ? 'Đã nộp' : 'Chưa nộp'}</span></td>
-        <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();resetTenantPassword(${t.id})"><i class="fas fa-key"></i></button></td>
-      </tr>`).join('') || `<tr><td colspan="8">Không có người thuê nào</td></tr>`;
+    const filterVal = sel && sel.value ? String(sel.value) : '';
+    const rows = filterVal === 'pending'
+      ? tenantCache.filter(t => t.phongId == null)
+      : (filterVal ? tenantCache.filter(t => String(t.phongId) === filterVal) : tenantCache);
+
+    body.innerHTML = rows.map(t => {
+      const hasRoom = t.phongId != null;
+      const roomTag = hasRoom
+        ? `<span class="tag rent">${esc(t.soPhong || ('P.' + t.phongId))}</span>`
+        : `<span class="tag warn">Chưa gán</span>`;
+      const statusTag = hasRoom
+        ? `<span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span>`
+        : `<span class="tag warn"><i class="fas fa-clock"></i> Chờ nhận phòng</span>`;
+
+      return `
+        <tr data-id="${t.id}" onclick="this.parentNode.querySelectorAll('tr').forEach(r=>r.classList.remove('sel'));this.classList.add('sel')">
+          <td>${roomTag}</td>
+          <td>${statusTag}</td>
+          <td><b>${esc(t.hoTen)}</b></td>
+          <td class="mono">${esc(t.cccd)}</td>
+          <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
+          <td class="mono">${esc(t.soDienThoai)}</td>
+          <td>${esc(t.queQuan)}</td>
+          <td><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">${t.daDangKyTamTru ? 'Đã nộp' : 'Chưa nộp'}</span></td>
+          <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();resetTenantPassword(${t.id})" title="Đặt lại mật khẩu mặc định (6 số cuối CCCD)"><i class="fas fa-key"></i></button></td>
+        </tr>`;
+    }).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--dim)">Không có người dùng nào</td></tr>`;
     updateTenantFoot(rows);
   }
 }
@@ -86,9 +111,12 @@ const tenantFields = (t, phong) => [
 ];
 
 function tenantPayload(values, id) {
+  const pId = values.phongId !== undefined && values.phongId !== null && String(values.phongId).trim() !== ''
+    ? Number(values.phongId)
+    : null;
   return {
     id: id ?? 0,
-    phongId: Number(values.phongId),
+    phongId: Number.isFinite(pId) && pId > 0 ? pId : null,
     hoTen: values.hoTen,
     ngaySinh: values.ngaySinh,
     cccd: values.cccd,
@@ -130,12 +158,16 @@ function findTenant(id) {
   return tenantCache.find(t => t.id === Number(id));
 }
 
-function editTenant(id) {
+async function editTenant(id) {
   const t = findTenant(id);
   if (!t) { toast('Vui lòng chọn người thuê cần sửa.', 'err'); return; }
+  // Khách chờ gán phòng không có id phòng thật — không được build option value "null" (submit ra NaN).
+  const phongOptions = t.phongId == null
+    ? [{ value: '', label: '— Chưa gán phòng —' }, ...await freeRooms()]
+    : [{ value: String(t.phongId), label: t.soPhong || ('P.' + t.phongId) }];
   openModal({
     title: `Sửa — ${t.hoTen}`,
-    fields: tenantFields(t, [{ value: String(t.phongId), label: t.soPhong }]),
+    fields: tenantFields(t, phongOptions),
     onSubmit: async v => {
       const pwd = (v.matKhau || '').trim() || null;
       await window.bridge.call('KHACH_THUE_CAP_NHAT', { tenant: tenantPayload(v, t.id), plainPassword: pwd });
@@ -148,6 +180,8 @@ function editTenant(id) {
 async function moveTenant(id) {
   const t = findTenant(id);
   if (!t) { toast('Vui lòng chọn người thuê cần chuyển phòng.', 'err'); return; }
+  // Khách chờ nhận phòng chưa có phongId — moveTenant vẫn dùng được (gán phòng đầu tiên),
+  // nhưng phải chặn trả phòng để không báo thành công giả.
   try {
     const phong = await freeRooms();
     const target = phong.filter(r => r.value !== String(t.phongId));
@@ -169,6 +203,8 @@ async function moveTenant(id) {
 async function checkoutTenant(id) {
   const t = findTenant(id);
   if (!t) { toast('Vui lòng chọn người thuê cần trả phòng.', 'err'); return; }
+  // Khách chưa được gán phòng thì không có gì để trả — server trả 0 rows và UI sẽ báo "thành công" giả.
+  if (t.phongId == null) { toast(`${t.hoTen} chưa được gán vào phòng nào.`, 'warn'); return; }
   if (!await confirmDialog(`Cho ${t.hoTen} trả phòng?`)) return;
   try {
     await window.bridge.call('KHACH_THUE_TRA_PHONG', { khachThueId: t.id });

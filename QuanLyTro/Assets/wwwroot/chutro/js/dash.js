@@ -21,6 +21,11 @@ async function loadDash() {
       setKpi('kpi-unpaid', fmtMoney(unpaidAmount));
       const el = document.getElementById('kpi-available-sub');
       if (el) el.textContent = `Thuê ${rentedRooms} · Trống ${availableRooms ?? 0}`;
+      // Cập nhật nhãn đếm trên tab "Phòng" và "Người dùng" ngay khi mở Dashboard
+      const cntBadge = document.getElementById('cnt-phong');
+      if (cntBadge && totalRooms !== undefined && totalRooms !== null) cntBadge.textContent = totalRooms;
+      const cntTenants = document.getElementById('cnt-khach_thue');
+      if (cntTenants && currentTenants !== undefined && currentTenants !== null) cntTenants.textContent = currentTenants;
     }
 
     const overdue = (hoaDon || []).filter(i => (i.trangThai ?? i.trang_thai) !== 'DaThu');

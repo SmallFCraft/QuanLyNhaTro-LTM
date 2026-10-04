@@ -26,41 +26,47 @@ Thứ ba, Server phải phục vụ được nhiều Client kết nối đồng 
 
 | Thành phần | Lựa chọn | Lý do |
 |---|---|---|
-| Ứng dụng Client | C# WinForms (Visual Studio) | Giao diện desktop trực quan, phát triển nhanh |
-| Ứng dụng Server | C# Console App, thư viện TcpListener | Nằm trong chuẩn .NET, đúng tinh thần lập trình mạng |
+| Ứng dụng Client | C# WinForms (.NET 8.0) + WebView2 nhúng web cục bộ | Khung desktop native chuẩn của .NET, nhúng Microsoft Edge WebView2 hiển thị giao diện HTML5/CSS3/JS từ `Assets/wwwroot/` chạy offline, có Canvas giải mã QR và WebRTC điều khiển camera |
+| Ứng dụng Server | C# Console App (.NET 8.0), thư viện TcpListener | Nằm trong chuẩn .NET, đúng tinh thần lập trình mạng |
 | Giao thức trao đổi | TCP/IP, cổng 8888, gói tin văn bản dạng JSON | TCP đảm bảo tin cậy, đúng thứ tự; JSON dễ đọc, dễ mở rộng |
-| Cơ sở dữ liệu | MySQL trên Laragon (cổng 3306) | Nhẹ, miễn phí, quen thuộc với nhóm |
+| Cơ sở dữ liệu | MySQL 8.0 trên Laragon (cổng 3306) | Nhẹ, miễn phí, quen thuộc với nhóm |
 | Truy vấn dữ liệu | ADO.NET (MySqlConnector) | Thư viện chuẩn của hệ sinh thái .NET |
+| Thư viện QR | `qrcode.min.js` (sinh mã) và `jsQR.min.js` (giải mã) | File cục bộ phía Client, hoạt động offline, mã nguồn mở (MIT) |
 
 ## 4. PHẠM VI ĐỀ TÀI
 
 ### 4.1. Trong phạm vi
 
-Hệ thống quản lý trọn vẹn vòng đời vận hành một khu trọ: quản lý phòng (thêm, sửa, xóa, theo dõi trạng thái); quản lý người thuê và hồ sơ cá nhân từng thành viên; quản lý hợp đồng thuê từ lúc lập đến khi chấm dứt; ghi chỉ số điện nước hàng tháng và tự động tính tiền; lập hóa đơn tổng hợp và xác nhận thanh toán; thống kê doanh thu – công nợ – công suất phòng; xuất danh sách người thuê phục vụ khai báo tạm trú tại phường. Về mặt mạng, hệ thống triển khai đầy đủ kiến trúc Client – Server qua TCP, hỗ trợ nhiều máy khách đồng thời.
+Hệ thống quản lý trọn vẹn vòng đời vận hành một cơ sở phòng trọ: quản lý phòng (thêm, sửa, xóa, theo dõi trạng thái, cảnh báo Treo HĐ); quản lý người thuê và tự đăng ký tài khoản từ xa; quản lý hợp đồng thuê từ lúc lập đến khi chấm dứt, bao gồm cả quy trình bàn giao nhận phòng số hóa bằng mã QR / PIN 8 số; ghi chỉ số điện nước hàng tháng và tự động tính tiền; lập hóa đơn tổng hợp và xác nhận thanh toán; thống kê doanh thu – công nợ – công suất phòng; quản lý ma trận phân quyền động (RBAC) theo vai trò; và tra cứu cùng xuất danh sách người thuê, lịch sử cư trú phục vụ công tác kiểm tra của công an phường. Về mặt mạng, hệ thống triển khai đầy đủ kiến trúc Client – Server qua TCP, hỗ trợ nhiều máy khách đồng thời.
 
 ### 4.2. Ngoài phạm vi
 
-Đề tài không bao gồm: thanh toán trực tuyến hay tích hợp cổng thanh toán điện tử; ứng dụng trên điện thoại; gửi thông báo tự động qua email/SMS; hệ thống phân quyền nhiều vai trò phức tạp (hệ thống chỉ phục vụ một vai trò duy nhất là chủ trọ).
+Đề tài không bao gồm: thanh toán trực tuyến qua cổng ngân hàng/VNPAY/Momo; ứng dụng di động native trên điện thoại; gửi thông báo tự động qua email/SMS; và quản lý phân tán nhiều cơ sở trọ (hệ thống phục vụ tập trung một cơ sở phòng trọ, số phòng là duy nhất toàn hệ thống).
 
 ## 5. ĐỐI TƯỢNG SỬ DỤNG VÀ KỊCH BẢN VẬN HÀNH
 
-Hệ thống có một nhóm người dùng duy nhất là **chủ trọ**. Chủ trọ vận hành Server trên máy chính (cài đặt Laragon và MySQL) và có thể mở Client trên nhiều máy trong cùng mạng LAN để thao tác.
+Hệ thống phục vụ bốn nhóm người dùng phân quyền rõ rệt: **Chủ trọ** (toàn quyền, quản lý phân quyền động), **Quản lý trọ** (thực hiện nghiệp vụ vận hành hằng ngày theo quyền được cấp), **Công an phường** (chỉ xem, tra cứu và xuất dữ liệu kiểm tra cư trú), và **Khách thuê** (tự đăng ký tài khoản, quét QR nhận phòng, xem cước cá nhân).
 
-Kịch bản vận hành điển hình trong một tháng như sau: đầu tháng, chủ trọ lập hợp đồng cho khách mới và đưa thành viên vào phòng. Cuối tháng, chủ trọ ghi chỉ số điện nước từng phòng; hệ thống tự tính số tiêu thụ và thành tiền. Sau đó chủ trọ lập hóa đơn cho từng phòng — hệ thống tự gộp tiền phòng, tiền điện, tiền nước và phí phát sinh (rác, wifi) thành tổng phải thu. Khi khách trả tiền, chủ trọ xác nhận thanh toán; các phòng chưa trả được liệt kê để đôn đốc. Định kỳ, chủ trọ xuất danh sách người đang ở để nộp công an phường Ngũ Hành Sơn theo quy định tạm trú.
+Kịch bản vận hành điển hình trong một tháng:
+- **Đầu tháng / Khi có khách mới:** Khách thuê tự đăng ký tài khoản từ xa trên ứng dụng; chủ trọ lập hợp đồng ở trạng thái chờ nhận phòng và gửi mã QR kèm mã PIN 8 số cho khách; khách tự dùng webcam hoặc tải ảnh QR để nhận phòng, hệ thống tự động kích hoạt hợp đồng và gán phòng trong 1 giao dịch an toàn.
+- **Cuối tháng:** Chủ trọ hoặc quản lý ghi chỉ số điện nước từng phòng; hệ thống tự tính số tiêu thụ và thành tiền (nước hỗ trợ tính theo khối hoặc khoán theo người). Sau đó lập hóa đơn cước tháng cho từng phòng. Khách thuê có thể đăng nhập xem chi tiết bảng kê cước của mình và bấm sao chép nội dung chuyển khoản nhanh.
+- **Thu tiền & Báo cáo:** Khi khách đóng tiền, chủ trọ xác nhận thanh toán; các phòng chưa nộp được lọc danh sách để đôn đốc. Định kỳ, công an phường đăng nhập tra cứu tình trạng cư trú và xuất file báo cáo phục vụ công tác quản lý địa bàn.
 
 ## 6. CÁC CHỨC NĂNG CHÍNH CỦA HỆ THỐNG
 
-**Quản lý phòng trọ.** Chủ trọ thêm, sửa, xóa phòng cùng các thông tin số phòng, giá thuê, sức chứa. Hệ thống tự theo dõi trạng thái mỗi phòng (trống, đang thuê, bảo trì) và hiển thị số thành viên hiện tại — số này được đếm trực tiếp từ danh sách người thuê nên luôn khớp với thực tế. Phòng chỉ được xóa khi đang trống.
+**Quản lý phòng trọ.** Chủ trọ thêm, sửa, xóa phòng cùng các thông tin số phòng, giá thuê, sức chứa. Hệ thống tự theo dõi trạng thái mỗi phòng (trống, đang thuê, bảo trì) và hiển thị số thành viên hiện tại — số này được đếm trực tiếp từ danh sách người thuê nên luôn khớp với thực tế. Phòng chỉ được xóa khi đang trống. Nếu phòng có người ở nhưng không còn hợp đồng hiệu lực nào, hệ thống tự động gắn thẻ cảnh báo cam `Treo HĐ` để chủ trọ kịp thời xử lý.
 
-**Quản lý người thuê.** Mỗi thành viên ở trọ có một hồ sơ gồm họ tên, ngày sinh, CCCD, số điện thoại, quê quán và nơi học tập/làm việc. Chủ trọ gán người thuê vào phòng (có kiểm tra sức chứa), chuyển phòng hoặc ghi nhận trả phòng. Hệ thống còn lưu cờ "đã đăng ký tạm trú" cho từng người, phục vụ công tác quản lý lưu trú của phường.
+**Quản lý người thuê & Tự đăng ký.** Mỗi thành viên ở trọ có một hồ sơ gồm họ tên, ngày sinh, CCCD (12 số duy nhất), số điện thoại, quê quán và nơi học tập/làm việc. Khách thuê có thể tự đăng ký tài khoản từ xa (`DANG_KY`) với mật khẩu ≥ 6 ký tự. Chủ trọ có thể gán người thuê vào phòng (kiểm tra sức chứa), chuyển phòng hoặc ghi nhận trả phòng. Hệ thống lưu cờ "đã đăng ký tạm trú" cho từng người.
 
-**Quản lý hợp đồng.** Mỗi phòng đang cho thuê có đúng một hợp đồng còn hiệu lực, ký bởi một người đại diện (bắt buộc là thành viên của phòng). Hợp đồng lưu thời hạn, giá thuê và tiền cọc. Hệ thống cảnh báo các hợp đồng sắp hết hạn trong 30 ngày và hỗ trợ gia hạn hoặc chấm dứt có ghi nhận lý do.
+**Quản lý hợp đồng & Nhận phòng QR/PIN.** Mỗi phòng đang cho thuê có tối đa một hợp đồng còn hiệu lực. Hệ thống hỗ trợ lập hợp đồng chờ nhận phòng (`ChoNhanPhong`) tự sinh mã QR bảo mật 128-bit CSPRNG và mã PIN 8 số; chủ trọ có thể in phiếu bàn giao trực tiếp. Khách thuê dùng camera hoặc nhập PIN để nhận phòng tự động. Khi chấm dứt hợp đồng còn hạn, hệ thống bắt buộc nhập lý do và ngày bàn giao dự kiến (≥ 30 ngày) tuân thủ Điều 172 Luật Nhà ở 2023.
 
 **Quản lý điện, nước.** Hàng tháng, chủ trọ nhập chỉ số đầu kỳ và cuối kỳ cho từng phòng. Chỉ số đầu kỳ được hệ thống tự điền bằng chỉ số cuối kỳ của tháng trước, tránh nhập tay sai sót. Tiền điện và tiền nước do Server tính theo công thức: số tiêu thụ nhân đơn giá, với đơn giá được lưu riêng cho từng kỳ.
 
-**Hóa đơn và thanh toán.** Hóa đơn tháng được lập theo phòng, tổng hợp tiền phòng, tiền điện, tiền nước và phí khác; mỗi phòng chỉ có một hóa đơn cho mỗi tháng. Hóa đơn chuyển từ trạng thái chưa thanh toán sang đã thanh toán kèm mốc thời gian thu tiền, làm cơ sở thống kê công nợ và doanh thu.
+**Hóa đơn và thanh toán.** Hóa đơn tháng được lập theo phòng, tổng hợp tiền phòng, tiền điện, tiền nước và phí khác; mỗi phòng chỉ có một hóa đơn cho mỗi tháng. Hóa đơn chuyển từ trạng thái chưa thanh toán sang đã thanh toán kèm mốc thời gian thu tiền, làm cơ sở thống kê công nợ và doanh thu. Khách thuê có màn hình riêng xem bảng kê cước và lịch sử hóa đơn phân trang từ server.
 
-**Thống kê và tra cứu.** Hệ thống tổng hợp công suất phòng (tỷ lệ lấp đầy), tổng người đang ở, doanh thu đã thu và chưa thu theo tháng; hỗ trợ tra cứu nhanh theo tên, số phòng, CCCD và xuất danh sách khai báo tạm trú.
+**Ma trận phân quyền động (RBAC).** Chủ trọ quản lý danh mục quyền của Quản lý trọ, Công an và Khách thuê thông qua giao diện ma trận quyền thời gian thực (`quyen_vai_tro`). Sổ cái `quyen_mac_dinh_da_ap_dung` tự động gieo bù quyền mới khi nâng cấp hệ thống mà không hồi sinh các quyền đã bị Chủ trọ chủ động thu hồi.
+
+**Tra cứu phục vụ công an phường.** Công an phường tra cứu danh sách người thuê, tình trạng tạm trú và biến động cư trú ở chế độ chỉ xem; xuất file báo cáo phục vụ kiểm tra; Server từ chối mọi yêu cầu ghi dữ liệu từ vai trò này.
 
 ## 7. USER STORY
 
@@ -178,22 +184,58 @@ Tiêu chí chấp nhận: chọn được khoảng tháng; bảng thống kê c�
 
 Tiêu chí chấp nhận: tìm kiếm xử lý ở Server; không phân biệt chữ hoa chữ thường; hỗ trợ tìm một phần của CCCD và số điện thoại.
 
-### 7.7. Epic 7 — Kết nối mạng (trọng tâm môn học)
+### 7.7. Epic 7 — Kết nối mạng & Đăng nhập (trọng tâm môn học)
 
 **US-21 — Kết nối Client đến Server** (Must)
-> Là chủ trọ, tôi muốn Client kết nối đến Server theo địa chỉ IP và cổng cấu hình được, để có thể làm việc từ máy khác trong mạng LAN.
+> Là người dùng, tôi muốn Client kết nối đến Server theo địa chỉ IP và cổng cấu hình được, để có thể làm việc từ các máy trong mạng LAN.
 
-Tiêu chí chấp nhận: có màn hình cấu hình IP/cổng, mặc định 127.0.0.1:8888; hiển thị trạng thái kết nối; mất kết nối thì thông báo rõ ràng, ứng dụng không bị treo; mỗi gói tin được kết thúc bằng ký tự xuống dòng để Server đọc trọn vẹn.
+Tiêu chí chấp nhận: kết nối TCP tới 127.0.0.1:8888; hiển thị trạng thái kết nối; mất kết nối thì thông báo rõ ràng, ứng dụng không bị treo; mỗi gói tin được kết thúc bằng ký tự xuống dòng `\n` để Server đọc trọn vẹn.
 
 **US-22 — Nhiều Client cùng lúc** (Must, phụ thuộc US-21)
-> Là chủ trọ, tôi muốn nhiều máy thao tác cùng lúc mà dữ liệu vẫn nhất quán.
+> Là người dùng, tôi muốn nhiều máy thao tác cùng lúc mà dữ liệu vẫn nhất quán.
 
-Tiêu chí chấp nhận: Server phục vụ nhiều kết nối đồng thời, mỗi kết nối một luồng xử lý; hai Client cùng tạo một phòng thì chỉ một lần thành công; Client khác thấy dữ liệu mới sau khi làm mới.
+Tiêu chí chấp nhận: Server phục vụ nhiều kết nối đồng thời, mỗi kết nối một luồng xử lý độc lập; hai Client cùng tạo một phòng thì chỉ một lần thành công; transaction và row locking chống xung đột.
 
-**US-23 — Đăng nhập chủ trọ** (Could, phụ thuộc US-21)
-> Là chủ trọ, tôi muốn đăng nhập bằng tài khoản quản lý để người lạ không mở được ứng dụng.
+**US-23 — Đăng nhập hợp nhất** (Must, phụ thuộc US-21)
+> Là người dùng (Chủ trọ, Quản lý, Công an, Khách thuê), tôi muốn đăng nhập chung trên một form duy nhất và hệ thống tự động nhận diện vai trò chuyển hướng vào đúng giao diện làm việc.
 
-Tiêu chí chấp nhận: mật khẩu lưu dưới dạng băm; sai quá 5 lần liên tiếp bị tạm khóa một phút.
+Tiêu chí chấp nhận: mật khẩu lưu dưới dạng băm; sai quá 5 lần liên tiếp bị tạm khóa một phút; tự chuyển vào shell tương ứng với quyền hạn.
+
+### 7.8. Epic 8 — Tự đăng ký & Nhận phòng QR/PIN (BR-17, BR-18, BR-19)
+
+**US-24 — Khách thuê tự đăng ký tài khoản** (Must, phụ thuộc US-21)
+> Là khách thuê mới, tôi muốn tự đăng ký tài khoản từ xa bằng CCCD và mật khẩu để chủ động làm thủ tục nhận phòng.
+
+Tiêu chí chấp nhận: form đăng ký kiểm tra CCCD 12 số, mật khẩu ≥ 6 ký tự; gửi lên server qua `DANG_KY` (hành động công khai không cần token); tài khoản mới tạo có `phong_id = NULL`.
+
+**US-25 — Lập hợp đồng chờ nhận phòng & sinh mã QR / PIN** (Must, phụ thuộc US-09)
+> Là chủ trọ, tôi muốn lập hợp đồng ở trạng thái chờ nhận phòng để cấp mã QR và PIN cho khách tự vào phòng.
+
+Tiêu chí chấp nhận: hợp đồng tạo ở trạng thái `ChoNhanPhong`; server tự sinh mã token 128-bit CSPRNG và mã PIN 8 số; chủ trọ có thể xem mã và in phiếu bàn giao trực tiếp từ giao diện.
+
+**US-26 — Khách thuê nhận phòng qua QR / Webcam / PIN** (Must, phụ thuộc US-24, US-25)
+> Là khách thuê, tôi muốn quét mã QR hoặc nhập PIN 8 số để hoàn tất nhận phòng mà không cần chờ chủ trọ đưa chìa khóa tận tay.
+
+Tiêu chí chấp nhận: hỗ trợ 3 cách (tải file ảnh QR, quét webcam trực tiếp, nhập mã PIN 8 số); server kiểm tra đúng đại diện, kích hoạt hợp đồng thành `HieuLuc`, gán phòng cho khách, phòng chuyển sang `DaThue`, và xóa mã token/PIN để chống quét lại.
+
+### 7.9. Epic 9 — Ma trận phân quyền động (RBAC)
+
+**US-27 — Tùy biến phân quyền cho các vai trò** (Must, phụ thuộc US-23)
+> Là chủ trọ, tôi muốn bật/tắt quyền hạn của Quản lý trọ, Công an và Khách thuê thông qua giao diện ma trận để linh hoạt phân công công việc.
+
+Tiêu chí chấp nhận: ma trận hiển thị danh mục quyền theo từng nhóm; chủ trọ tick chọn và lưu thay đổi có hiệu lực ngay lập tức mà không cần khởi động lại Server; quyền mới tự động gieo bù qua sổ cái khi nâng cấp hệ thống.
+
+### 7.10. Epic 10 — Chấm dứt hợp đồng tuân thủ Luật Nhà ở 2023
+
+**US-28 — Ràng buộc lý do và ngày bàn giao khi chấm dứt trước hạn** (Must, phụ thuộc US-10)
+> Là chủ trọ, tôi muốn khi chấm dứt hợp đồng trước hạn phải ghi rõ lý do pháp lý và ngày bàn giao dự kiến (≥ 30 ngày) để đúng quy định Điều 172 Luật Nhà ở 2023.
+
+Tiêu chí chấp nhận: hợp đồng còn hạn bắt buộc nhập lý do chấm dứt và chọn ngày bàn giao dự kiến; thông tin được lưu vết tự động vào ghi chú hợp đồng.
+
+**US-29 — Cảnh báo phòng treo hợp đồng** (Should, phụ thuộc US-03, US-28)
+> Là chủ trọ, tôi muốn nhìn thấy phòng nào đang có người ở nhưng không còn hợp đồng hiệu lực để kịp thời xử lý thủ tục trả phòng hoặc tái ký.
+
+Tiêu chí chấp nhận: trên bảng danh sách phòng, các phòng có người nhưng 0 hợp đồng hiệu lực được gắn thẻ cam `Treo HĐ` cảnh báo nổi bật.
 
 ## 8. QUY TẮC NGHIỆP VỤ
 
@@ -213,21 +255,29 @@ Các quy tắc dưới đây là ràng buộc bắt buộc, **đều được Se
 | BR-10 | Tổng tiền hóa đơn bằng tiền phòng cộng tiền điện, tiền nước và phí khác |
 | BR-11 | Hóa đơn đã thanh toán không được sửa đổi hay xóa |
 | BR-12 | Chỉ xóa được phòng khi phòng đang trống |
-| BR-13 | Các thao tác ghi liên quan nhiều bảng (hợp đồng, hóa đơn) chạy trong một giao dịch (giao_dich) — hoặc thành công toàn bộ, hoặc không ghi gì |
+| BR-13 | Các thao tác ghi liên quan nhiều bảng (hợp đồng, hóa đơn, nhận phòng) chạy trong một giao dịch (giao_dich) — hoặc thành công toàn bộ, hoặc không ghi gì |
+| BR-14 | Tra cứu hóa đơn của khách thuê suy phòng từ token phiên, không nhận phòng từ client; phân trang ở Server |
+| BR-15 | Ma trận phân quyền động kiểm soát quyền từng vai trò; quyền mới tự động gieo bù mà không hồi sinh quyền đã bị thu hồi |
+| BR-16 | Vai Công an phường chỉ xem — Server từ chối mọi yêu cầu ghi dữ liệu từ vai trò này |
+| BR-17 | Khách thuê tự đăng ký tài khoản từ xa (hành động công khai, không cần token); hồ sơ mới có phong_id rỗng |
+| BR-18 | Hợp đồng chờ nhận phòng sinh mã QR 128-bit CSPRNG và mã PIN 8 số; mã chỉ hiển thị khi hợp đồng chưa kích hoạt |
+| BR-19 | Nhận phòng qua QR/PIN: kiểm tra đúng người đại diện, kích hoạt hợp đồng và xóa token/PIN một lần chống quét lại |
 
 ## 9. THIẾT KẾ DỮ LIỆU
 
-Cơ sở dữ liệu `quanly_phongtro_nhs` gồm 6 bảng chính, thiết kế ở dạng chuẩn hóa 3NF, dùng khóa ngoại đảm bảo toàn vẹn và ràng buộc duy nhất chặn trùng lặp ngay từ tầng cơ sở dữ liệu:
+Cơ sở dữ liệu `quanly_phongtro_nhs` gồm 7 bảng cốt lõi, thiết kế ở dạng chuẩn hóa 3NF, dùng khóa ngoại đảm bảo toàn vẹn và ràng buộc duy nhất chặn trùng lặp ngay từ tầng cơ sở dữ liệu:
 
-**Bảng tai_khoan** — tài khoản quản trị: tên đăng nhập (duy nhất), mật khẩu đã băm, họ tên.
+**Bảng tai_khoan** — tài khoản Chủ trọ, Quản lý, Công an: tên đăng nhập (duy nhất), mật khẩu đã băm, họ tên, vai trò (ChuTro / QuanLy / CongAn).
+
+**Bảng quyen_vai_tro** — ma trận phân quyền động: cặp (vai trò, hành động) cho biết vai trò đó được phép gọi hành động nào. Bảng là nguồn duy nhất nạp vào bộ kiểm tra quyền lúc Server khởi động.
 
 **Bảng phong** — phòng trọ: số phòng (duy nhất), giá thuê, sức chứa tối đa, trạng thái (trống / đang thuê / bảo trì), mô tả.
 
-**Bảng khach_thue** — người thuê: họ tên, ngày sinh, CCCD (duy nhất), số điện thoại, quê quán, nơi học tập/làm việc, cờ đăng ký tạm trú, khóa ngoại về phòng đang ở (cho phép rỗng khi chưa gán phòng).
+**Bảng khach_thue** — người thuê kiêm tài khoản đăng nhập khách: họ tên, ngày sinh, CCCD (duy nhất), mật khẩu đã băm, số điện thoại, quê quán, nơi học tập/làm việc, cờ đăng ký tạm trú, khóa ngoại về phòng đang ở (cho phép rỗng khi khách tự đăng ký hoặc đã trả phòng).
 
-**Bảng hop_dong** — hợp đồng: khóa ngoại về phòng và về người đại diện, ngày bắt đầu, ngày kết thúc, giá thuê, tiền cọc, trạng thái (còn hiệu lực / hết hạn / chấm dứt), ghi chú.
+**Bảng hop_dong** — hợp đồng: khóa ngoại về phòng và về người đại diện, ngày bắt đầu, ngày kết thúc, giá thuê, tiền cọc, trạng thái (chờ nhận phòng / còn hiệu lực / hết hạn / chấm dứt), ghi chú, mã QR (duy nhất) và mã PIN dùng cho bàn giao phòng.
 
-**Bảng chi_so_dien_nuoc** — chỉ số điện nước: khóa ngoại về phòng, tháng chốt (định dạng năm-tháng), chỉ số điện và nước cũ/mới, đơn giá điện và nước của kỳ. Ràng buộc duy nhất trên cặp (phòng, tháng) chặn ghi trùng kỳ.
+**Bảng chi_so_dien_nuoc** — chỉ số điện nước: khóa ngoại về phòng, tháng chốt (định dạng năm-tháng), chỉ số điện và nước cũ/mới, đơn giá điện và nước của kỳ, hình thức tính nước (theo khối / khoán theo người). Ràng buộc duy nhất trên cặp (phòng, tháng) chặn ghi trùng kỳ.
 
 **Bảng hoa_don** — hóa đơn: khóa ngoại về phòng và về hợp đồng, tháng lập, các khoản tiền phòng, điện, nước, phí khác, tổng tiền, trạng thái thanh toán, thời điểm thanh toán. Ràng buộc duy nhất trên cặp (phòng, tháng) đảm bảo không có hai hóa đơn cùng kỳ.
 
@@ -237,15 +287,51 @@ Cơ sở dữ liệu `quanly_phongtro_nhs` gồm 6 bảng chính, thiết kế �
 
 Hệ thống tổ chức theo kiến trúc ba tầng, tách bạch trách nhiệm giữa giao diện, xử lý nghiệp vụ và lưu trữ:
 
-- **Tầng trình diễn (Client WinForms):** các màn hình quản lý phòng, người thuê, hợp đồng, điện nước, hóa đơn và thống kê. Client không chứa logic nghiệp vụ, chỉ gửi yêu cầu và hiển thị kết quả.
-- **Tầng nghiệp vụ (Server):** lắng nghe kết nối qua TcpListener tại cổng 8888. Với mỗi Client, Server cấp phát một luồng xử lý riêng (ClientHandler), nhận gói yêu cầu, định tuyến đến bộ điều khiển tương ứng (phòng, người thuê, hợp đồng, điện nước, hóa đơn). Toàn bộ quy tắc nghiệp vụ nằm tại đây.
-- **Tầng dữ liệu (MySQL):** Server truy cập cơ sở dữ liệu qua ADO.NET, tổ chức thành các Repository cho từng nhóm đối tượng.
+- **Tầng trình diễn (Client WinForms + WebView2):** ứng dụng WinForms nhúng Microsoft Edge WebView2, tải giao diện HTML/CSS/JavaScript thuần từ thư mục cục bộ `Assets/wwwroot/` chia thành các shell giao diện chuyên biệt cho từng vai trò (`chutro`, `congan`, `khachthue`, `auth`). Client không chứa logic nghiệp vụ, giao tiếp thông qua cầu nối `window.bridge.call(action, payload)` gửi dữ liệu JSON qua socket TCP tới Server.
+- **Tầng nghiệp vụ (Server):** ứng dụng Console .NET 8.0 lắng nghe kết nối qua TcpListener tại cổng 8888. Với mỗi Client, Server cấp phát một luồng xử lý riêng (ClientHandler), nhận gói yêu cầu, kiểm tra phiên đăng nhập và ma trận quyền (`MaTranPhanQuyen`), rồi định tuyến đến service tương ứng.
+- **Tầng dữ liệu (MySQL):** Server truy cập cơ sở dữ liệu qua ADO.NET (MySqlConnector), tổ chức thành các Repository cho từng nhóm đối tượng.
 
 ### 10.2. Giao thức ứng dụng trên TCP
 
-Client và Server trao đổi bằng gói tin văn bản dạng JSON, mỗi gói kết thúc bằng ký tự xuống dòng để phân định ranh giới gói tin trên luồng TCP. Một yêu cầu gồm ba trường: tên hành động (Action), mã phiên đăng nhập (Token) và dữ liệu (Data). Phản hồi của Server gồm ba trường: thành công hay thất bại (Success), thông điệp (Message) và dữ liệu kết quả (Data).
+Client và Server trao đổi bằng gói tin văn bản dạng JSON, mỗi gói kết thúc bằng ký tự xuống dòng `\n` để phân định ranh giới gói tin trên luồng TCP. Một yêu cầu gồm ba trường: tên hành động (Action), mã phiên đăng nhập (Token) và dữ liệu (Data). Phản hồi của Server gồm ba trường: thành công hay thất bại (Success), thông điệp (Message) và dữ liệu kết quả (Data).
 
-Hệ thống định nghĩa 18 hành động, nhóm theo chức năng: đăng nhập; bốn hành động quản lý phòng (lấy danh sách, thêm, sửa, xóa); bốn hành động quản lý người thuê (lấy theo phòng, thêm, sửa, trả phòng); hai hành động hợp đồng (lập, chấm dứt); hai hành động điện nước (chốt chỉ số, lấy chỉ số kỳ trước); ba hành động hóa đơn (lập, lấy danh sách, xác nhận thanh toán); và hai hành động báo cáo (thống kê tổng hợp, xuất danh sách tạm trú). Danh sách chi tiết được trình bày trong phụ lục kỹ thuật.
+Hệ thống định nghĩa 29 hành động chuẩn bằng tiếng Việt không dấu (`ActionNames.cs`): xác thực và tự đăng ký (DANG_NHAP, DANG_KY); bốn hành động phòng (lấy danh sách, thêm, sửa, xóa); năm hành động người thuê (lấy theo phòng, thêm, sửa, trả phòng, xóa); năm hành động hợp đồng (lập, gia hạn, chấm dứt, lấy danh sách, sinh QR); nhận phòng QR/PIN; hai hành động điện nước (chốt số, lấy số kỳ trước); bốn hành động hóa đơn (lập, danh sách, thanh toán, hóa đơn của tôi); bốn hành động báo cáo & lưu trú (tổng quan, xuất tạm trú, lấy lịch sử cư trú, xuất lịch sử cư trú); và hai hành động phân quyền (lấy ma trận, cập nhật quyền).
+
+---
+
+## PHỤ LỤC: BẢNG HÀNH ĐỘNG GIAO THỨC (29 ACTIONS)
+
+| Nhóm | Hành động | Ý nghĩa |
+|---|---|---|
+| **Xác thực** | `DANG_NHAP` | Đăng nhập tài khoản, tự nhận diện vai trò |
+| | `DANG_KY` | Khách thuê tự đăng ký tài khoản từ xa (không cần token) |
+| **Phòng** | `PHONG_LAY_TAT_CA` | Lấy danh sách toàn bộ phòng và số người hiện tại |
+| | `PHONG_THEM` | Thêm phòng trọ mới |
+| | `PHONG_CAP_NHAT` | Sửa thông tin phòng (giá thuê, sức chứa, trạng thái) |
+| | `PHONG_XOA` | Xóa phòng trọ (chỉ cho phép khi phòng trống) |
+| **Người thuê** | `KHACH_THUE_THEO_PHONG` | Lấy danh sách người thuê theo phòng (hoặc khách chờ nhận phòng) |
+| | `KHACH_THUE_THEM` | Thêm hồ sơ người thuê vào phòng |
+| | `KHACH_THUE_CAP_NHAT` | Cập nhật thông tin cá nhân người thuê |
+| | `KHACH_THUE_TRA_PHONG` | Ghi nhận khách trả phòng, đưa phong_id về NULL |
+| | `KHACH_THUE_XOA` | Xóa vĩnh viễn hồ sơ người thuê đã trả phòng |
+| **Hợp đồng** | `HOP_DONG_TAO` | Lập hợp đồng mới (trực tiếp hoặc chờ nhận phòng QR) |
+| | `HOP_DONG_GIA_HAN` | Gia hạn ngày kết thúc hợp đồng đang hiệu lực |
+| | `HOP_DONG_CHAM_DUT` | Chấm dứt hợp đồng (bắt buộc lý do và ngày bàn giao khi còn hạn) |
+| | `HOP_DONG_LAY_TAT_CA` | Lấy danh sách toàn bộ hợp đồng |
+| | `HOP_DONG_SINH_QR` | Lấy lại mã QR và mã PIN của hợp đồng chờ nhận phòng |
+| **Nhận phòng QR** | `KHACH_THUE_NHAN_PHONG_QR` | Khách quét QR / nhập PIN để kích hoạt hợp đồng và nhận phòng |
+| **Điện nước** | `DIEN_NUOC_LAY_KY_TRUOC` | Lấy chỉ số điện nước kỳ trước liền kề |
+| | `DIEN_NUOC_GHI_SO` | Chốt chỉ số điện nước kỳ hiện tại |
+| **Hóa đơn** | `HOA_DON_TAO` | Lập hóa đơn cước tháng cho phòng |
+| | `HOA_DON_LAY_TAT_CA` | Lấy danh sách hóa đơn theo kỳ cước hoặc theo phòng |
+| | `HOA_DON_THANH_TOAN` | Xác nhận hóa đơn đã thanh toán (DaThu) |
+| | `HOA_DON_CUA_TOI` | Khách thuê tra cứu danh sách hóa đơn của mình (có phân trang) |
+| **Báo cáo & Tạm trú** | `BAO_CAO_TONG_QUAN` | Lấy số liệu KPI tổng quan cơ sở trọ |
+| | `XUAT_HO_SO_TAM_TRU` | Xuất danh sách thông tin người ở phục vụ đăng ký tạm trú |
+| | `LICH_SU_CU_TRU_LAY` | Lấy lịch sử biến động cư trú theo thời gian |
+| | `XUAT_LICH_SU_CU_TRU` | Xuất file báo cáo lịch sử cư trú phục vụ kiểm tra công an |
+| **Phân quyền** | `PHAN_QUYEN_LAY_MA_TRAN` | Lấy ma trận quyền động hiện tại của hệ thống |
+| | `PHAN_QUYEN_CAP_NHAT_VAI_TRO` | Chủ trọ cập nhật danh mục quyền cho từng vai trò |
 
 ### 10.3. Xử lý đa kết nối
 

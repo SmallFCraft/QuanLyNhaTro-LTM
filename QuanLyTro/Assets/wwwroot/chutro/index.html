@@ -36,8 +36,8 @@
     </div>
     <div class="tabs">
       <div class="tab on" data-tab="dash" onclick="loadLandlordTab('dash')"><i class="fas fa-th-large"></i> Tổng quan</div>
-      <div class="tab" data-tab="phong" onclick="loadLandlordTab('phong')"><i class="fas fa-door-open"></i> Phòng <span class="cnt">24</span></div>
-      <div class="tab" data-tab="khach_thue" onclick="loadLandlordTab('khach_thue')"><i class="fas fa-users"></i> Người thuê</div>
+      <div class="tab" data-tab="phong" onclick="loadLandlordTab('phong')"><i class="fas fa-door-open"></i> Phòng <span class="cnt" id="cnt-phong">0</span></div>
+      <div class="tab" data-tab="khach_thue" onclick="loadLandlordTab('khach_thue')"><i class="fas fa-users"></i> Người dùng <span class="cnt" id="cnt-khach_thue">0</span></div>
       <div class="tab" data-tab="hop_dong" onclick="loadLandlordTab('hop_dong')"><i class="fas fa-file-signature"></i> Hợp đồng</div>
       <div class="tab" data-tab="utils" onclick="loadLandlordTab('utils')"><i class="fas fa-tachometer-alt"></i> Điện nước</div>
       <div class="tab" data-tab="hoa_don" onclick="loadLandlordTab('hoa_don')"><i class="fas fa-receipt"></i> Hóa đơn</div>
@@ -121,15 +121,15 @@
         </div>
         <div class="tblwrap">
         <table class="tbl">
-          <thead><tr><th>Phòng</th><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
+          <thead><tr><th>Phòng</th><th>Trạng thái</th><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
           <tbody id="khach_thue-body">
             <tr>
-              <td><span class="tag rent">P101</span></td><td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
+              <td><span class="tag rent">P101</span></td><td><span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span></td><td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
               <td><span class="tag done">Đã nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(1)"><i class="fas fa-key"></i></button></td>
             </tr>
             <tr>
-              <td><span class="tag rent">P102</span></td><td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
+              <td><span class="tag rent">P102</span></td><td><span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span></td><td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
               <td><span class="tag warn">Chưa nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(2)"><i class="fas fa-key"></i></button></td>
             </tr>

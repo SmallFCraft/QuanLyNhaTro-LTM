@@ -1,6 +1,6 @@
 # XÁC ĐỊNH CHỨC NĂNG, NHÓM, ĐỐI TƯỢNG & PHÂN CÔNG 5 NGƯỜI
 
-Tài liệu gốc: [GIOI_THIEU_DE_TAI.md](GIOI_THIEU_DE_TAI.md) (FR-01→FR-30, BR-01→BR-18).
+Tài liệu gốc: [GIOI_THIEU_DE_TAI.md](GIOI_THIEU_DE_TAI.md) (FR-01→FR-30, BR-01→BR-19).
 Tài liệu giao diện người dùng: [XAC_DINH_CHUC_NANG_MENU_GIAO_DIEN.md](XAC_DINH_CHUC_NANG_MENU_GIAO_DIEN.md).
 
 ---
@@ -13,10 +13,10 @@ Tiêu chí dừng: mỗi nút lá (mức 4: `.x.y`) là **1 thao tác nguyên t�
 HệThốngTrọ_NgũHànhSơn/
 ├── A. HạTầng_Mạng_CSDL [FR-21, FR-22, NFR-01..05, 08, 09]
 │   ├── A1. KếtNối_Client_Server [FR-21]
-│   │   ├── A1.1 Đọc cấu hình kết nối từ file
-│   │   │   ├── A1.1.1 Đọc địa chỉ IP máy chủ từ App.config
-│   │   │   ├── A1.1.2 Đọc cổng TCP từ App.config (mặc định 8888)
-│   │   │   └── A1.1.3 Khởi tạo TcpClient theo cấu hình đã đọc
+│   │   ├── A1.1 Đọc cấu hình kết nối từ client
+│   │   │   ├── A1.1.1 Đọc địa chỉ IP máy chủ (mặc định 127.0.0.1)
+│   │   │   ├── A1.1.2 Đọc cổng TCP từ cấu hình (mặc định 8888)
+│   │   │   └── A1.1.3 Khởi tạo TcpClient theo cấu hình socket
 │   │   ├── A1.2 Trạng thái kết nối
 │   │   │   ├── A1.2.1 Bật cờ/đèn xanh khi kết nối TCP thành công
 │   │   │   └── A1.2.2 Cập nhật nhãn trạng thái trên thanh đáy ứng dụng
@@ -26,7 +26,7 @@ HệThốngTrọ_NgũHànhSơn/
 │   │       └── A1.3.3 Giữ nguyên màn hình hiện tại, không làm sập ứng dụng
 │   ├── A2. GiaoThức_TCP_JSON [NFR-03]
 │   │   ├── A2.1 Đóng gói yêu cầu (Client)
-│   │   │   ├── A2.1.1 Gán tên hành động vào trường Action
+│   │   │   ├── A2.1.1 Gán tên hành động vào trường Action (29 actions tiếng Việt không dấu)
 │   │   │   ├── A2.1.2 Đính kèm mã phiên vào trường Token
 │   │   │   ├── A2.1.3 Tuần tự hóa dữ liệu gửi sang chuỗi JSON ở trường Data
 │   │   │   └── A2.1.4 Thêm ký tự xuống dòng `\n` vào cuối gói tin
@@ -41,22 +41,23 @@ HệThốngTrọ_NgũHànhSơn/
 │   │       └── A2.3.4 Thêm ký tự `\n` và gửi ngược lại Client
 │   └── A3. ĐaClient_ĐồngThời [FR-22, NFR-02, NFR-04, NFR-05]
 │       ├── A3.1 Lắng nghe và cấp phát luồng
-│       │   ├── A3.1.1 TcpListener mở cổng và chờ kết nối tới
+│       │   ├── A3.1.1 TcpListener mở cổng 8888 và chờ kết nối tới
 │       │   ├── A3.1.2 Chấp nhận kết nối và tạo TcpClient mới
-│       │   └── A3.1.3 Khởi tạo một luồng xử lý độc lập cho Client đó
-│       ├── A3.2 Quản lý vòng đời kết nối
+│       │   └── A3.1.3 Khởi tạo một Task/luồng xử lý độc lập cho Client đó
+│       ├── A3.2 Quản lý vòng đời kết nối & Log có cấu trúc
 │       │   ├── A3.2.1 Duy trì luồng đọc lặp cho đến khi Client ngắt
-│       │   └── A3.2.2 Dọn dẹp tài nguyên và đóng luồng khi Client thoát
+│       │   ├── A3.2.2 Ghi log ServerLog ra console: thời gian, endpoint, action, duration, OK/FAIL
+│       │   └── A3.2.3 Dọn dẹp tài nguyên và đóng luồng khi Client thoát
 │       └── A3.3 Đảm bảo nhất quán dữ liệu phía CSDL
 │           ├── A3.3.1 Áp dụng ràng buộc UNIQUE cho số phòng và CCCD
-│           ├── A3.3.2 Mở giao dịch (GiaoDich) cho thao tác ghi nhiều bảng
-│           └── A3.3.3 Khóa dòng ghi của InnoDB tránh hai Client ghi đè
-├── B. XácThực_PhânQuyền [FR-23, FR-26, FR-29, NFR-06, NFR-07, NFR-10]
-│   ├── B1. ĐăngNhập [FR-23]
+│           ├── A3.3.2 Mở giao dịch (MySqlTransaction) cho thao tác ghi nhiều bảng
+│           └── A3.3.3 Khóa dòng ghi của InnoDB (`FOR UPDATE`) tránh hai Client ghi đè
+├── B. XácThực_PhânQuyền [FR-23, FR-24, FR-28, FR-30, NFR-06, NFR-07]
+│   ├── B1. ĐăngNhập_HợpNhất [FR-23]
 │   │   ├── B1.1 Tiếp nhận thông tin đăng nhập
 │   │   │   ├── B1.1.1 Nhập tên tài khoản (hoặc CCCD đối với khách thuê)
 │   │   │   ├── B1.1.2 Nhập mật khẩu
-│   │   │   └── B1.1.3 Gửi yêu cầu đăng nhập sang máy chủ
+│   │   │   └── B1.1.3 Gửi yêu cầu `DANG_NHAP` sang máy chủ
 │   │   ├── B1.2 Xác thực tài khoản máy chủ
 │   │   │   ├── B1.2.1 Truy vấn tài khoản nội bộ trong bảng `tai_khoan`
 │   │   │   ├── B1.2.2 Nếu không có, truy vấn tài khoản khách trong bảng `khach_thue`
@@ -67,384 +68,307 @@ HệThốngTrọ_NgũHànhSơn/
 │   │   │   ├── B1.3.1 Kiểm tra nếu số lần sai liên tiếp đạt 5 lần
 │   │   │   ├── B1.3.2 Ghi mốc thời gian tạm khóa 1 phút
 │   │   │   └── B1.3.3 Từ chối đăng nhập và báo số giây còn lại nếu trong thời gian khóa
-│   │   └── B1.4 Khởi tạo phiên làm việc
+│   │   └── B1.4 Khởi tạo phiên làm việc & Điều hướng
 │   │       ├── B1.4.1 Sinh chuỗi token ngẫu nhiên không trùng lặp
-│   │       ├── B1.4.2 Lưu token kèm mã người dùng, vai trò và phạm vi khu vào SessionStore
-│   │       └── B1.4.3 Trả về Client: Token, Họ tên, Vai trò
-│   ├── B2. Chặn_PhạmVi_Khu [FR-26 / BR-15]
-│   │   ├── B2.1 Xác định phạm vi khu của yêu cầu
-│   │   │   ├── B2.1.1 Trích xuất token từ gói tin yêu cầu
-│   │   │   ├── B2.1.2 Tra cứu danh sách mã khu được phép thao tác từ phiên
-│   │   │   └── B2.1.3 Đọc mã khu của đối tượng dữ liệu được gửi kèm
-│   │   └── B2.2 Thực thi giới hạn phạm vi
-│   │       ├── B2.2.1 Nếu vai trò là Chủ trọ: cho phép toàn bộ khu
-│   │       ├── B2.2.2 Nếu vai trò là Quản lý: so khớp mã khu với danh sách được phân công
-│   │       └── B2.2.3 Không khớp khu: trả về lỗi từ chối quyền truy cập
-│   └── B3. Chặn_Vai_ChỉXem [FR-29 / BR-16]
-│       ├── B3.1 Nhận diện thao tác ghi (Thêm / Sửa / Xóa)
-│       ├── B3.2 Kiểm tra vai trò của phiên có phải Công an phường hay không
-│       └── B3.3 Nếu là Công an phường gửi thao tác ghi: máy chủ từ chối và báo lỗi rõ ràng
-├── C. KhuTrọ_PhânCông [FR-24, FR-25, FR-27]
-│   ├── C1. QuảnLý_KhuTrọ [FR-24 / BR-17]
-│   │   ├── C1.1 Thêm khu trọ
-│   │   │   ├── C1.1.1 Nhập tên khu trọ
-│   │   │   ├── C1.1.2 Nhập địa chỉ khu trọ trong phường
-│   │   │   ├── C1.1.3 Nhập ghi chú khu trọ
-│   │   │   ├── C1.1.4 Kiểm tra trùng tên khu trọ trên toàn hệ thống
-│   │   │   └── C1.1.5 Lưu bản ghi khu trọ mới vào bảng `areas`
-│   │   ├── C1.2 Sửa thông tin khu trọ
-│   │   │   ├── C1.2.1 Chọn khu trọ cần sửa
-│   │   │   ├── C1.2.2 Cập nhật tên mới, địa chỉ mới, ghi chú mới
-│   │   │   └── C1.2.3 Lưu cập nhật vào cơ sở dữ liệu
-│   │   ├── C1.3 Xóa khu trọ [BR-17]
-│   │   │   ├── C1.3.1 Chọn khu trọ cần xóa
-│   │   │   ├── C1.3.2 Đếm số phòng trực thuộc khu trọ đó
-│   │   │   ├── C1.3.3 Nếu số phòng > 0: báo lỗi từ chối xóa
-│   │   │   └── C1.3.4 Nếu số phòng = 0: thực hiện xóa khu trọ
-│   │   └── C1.4 Gán phòng vào khu trọ
-│   │       ├── C1.4.1 Chọn danh sách phòng
-│   │       └── C1.4.2 Cập nhật khóa ngoại `area_id` cho các phòng được chọn
-│   ├── C2. PhânCông_QuảnLý [FR-25]
-│   │   ├── C2.1 Tạo tài khoản Quản lý trọ
-│   │   │   ├── C2.1.1 Nhập tên đăng nhập, họ tên, mật khẩu ban đầu
-│   │   │   ├── C2.1.2 Băm mật khẩu và lưu vào bảng `tai_khoan` với vai trò QuanLy
-│   │   │   └── C2.1.3 Báo tạo tài khoản thành công
-│   │   ├── C2.2 Gán khu phụ trách
-│   │   │   ├── C2.2.1 Chọn tài khoản Quản lý trọ
-│   │   │   ├── C2.2.2 Tích chọn một hoặc nhiều khu trọ phân công
-│   │   │   └── C2.2.3 Lưu các cặp (user_id, area_id) vào bảng `assignments`
-│   │   ├── C2.3 Thu hồi phân công
-│   │   │   ├── C2.3.1 Chọn bản ghi phân công cần hủy
-│   │   │   └── C2.3.2 Xóa bản ghi tương ứng khỏi bảng `assignments`
-│   │   └── C2.4 Tra cứu danh sách phân công
-│   │       └── C2.4.1 Đọc toàn bộ bảng phân công kèm tên người quản lý và tên khu
-│   └── C3. TổngQuan_NhiềuKhu [FR-27, FR-04]
-│       ├── C3.1 Hợp nhất số liệu toàn bộ khu
-│       │   ├── C3.1.1 Tính tổng số phòng toàn bộ các khu
-│       │   ├── C3.1.2 Tính tổng số phòng trống và đang thuê
-│       │   ├── C3.1.3 Tính tổng số người đang lưu trú toàn hệ thống
-│       │   └── C3.1.4 Tính tổng tiền đã thu và còn nợ của tháng hiện tại
-│       ├── C3.2 Lọc số liệu riêng từng khu
-│       │   ├── C3.2.1 Chọn khu trọ từ danh sách thả xuống
-│       │   └── C3.2.2 Tính và hiển thị lại các chỉ số trên theo riêng khu đã chọn
-│       └── C3.3 So sánh giữa các khu trọ
-│           ├── C3.3.1 Tính tỉ lệ lấp đầy của từng khu
-│           ├── C3.3.2 Tính doanh thu từng khu
-│           └── C3.3.3 Hiển thị bảng so sánh đối chiếu giữa các khu
-├── D. PhòngTrọ [FR-01, FR-02, FR-03]
-│   ├── D1. ThêmPhòng [FR-01 / BR-01, BR-14]
-│   │   ├── D1.1 Nhập thông tin phòng
-│   │   │   ├── D1.1.1 Nhập số phòng
-│   │   │   ├── D1.1.2 Nhập giá thuê tháng
-│   │   │   ├── D1.1.3 Nhập sức chứa tối đa (người)
-│   │   │   ├── D1.1.4 Chọn khu trọ trực thuộc
-│   │   │   └── D1.1.5 Nhập mô tả/ghi chú phòng
-│   │   ├── D1.2 Kiểm tra hợp lệ dữ liệu
-│   │   │   ├── D1.2.1 Kiểm tra số phòng không được để trống, tối đa 20 ký tự
-│   │   │   ├── D1.2.2 Kiểm tra giá thuê phải là số > 0
-│   │   │   ├── D1.2.3 Kiểm tra sức chứa là số nguyên từ 1 đến 50
-│   │   │   └── D1.2.4 Kiểm tra số phòng không được trùng trong cùng khu trọ
-│   │   └── D1.3 Lưu phòng mới
-│   │       ├── D1.3.1 Đặt trạng thái ban đầu mặc định là Trống
-│   │       └── D1.3.2 Lưu bản ghi vào bảng `phong`
-│   ├── D2. Sửa_Xóa_Phòng [FR-02 / BR-12]
-│   │   ├── D2.1 Sửa thông tin phòng
-│   │   │   ├── D2.1.1 Chọn phòng cần sửa từ danh sách
-│   │   │   ├── D2.1.2 Cập nhật giá thuê mới
-│   │   │   ├── D2.1.3 Cập nhật sức chứa mới (không nhỏ hơn số người đang ở thực tế)
-│   │   │   ├── D2.1.4 Cập nhật trạng thái phòng (Trống / Đang thuê / Bảo trì)
-│   │   │   └── D2.1.5 Lưu bản ghi cập nhật
-│   │   └── D2.2 Xóa phòng [BR-12]
-│   │       ├── D2.2.1 Chọn phòng cần xóa
-│   │       ├── D2.2.2 Hiển thị hộp thoại xác nhận xóa
-│   │       ├── D2.2.3 Kiểm tra phòng có người thuê đang ở hay không
-│   │       ├── D2.2.4 Kiểm tra phòng có hợp đồng còn hiệu lực hay không
-│   │       ├── D2.2.5 Nếu còn người hoặc còn hợp đồng: từ chối xóa và báo lỗi
-│   │       └── D2.2.6 Nếu phòng trống hoàn toàn: xóa bản ghi phòng khỏi bảng `phong`
-│   └── D3. Xem_DanhSách_Phòng [FR-03]
-│       ├── D3.1 Lấy dữ liệu danh sách phòng
-│       │   ├── D3.1.1 Truy vấn danh sách phòng theo khu được phép
-│       │   ├── D3.1.2 Đếm số người đang ở thực tế từ bảng `khach_thue` cho từng phòng
-│       │   └── D3.1.3 Ghép trạng thái, giá thuê, sức chứa thành dòng hiển thị
-│       ├── D3.2 Lọc danh sách phòng
-│       │   ├── D3.2.1 Lọc phòng theo trạng thái: Tất cả / Trống / Đang thuê / Bảo trì
-│       │   └── D3.2.2 Lọc phòng theo khu trọ
-│       └── D3.3 Tìm kiếm nhanh phòng
-│           └── D3.3.1 Gõ số phòng để lọc ngay trên bảng hiển thị
-├── E. NgườiThuê_TạmTrú [FR-05, FR-06, FR-07, FR-08, FR-28]
-│   ├── E1. Thêm_GánPhòng [FR-05 / BR-02, BR-03]
-│   │   ├── E1.1 Nhập hồ sơ cá nhân
-│   │   │   ├── E1.1.1 Nhập họ và tên
-│   │   │   ├── E1.1.2 Chọn ngày tháng năm sinh
-│   │   │   ├── E1.1.3 Nhập số CCCD (bắt buộc)
-│   │   │   ├── E1.1.4 Nhập số điện thoại liên hệ
-│   │   │   ├── E1.1.5 Nhập quê quán (tỉnh/thành, quận/huyện)
-│   │   │   └── E1.1.6 Nhập nơi học tập hoặc nơi làm việc
-│   │   ├── E1.2 Kiểm tra hợp lệ hồ sơ
-│   │   │   ├── E1.2.1 Kiểm tra định dạng và tính duy nhất của CCCD trên toàn hệ thống
-│   │   │   └── E1.2.2 Kiểm tra họ tên và số điện thoại hợp lệ
-│   │   ├── E1.3 Gán vào phòng ở
-│   │   │   ├── E1.3.1 Chọn phòng còn chỗ
-│   │   │   ├── E1.3.2 Đếm số người hiện tại của phòng, so sánh với sức chứa tối đa
-│   │   │   └── E1.3.3 Nếu đủ chỗ: gán `phong_id` cho người thuê mới
-│   │   ├── E1.4 Khởi tạo mật khẩu tra cứu cho khách
-│   │   │   ├── E1.4.1 Nhận mật khẩu do chủ trọ đặt (nếu có)
-│   │   │   ├── E1.4.2 Nếu để trống: lấy 6 số cuối của CCCD làm mật khẩu mặc định
-│   │   │   └── E1.4.3 Băm mật khẩu và lưu vào trường `mat_khau_hash`
-│   │   └── E1.5 Cập nhật trạng thái phòng
-│   │       └── E1.5.1 Tự động chuyển trạng thái phòng sang Đang thuê
-│   ├── E2. Sửa_Xóa_HồSơ [FR-06]
-│   │   ├── E2.1 Sửa thông tin cá nhân người thuê
-│   │   │   ├── E2.1.1 Chọn người thuê cần sửa
-│   │   │   ├── E2.1.2 Cho phép sửa họ tên, ngày sinh, SĐT, quê quán, nơi làm/học
-│   │   │   ├── E2.1.3 Cho phép đặt lại mật khẩu tra cứu mới
-│   │   │   └── E2.1.4 Lưu bản ghi thông tin đã cập nhật
-│   │   └── E2.2 Xóa hồ sơ người thuê
-│   │       ├── E2.2.1 Chọn người thuê cần xóa
-│   │       ├── E2.2.2 Kiểm tra người thuê đã trả phòng chưa (`phong_id IS NULL`)
-│   │       ├── E2.2.3 Kiểm tra người thuê có đang đứng tên hợp đồng còn hiệu lực không
-│   │       ├── E2.2.4 Nếu chưa trả phòng hoặc đang đứng tên HĐ: từ chối xóa
-│   │       └── E2.2.5 Nếu đã trả phòng hoàn toàn: xóa bản ghi khỏi bảng `khach_thue`
-│   ├── E3. ChuyểnPhòng_TrảPhòng [FR-07]
-│   │   ├── E3.1 Chuyển phòng cho người thuê
-│   │   │   ├── E3.1.1 Chọn người thuê cần chuyển
-│   │   │   ├── E3.1.2 Chọn phòng đích muốn chuyển đến
-│   │   │   ├── E3.1.3 Kiểm tra phòng đích còn chỗ trống hay không
-│   │   │   ├── E3.1.4 Cập nhật `phong_id` mới cho người thuê
-│   │   │   ├── E3.1.5 Cập nhật trạng thái phòng đích thành Đang thuê
-│   │   │   └── E3.1.6 Kiểm tra phòng cũ: nếu hết người thì cập nhật về Trống
-│   │   └── E3.2 Ghi nhận khách trả phòng
-│   │       ├── E3.2.1 Chọn người thuê trả phòng
-│   │       ├── E3.2.2 Gỡ liên kết phòng (gán `phong_id = NULL`)
-│   │       ├── E3.2.3 Đếm lại số người còn lại của phòng cũ
-│   │       └── E3.2.4 Nếu phòng cũ không còn người nào: chuyển trạng thái phòng về Trống
-│   └── E4. QuảnLý_TạmTrú [FR-08, FR-28]
-│       ├── E4.1 Quản lý trạng thái tạm trú
-│       │   ├── E4.1.1 Tích chọn cờ Đã đăng ký tạm trú cho từng người
-│       │   └── E4.1.2 Lưu cờ `da_dang_ky_tam_tru` vào CSDL
-│       ├── E4.2 Xuất danh sách khai báo tạm trú [FR-08]
-│       │   ├── E4.2.1 Lọc danh sách người đang ở thực tế (`phong_id IS NOT NULL`)
-│       │   ├── E4.2.2 Kết xuất các cột: Họ tên, Ngày sinh, CCCD, Quê quán, Số phòng, Khu
-│       │   └── E4.2.3 Xuất dữ liệu ra file định dạng CSV/Excel
-│       └── E4.3 Tra cứu lưu trú phục vụ Công an phường [FR-28]
-│           ├── E4.3.1 Mở màn hình tra cứu danh sách lưu trú toàn phường
-│           ├── E4.3.2 Tìm kiếm người thuê theo họ tên
-│           ├── E4.3.3 Tìm kiếm người thuê theo số CCCD (cho phép tìm một phần)
-│           ├── E4.3.4 Tìm kiếm theo số phòng hoặc theo từng khu trọ
-│           └── E4.3.5 Xuất báo cáo danh sách kiểm tra lưu trú
-├── F. HợpĐồngThuê [FR-09, FR-10, FR-11]
-│   ├── F1. LậpHợpĐồng [FR-09 / BR-04, BR-05, BR-06, BR-13]
-│   │   ├── F1.1 Nhập thông tin hợp đồng
-│   │   │   ├── F1.1.1 Chọn phòng cần lập hợp đồng
-│   │   │   ├── F1.1.2 Chọn người đại diện ký hợp đồng từ danh sách thành viên của phòng
-│   │   │   ├── F1.1.3 Chọn ngày bắt đầu hợp đồng
-│   │   │   ├── F1.1.4 Chọn ngày kết thúc hợp đồng
-│   │   │   ├── F1.1.5 Nhập giá thuê theo thỏa thuận hợp đồng
-│   │   │   └── F1.1.6 Nhập số tiền đặt cọc
-│   │   ├── F1.2 Kiểm tra quy tắc nghiệp vụ
-│   │   │   ├── F1.2.1 Kiểm tra ngày kết thúc phải sau ngày bắt đầu [BR-06]
-│   │   │   ├── F1.2.2 Kiểm tra người đại diện bắt buộc phải thuộc phòng đó [BR-05]
-│   │   │   ├── F1.2.3 Kiểm tra phòng không có hợp đồng nào khác đang hiệu lực [BR-04]
-│   │   │   └── F1.2.4 Kiểm tra giá thuê và tiền cọc phải >= 0
-│   │   └── F1.3 Lưu hợp đồng (giao dịch an toàn) [BR-13]
-│   │       ├── F1.3.1 Mở GiaoDich cơ sở dữ liệu
-│   │       ├── F1.3.2 Ghi bản ghi hợp đồng mới với trạng thái HieuLuc
-│   │       ├── F1.3.3 Cập nhật trạng thái phòng sang Đang thuê
-│   │       └── F1.3.4 Commit giao dịch
-│   ├── F2. GiaHạn_ChấmDứt [FR-10]
-│   │   ├── F2.1 Gia hạn hợp đồng
-│   │   │   ├── F2.1.1 Chọn hợp đồng đang có hiệu lực (HieuLuc)
-│   │   │   ├── F2.1.2 Nhập ngày kết thúc mới
-│   │   │   ├── F2.1.3 Kiểm tra ngày kết thúc mới phải sau ngày kết thúc cũ
-│   │   │   └── F2.1.4 Cập nhật trường `ngay_ket_thuc` của hợp đồng
-│   │   └── F2.2 Chấm dứt hợp đồng
-│   │       ├── F2.2.1 Chọn hợp đồng cần thanh lý
-│   │       ├── F2.2.2 Nhập lý do chấm dứt hợp đồng
-│   │       ├── F2.2.3 Nhập ghi chú hoàn trả/cấn trừ tiền cọc
-│   │       ├── F2.2.4 Cập nhật trạng thái hợp đồng thành ChamDut
-│   │       └── F2.2.5 Lưu lý do và ghi chú cọc vào bản ghi hợp đồng
-│   └── F3. CảnhBáo_HếtHạn [FR-11]
-│       ├── F3.1 Tính thời hạn còn lại của hợp đồng
-│       │   ├── F3.1.1 Lấy ngày kết thúc của từng hợp đồng HieuLuc so với ngày hiện tại
-│       │   └── F3.1.2 Tính ra số ngày còn lại
-│       ├── F3.2 Hiển thị danh sách sắp hết hạn
-│       │   ├── F3.2.1 Sắp xếp hợp đồng theo số ngày còn lại tăng dần
-│       │   └── F3.2.2 Lọc các hợp đồng có số ngày còn lại <= 30 ngày
-│       └── F3.3 Báo hiệu trực quan
-│           └── F3.3.1 Tô màu đỏ cảnh báo dòng hợp đồng sắp hết hạn trên bảng
-├── G. ĐiệnNước [FR-12, FR-13]
-│   ├── G1. ChốtChỉSố [FR-12 / BR-07, BR-08]
-│   │   ├── G1.1 Chọn kỳ ghi nhận
-│   │   │   ├── G1.1.1 Chọn khu trọ
-│   │   │   ├── G1.1.2 Chọn phòng trọ
-│   │   │   └── G1.1.3 Chọn tháng chốt theo định dạng yyyy-MM
-│   │   ├── G1.2 Lấy chỉ số đầu kỳ tự động
-│   │   │   ├── G1.2.1 Truy vấn bản ghi chốt số của kỳ tháng liền trước
-│   │   │   ├── G1.2.2 Tự điền chỉ số điện cũ = chỉ số điện mới kỳ trước
-│   │   │   └── G1.2.3 Tự điền chỉ số nước cũ = chỉ số nước mới kỳ trước
-│   │   ├── G1.3 Nhập chỉ số cuối kỳ và đơn giá
-│   │   │   ├── G1.3.1 Nhập chỉ số điện mới
-│   │   │   ├── G1.3.2 Nhập chỉ số nước mới
-│   │   │   ├── G1.3.3 Nhập đơn giá điện áp dụng cho kỳ này (đồng/kWh)
-│   │   │   └── G1.3.4 Nhập đơn giá nước áp dụng cho kỳ này (đồng/m³)
-│   │   ├── G1.4 Kiểm tra tính hợp lệ [BR-07, BR-08]
-│   │   │   ├── G1.4.1 Kiểm tra chỉ số điện mới không được nhỏ hơn chỉ số điện cũ
-│   │   │   ├── G1.4.2 Kiểm tra chỉ số nước mới không được nhỏ hơn chỉ số nước cũ
-│   │   │   ├── G1.4.3 Kiểm tra đơn giá điện và đơn giá nước phải > 0
-│   │   │   └── G1.4.4 Kiểm tra phòng chưa từng chốt số trong tháng này (tránh ghi đè)
-│   │   └── G1.5 Lưu chỉ số chốt
-│   │       └── G1.5.1 Ghi bản ghi vào bảng `chi_so_dien_nuoc`
-│   └── G2. TínhTiền_ĐiệnNước [FR-13]
-│       ├── G2.1 Tính lượng tiêu thụ
-│       │   ├── G2.1.1 Lượng điện tiêu thụ = Chỉ số điện mới - Chỉ số điện cũ
-│       │   └── G2.1.2 Lượng nước tiêu thụ = Chỉ số nước mới - Chỉ số nước cũ
-│       ├── G2.2 Tính thành tiền tại máy chủ
-│       │   ├── G2.2.1 Tiền điện = Lượng điện tiêu thụ × Đơn giá điện kỳ
-│       │   └── G2.2.2 Tiền nước = Lượng nước tiêu thụ × Đơn giá nước kỳ
-│       └── G2.3 Hiển thị xem trước
-│           ├── G2.3.1 Hiển thị số lượng và thành tiền điện tức thì trên giao diện
-│           └── G2.3.2 Hiển thị số lượng và thành tiền nước tức thì trên giao diện
-├── H. HóaĐơn_ThanhToán [FR-14, FR-15, FR-16, FR-17, FR-30]
-│   ├── H1. LậpHóaĐơn [FR-14 / BR-08, BR-09, BR-10, BR-13]
-│   │   ├── H1.1 Kiểm tra điều kiện lập hóa đơn [BR-09]
-│   │   │   ├── H1.1.1 Kiểm tra phòng có hợp đồng đang hiệu lực không
-│   │   │   ├── H1.1.2 Kiểm tra phòng đã chốt điện nước của tháng cần lập chưa
-│   │   │   └── H1.1.3 Kiểm tra phòng đã có hóa đơn trong tháng này chưa [BR-08]
-│   │   ├── H1.2 Tập hợp các khoản tiền [BR-10]
-│   │   │   ├── H1.2.1 Lấy tiền phòng từ giá thuê trên hợp đồng đang hiệu lực
-│   │   │   ├── H1.2.2 Lấy thành tiền điện từ bản ghi chốt điện nước của tháng
-│   │   │   ├── H1.2.3 Lấy thành tiền nước từ bản ghi chốt điện nước của tháng
-│   │   │   ├── H1.2.4 Nhập các khoản phí dịch vụ khác (rác, wifi, vệ sinh) nếu có
-│   │   │   └── H1.2.5 Tính tổng tiền = Tiền phòng + Tiền điện + Tiền nước + Phí khác
-│   │   └── H1.3 Lưu hóa đơn mới
-│   │       ├── H1.3.1 Đặt trạng thái ban đầu là Chưa thanh toán (ChuaThu)
-│   │       ├── H1.3.2 Đặt thời gian thu `ngay_dong = NULL`
-│   │       └── H1.3.3 Lưu bản ghi vào bảng `hoa_don`
-│   ├── H2. Xem_LịchSử_HóaĐơn [FR-15]
-│   │   ├── H2.1 Lấy danh sách hóa đơn
-│   │   │   ├── H2.1.1 Lọc hóa đơn theo tháng (yyyy-MM)
-│   │   │   ├── H2.1.2 Lọc hóa đơn theo phòng trọ
-│   │   │   └── H2.1.3 Lọc theo trạng thái: Tất cả / Đã thanh toán / Chưa thanh toán
-│   │   └── H2.2 Xem chi tiết hóa đơn
-│   │       ├── H2.2.1 Xem bảng kê chi tiết từng khoản: phòng, điện, nước, phí khác
-│   │       └── H2.2.2 Xem chỉ số đầu/cuối và đơn giá điện nước kèm theo
-│   ├── H3. XácNhận_ThanhToán [FR-16 / BR-11]
-│   │   ├── H3.1 Thực hiện thu tiền
-│   │   │   ├── H3.1.1 Chọn hóa đơn cần xác nhận thanh toán
-│   │   │   ├── H3.1.2 Kiểm tra hóa đơn phải đang ở trạng thái ChuaThu
-│   │   │   ├── H3.1.3 Nếu đã thanh toán rồi: từ chối xử lý
-│   │   │   ├── H3.1.4 Cập nhật trạng thái sang Đã thanh toán (DaThu)
-│   │   │   └── H3.1.5 Lưu mốc thời gian thu tiền `ngay_dong = NOW()`
-│   │   └── H3.2 Bảo vệ tính bất biến [BR-11]
-│   │       ├── H3.2.1 Khóa chức năng chỉnh sửa đối với hóa đơn đã DaThu
-│   │       └── H3.2.2 Khóa chức năng xóa đối với hóa đơn đã DaThu
-│   ├── H4. QuảnLý_CôngNợ [FR-17]
-│   │   ├── H4.1 Lọc danh sách phòng còn nợ
-│   │   │   ├── H4.1.1 Truy vấn các hóa đơn có trạng thái ChuaThu
-│   │   │   └── H4.1.2 Lọc danh sách theo tháng được chọn
-│   │   └── H4.2 Tổng hợp thông tin đôn đốc
-│   │       ├── H4.2.1 Liệt kê: Số phòng, Tên người đại diện, Số điện thoại, Tháng nợ, Số tiền
-│   │       └── H4.2.2 Tính tổng tiền nợ đọng cần thu trong kỳ
-│   └── H5. KháchThuê_TraCứu [FR-30 / BR-18]
-│       ├── H5.1 Xác định danh tính khách thuê
-│       │   ├── H5.1.1 Đọc mã người thuê từ phiên đăng nhập CCCD
-│       │   └── H5.1.2 Máy chủ tự suy ra mã phòng khách đang ở (không nhận mã phòng từ máy khách)
-│       ├── H5.2 Xem hóa đơn phòng mình
-│       │   ├── H5.2.1 Hiển thị hóa đơn tháng hiện tại của phòng
-│       │   ├── H5.2.2 Xem chi tiết tiền phòng, chỉ số điện, chỉ số nước, tiền dịch vụ
-│       │   └── H5.2.3 Xem trạng thái đã đóng tiền hay chưa
-│       └── H5.3 Xem lịch sử thanh toán
-│           └── H5.3.1 Xem danh sách các tháng trước đã thanh toán kèm ngày giờ thu
-└── I. ThốngKê_BáoCáo_TraCứu [FR-18, FR-19, FR-20]
-    ├── I1. ThốngKê_HiệnTrạng [FR-18]
-    │   ├── I1.1 Tính toán chỉ số vận hành
-    │   │   ├── I1.1.1 Đếm tổng số phòng đang quản lý
-    │   │   ├── I1.1.2 Đếm số phòng đang có người thuê
-    │   │   ├── I1.1.3 Đếm số phòng còn trống
-    │   │   ├── I1.1.4 Tính tỉ lệ lấp đầy = (Số phòng đang thuê / Tổng số phòng) × 100%
-    │   │   └── I1.1.5 Đếm tổng số người đang lưu trú thực tế
-    │   └── I1.2 Trực quan hóa hiện trạng
-    │       ├── I1.2.1 Hiển thị các khối số liệu nổi bật trên bảng điều khiển
-    │       └── I1.2.2 Vẽ biểu đồ tròn/cột thể hiện cơ cấu phòng (Trống vs Đang thuê)
-    ├── I2. ThốngKê_DoanhThu [FR-19]
-    │   ├── I2.1 Chọn khoảng thời gian thống kê
-    │   │   ├── I2.1.1 Chọn tháng bắt đầu thống kê
-    │   │   └── I2.1.2 Chọn tháng kết thúc thống kê
-    │   ├── I2.2 Tổng hợp số liệu tài chính theo tháng
-    │   │   ├── I2.2.1 Tính tổng tiền đã thu trong từng tháng (tổng tiền các hóa đơn DaThu)
-    │   │   └── I2.2.2 Tính tổng tiền còn nợ trong từng tháng (tổng tiền các hóa đơn ChuaThu)
-    │   └── I2.3 Bảng tổng hợp tài chính
-    │       ├── I2.3.1 Hiển thị danh sách các tháng với hai cột: Đã thu và Còn nợ
-    │       └── I2.3.2 Tính dòng tổng cộng cho toàn bộ khoảng thời gian đã chọn
-    └── I3. TraCứu_Nhanh [FR-20]
-        ├── I3.1 Tiếp nhận từ khóa tìm kiếm
-        │   ├── I3.1.1 Nhập từ khóa tự do vào ô tìm kiếm nhanh
-        │   └── I3.1.2 Gửi chuỗi tìm kiếm về máy chủ
-        └── I3.2 Thực thi tìm kiếm đa tiêu chí phía máy chủ
-            ├── I3.2.1 Tìm kiếm không phân biệt hoa thường theo Họ tên người thuê
-            ├── I3.2.2 Tìm kiếm khớp một phần theo Số căn cước công dân
-            ├── I3.2.3 Tìm kiếm khớp một phần theo Số điện thoại liên hệ
-            ├── I3.2.4 Tìm kiếm theo Số phòng
-            └── I3.2.5 Trả về danh sách kết quả phù hợp kèm phòng và khu tương ứng
+│   │       ├── B1.4.2 Lưu token kèm mã người dùng và vai trò vào SessionStore
+│   │       └── B1.4.3 Trả về Client: Token, Họ tên, Vai trò để client tự mở đúng shell giao diện
+│   ├── B2. KháchThuê_TựĐăngKý [FR-24 / BR-17]
+│   │   ├── B2.1 Nhập form đăng ký tài khoản từ xa
+│   │   │   ├── B2.1.1 Nhập họ tên, ngày sinh, quê quán, nơi làm việc
+│   │   │   ├── B2.1.2 Nhập số CCCD (kiểm tra đúng 12 chữ số)
+│   │   │   ├── B2.1.3 Nhập số điện thoại liên hệ
+│   │   │   └── B2.1.4 Nhập mật khẩu tự chọn (kiểm tra độ dài >= 6 ký tự)
+│   │   └── B2.2 Xử lý đăng ký phía Server (`DANG_KY`)
+│   │       ├── B2.2.1 Route công khai (Public Route) bỏ qua kiểm tra token phiên
+│   │       ├── B2.2.2 Kiểm tra trùng lặp số CCCD trong bảng `khach_thue`
+│   │       ├── B2.2.3 Băm mật khẩu bằng `PasswordHasher.Hash`
+│   │       ├── B2.2.4 Lưu hồ sơ mới vào bảng `khach_thue` với `phong_id = NULL`
+│   │       └── B2.2.5 Điền sẵn CCCD sang ô đăng nhập để khách đăng nhập nhận phòng
+│   ├── B3. MaTrận_PhânQuyền_Động [FR-28 / BR-15]
+│   │   ├── B3.1 Đọc ma trận quyền (`PHAN_QUYEN_LAY_MA_TRAN`)
+│   │   │   ├── B3.1.1 Chủ trọ yêu cầu xem ma trận phân quyền
+│   │   │   ├── B3.1.2 Đọc toàn bộ danh sách (vai_tro, hanh_dong) từ bảng `quyen_vai_tro`
+│   │   │   └── B3.1.3 Trả về danh mục quyền theo từng nhóm chức năng (Hợp đồng, Phòng, Điện nước...)
+│   │   ├── B3.2 Cập nhật quyền theo vai trò (`PHAN_QUYEN_CAP_NHAT_VAI_TRO`)
+│   │   │   ├── B3.2.1 Chủ trọ tick/bỏ tick các quyền cho Quản lý, Công an, Khách thuê
+│   │   │   ├── B3.2.2 Ghi đè danh sách hành động được phép vào bảng `quyen_vai_tro`
+│   │   │   └── B3.2.3 Cập nhật ngay bộ nhớ đệm `MaTranPhanQuyen` mà không cần khởi động lại Server
+│   │   └── B3.3 Tự động gieo bù quyền qua sổ cái
+│   │       ├── B3.3.1 Tạo bảng sổ cái `quyen_mac_dinh_da_ap_dung` nếu chưa có
+│   │       ├── B3.3.2 Đối chiếu danh mục quyền mặc định code với sổ cái trong 1 query
+│   │       └── B3.3.3 Gieo bù batch các quyền mới xuất hiện mà không khôi phục quyền Chủ trọ đã thu hồi
+│   └── B4. Chặn_Vai_ChỉXem [FR-30 / BR-16]
+│       ├── B4.1 Nhận diện thao tác ghi (Thêm / Sửa / Xóa / Kích hoạt)
+│       ├── B4.2 Kiểm tra vai trò của phiên có phải Công an phường hay không
+│       └── B4.3 Nếu là Công an phường gửi thao tác ghi: máy chủ từ chối và báo lỗi rõ ràng
+├── C. PhòngTrọ [FR-01, FR-02, FR-03 / BR-01, BR-12]
+│   ├── C1. ThêmPhòng [FR-01 / BR-01]
+│   │   ├── C1.1 Nhập thông tin phòng
+│   │   │   ├── C1.1.1 Nhập số phòng
+│   │   │   ├── C1.1.2 Nhập giá thuê tháng
+│   │   │   ├── C1.1.3 Nhập sức chứa tối đa (người)
+│   │   │   └── C1.1.4 Nhập mô tả phòng (tầng, tiện ích)
+│   │   ├── C1.2 Kiểm tra hợp lệ phía Server
+│   │   │   ├── C1.2.1 Kiểm tra số phòng không được để trống
+│   │   │   ├── C1.2.2 Kiểm tra giá thuê > 0
+│   │   │   ├── C1.2.3 Kiểm tra sức chứa > 0
+│   │   │   └── C1.2.4 Kiểm tra trùng số phòng trên toàn hệ thống (bắt lỗi MySQL 1062)
+│   │   └── C1.3 Lưu phòng mới
+│   │       ├── C1.3.1 Đặt trạng thái ban đầu là Trống (Trong)
+│   │       └── C1.3.2 Ghi bản ghi vào bảng `phong`
+│   ├── C2. Sửa_XóaPhòng [FR-02 / BR-12]
+│   │   ├── C2.1 Sửa thông tin phòng
+│   │   │   ├── C2.1.1 Chọn phòng cần sửa
+│   │   │   ├── C2.1.2 Cập nhật giá thuê, sức chứa, trạng thái, mô tả
+│   │   │   └── C2.1.3 Lưu thay đổi vào bảng `phong`
+│   │   └── C2.2 Xóa phòng [BR-12]
+│   │       ├── C2.2.1 Chọn phòng cần xóa
+│   │       ├── C2.2.2 Kiểm tra số người đang ở qua khóa ngoại `khach_thue`
+│   │       ├── C2.2.3 Kiểm tra hợp đồng còn hiệu lực qua bảng `hop_dong`
+│   │       ├── C2.2.4 Nếu có người hoặc có hợp đồng: báo lỗi từ chối xóa
+│   │       └── C2.2.5 Nếu phòng trống hoàn toàn: hiển thị hộp thoại xác nhận và xóa
+│   └── C3. Xem_DanhSách_CảnhBáo [FR-03, FR-04]
+│       ├── C3.1 Hiển thị lưới danh sách phòng
+│       │   ├── C3.1.1 Đọc toàn bộ phòng từ bảng `phong` (`PHONG_LAY_TAT_CA`)
+│       │   ├── C3.1.2 Đếm số người đang ở thực tế cho từng phòng
+│       │   └── C3.1.3 Lọc danh sách theo trạng thái (Trống / Đang thuê / Bảo trì)
+│       └── C3.2 Cảnh báo phòng treo hợp đồng
+│           ├── C3.2.1 Đọc song song danh sách hợp đồng hiệu lực (`HOP_DONG_LAY_TAT_CA`)
+│           ├── C3.2.2 Phát hiện phòng có người ở (`soNguoiHienTai > 0`) nhưng không có HĐ HieuLuc
+│           └── C3.2.3 Gắn thẻ cảnh báo cam `Treo HĐ (N người)` nổi bật trên giao diện
+├── D. NgườiThuê [FR-05, FR-06, FR-07, FR-08 / BR-02, BR-03]
+│   ├── D1. ThêmNgườiThuê [FR-05 / BR-02, BR-03]
+│   │   ├── D1.1 Nhập hồ sơ người thuê
+│   │   │   ├── D1.1.1 Nhập họ tên
+│   │   │   ├── D1.1.2 Nhập ngày sinh
+│   │   │   ├── D1.1.3 Nhập số CCCD (12 chữ số)
+│   │   │   ├── D1.1.4 Nhập số điện thoại liên lạc
+│   │   │   ├── D1.1.5 Nhập quê quán và nơi học tập/làm việc
+│   │   │   └── D1.1.6 Chọn phòng trọ gán vào
+│   │   ├── D1.2 Kiểm tra hợp lệ phía Server
+│   │   │   ├── D1.2.1 Kiểm tra trùng CCCD trên toàn hệ thống (bắt lỗi MySQL 1062)
+│   │   │   ├── D1.2.2 Đếm số người hiện tại trong phòng mục tiêu
+│   │   │   └── D1.2.3 Kiểm tra số người hiện tại < Sức chứa tối đa (BR-02)
+│   │   └── D1.3 Lưu hồ sơ người thuê
+│   │       ├── D1.3.1 Băm mật khẩu (mặc định 6 số cuối CCCD nếu để trống)
+│   │       ├── D1.3.2 Ghi bản ghi vào bảng `khach_thue`
+│   │       └── D1.3.3 Cập nhật trạng thái phòng sang Đang thuê (`DaThue`)
+│   ├── D2. Sửa_XóaNgườiThuê [FR-06]
+│   │   ├── D2.1 Sửa hồ sơ người thuê
+│   │   │   ├── D2.1.1 Chọn người thuê cần cập nhật
+│   │   │   ├── D2.1.2 Cập nhật thông tin cá nhân hoặc đặt lại mật khẩu
+│   │   │   └── D2.1.3 Lưu thay đổi vào bảng `khach_thue`
+│   │   └── D2.2 Xóa hồ sơ người thuê
+│   │       ├── D2.2.1 Chọn người thuê cần xóa
+│   │       ├── D2.2.2 Kiểm tra trường `phong_id`: nếu khác NULL thì từ chối xóa
+│   │       └── D2.2.3 Nếu đã trả phòng (`phong_id = NULL`): thực hiện xóa vĩnh viễn
+│   ├── D3. ChuyểnPhòng_TrảPhòng [FR-07]
+│   │   ├── D3.1 Chuyển phòng
+│   │   │   ├── D3.1.1 Chọn phòng mới cho người thuê
+│   │   │   ├── D3.1.2 Kiểm tra phòng mới còn sức chứa
+│   │   │   ├── D3.1.3 Cập nhật `phong_id` mới cho người thuê
+│   │   │   └── D3.1.4 Nếu phòng cũ hết sạch người: chuyển trạng thái phòng cũ về Trống
+│   │   └── D3.2 Trả phòng (`KHACH_THUE_TRA_PHONG`)
+│   │       ├── D3.2.1 Chọn người thuê xác nhận trả phòng
+│   │       ├── D3.2.2 Cập nhật `phong_id = NULL` trong bảng `khach_thue`
+│   │       └── D3.2.3 Nếu phòng không còn ai: chuyển trạng thái phòng về Trống
+│   └── D4. XuấtHồSơ_TạmTrú [FR-08]
+│       ├── D4.1 Lọc danh sách người đang cư trú thực tế
+│       └── D4.2 Xuất file danh sách tạm trú phục vụ nộp cơ quan công an
+├── E. HợpĐồng_QR_CheckIn [FR-09, FR-10, FR-11, FR-25, FR-26 / BR-04..06, BR-18, BR-19]
+│   ├── E1. LậpHợpĐồng [FR-09, FR-25 / BR-04, BR-05, BR-06, BR-18]
+│   │   ├── E1.1 Chọn thông tin hợp đồng
+│   │   │   ├── E1.1.1 Chọn phòng cần lập hợp đồng
+│   │   │   ├── E1.1.2 Chọn người đại diện (khách trong phòng hoặc khách chờ gán phòng)
+│   │   │   ├── E1.1.3 Nhập ngày bắt đầu và ngày kết thúc (> ngày bắt đầu)
+│   │   │   ├── E1.1.4 Nhập giá thuê thỏa thuận và tiền đặt cọc
+│   │   │   └── E1.1.5 Chọn hình thức bàn giao: Trực tiếp (`HieuLuc`) hoặc Chờ nhận phòng QR (`ChoNhanPhong`)
+│   │   ├── E1.2 Kiểm tra điều kiện ở Server
+│   │   │   ├── E1.2.1 Khóa dòng phòng `SELECT ... FOR UPDATE`
+│   │   │   ├── E1.2.2 Kiểm tra phòng chưa có hợp đồng HieuLuc hoặc ChoNhanPhong nào khác (BR-04)
+│   │   │   └── E1.2.3 Nếu bàn giao trực tiếp: kiểm tra người đại diện đã ở trong phòng (BR-05)
+│   │   └── E1.3 Sinh mã và lưu hợp đồng
+│   │       ├── E1.3.1 Nếu là ChoNhanPhong: sinh mã QR CSPRNG 128-bit và mã PIN 8 số ngẫu nhiên
+│   │       ├── E1.3.2 Lưu bản ghi vào bảng `hop_dong`
+│   │       └── E1.3.3 Nếu là HieuLuc: cập nhật phòng sang trạng thái DaThue
+│   ├── E2. BànGiao_InPhiếu_QR [FR-25 / BR-18]
+│   │   ├── E2.1 Xem mã QR & PIN (`HOP_DONG_SINH_QR`)
+│   │   │   ├── E2.1.1 Chủ trọ bấm "Xem QR / PIN..." trên toolbar hợp đồng
+│   │   │   ├── E2.1.2 Server kiểm tra hợp đồng đang ở trạng thái ChoNhanPhong
+│   │   │   └── E2.1.3 Trả về mã QR payload và mã PIN 8 số
+│   │   └── E2.2 Hiển thị & In phiếu bàn giao
+│   │       ├── E2.2.1 Vẽ mã QR lên modal bằng thư viện `qrcode.min.js`
+│   │       ├── E2.2.2 Tải ảnh QR định dạng PNG về máy tính
+│   │       └── E2.2.3 Kích hoạt in phiếu QR/PIN an toàn qua iframe ẩn (tránh bị WebView2 chặn popup)
+│   ├── E3. KháchThuê_NhậnPhòng_QR [FR-26 / BR-19]
+│   │   ├── E3.1 Thu thập mã nhận phòng phía Client
+│   │   │   ├── E3.1.1 Cách 1: Tải file ảnh QR từ máy, giải mã qua canvas + `jsQR.min.js`
+│   │   │   ├── E3.1.2 Cách 2: Bật camera webcam quét trực tiếp thời gian thực (loop 300ms)
+│   │   │   └── E3.1.3 Cách 3: Nhập tay mã PIN 8 số dự phòng
+│   │   └── E3.2 Kích hoạt nhận phòng ở Server (`KHACH_THUE_NHAN_PHONG_QR`)
+│   │       ├── E3.2.1 Mở Transaction, tìm hợp đồng ChoNhanPhong khớp token hoặc PIN (`FOR UPDATE`)
+│   │       ├── E3.2.2 Kiểm tra đúng người đại diện (CCCD từ phiên trùng `nguoi_dai_dien_id`)
+│   │       ├── E3.2.3 Khóa phòng và kiểm tra phòng còn sức chứa
+│   │       ├── E3.2.4 Gán phòng cho khách: `UPDATE khach_thue SET phong_id = @phongId`
+│   │       ├── E3.2.5 Kích hoạt hợp đồng: `UPDATE hop_dong SET trang_thai='HieuLuc', ma_qr_token=NULL, ma_pin=NULL`
+│   │       ├── E3.2.6 Cập nhật phòng: `UPDATE phong SET trang_thai='DaThue' WHERE trang_thai <> 'BaoTri'`
+│   │       └── E3.2.7 Commit Transaction, tải lại giao diện dashboard khách thuê
+│   ├── E4. GiaHạn_ChấmDứt [FR-10]
+│   │   ├── E4.1 Gia hạn hợp đồng (`HOP_DONG_GIA_HAN`)
+│   │   │   ├── E4.1.1 Chọn hợp đồng đang có hiệu lực (HieuLuc)
+│   │   │   ├── E4.1.2 Nhập ngày kết thúc mới (> ngày kết thúc hiện tại)
+│   │   │   └── E4.1.3 Cập nhật trường `ngay_ket_thuc` trong CSDL
+│   │   └── E4.2 Chấm dứt hợp đồng tuân thủ Luật Nhà ở 2023 (`HOP_DONG_CHAM_DUT`)
+│   │       ├── E4.2.1 Chọn hợp đồng cần thanh lý (HieuLuc hoặc ChoNhanPhong)
+│   │       ├── E4.2.2 Nếu hợp đồng còn hạn: bắt buộc nhập lý do chấm dứt hợp pháp
+│   │       ├── E4.2.3 Gợi ý và thiết lập ngày bàn giao dự kiến (mặc định hôm nay + 30 ngày)
+│   │       ├── E4.2.4 Lưu vết ngày thông báo và lý do vào `ghi_chu`: `[TB: ... | Bàn giao: ...] <lý do>`
+│   │       ├── E4.2.5 Cập nhật trạng thái thành `ChamDut`, xóa mã QR/PIN nếu là hợp đồng chờ
+│   │       └── E4.2.6 Giữ nguyên khách trong phòng (không auto-evict) chờ làm thủ tục trả phòng thực tế
+│   └── E5. CảnhBáo_HếtHạn [FR-11]
+│       ├── E5.1 Tính số ngày còn lại của từng hợp đồng so với ngày hiện tại
+│       └── E5.2 Lọc và tô màu cảnh báo hợp đồng sắp hết hạn trong vòng 30 ngày
+├── F. ĐiệnNước [FR-12, FR-13 / BR-07, BR-08]
+│   ├── F1. ChốtChỉSố [FR-12 / BR-07, BR-08]
+│   │   ├── F1.1 Chọn phòng trọ và tháng chốt (yyyy-MM)
+│   │   ├── F1.2 Tự điền chỉ số cũ từ bản ghi chốt của kỳ liền trước (`DIEN_NUOC_LAY_KY_TRUOC`)
+│   │   ├── F1.3 Nhập chỉ số điện mới và chỉ số nước mới
+│   │   ├── F1.4 Nhập đơn giá điện, nước áp dụng cho kỳ
+│   │   ├── F1.5 Chọn hình thức tính tiền nước (theo khối hoặc khoán theo số người)
+│   │   ├── F1.6 Kiểm tra hợp lệ: số mới >= số cũ, đơn giá > 0, chưa chốt trùng tháng
+│   │   └── F1.7 Ghi bản ghi vào bảng `chi_so_dien_nuoc` (`DIEN_NUOC_GHI_SO`)
+│   └── F2. TínhTiền_ĐiệnNước [FR-13]
+│       ├── F2.1 Tính sản lượng tiêu thụ điện và nước
+│       ├── F2.2 Tính thành tiền điện = Sản lượng điện × Đơn giá điện
+│       ├── F2.3 Tính thành tiền nước theo khối hoặc theo số người × Đơn giá nước
+│       └── F2.4 Hiển thị xem trước số tiền tức thì trên giao diện
+├── G. HóaĐơn_ThanhToán [FR-14, FR-15, FR-16, FR-17, FR-27 / BR-08..11, BR-14]
+│   ├── G1. LậpHóaĐơn [FR-14 / BR-08, BR-09, BR-10, BR-13]
+│   │   ├── G1.1 Kiểm tra điều kiện: phòng có HĐ hiệu lực, đã chốt điện nước, chưa lập HĐ tháng này
+│   │   ├── G1.2 Tập hợp các khoản: tiền phòng (từ HĐ), tiền điện, tiền nước, phí dịch vụ khác
+│   │   ├── G1.3 Tính tổng tiền hóa đơn = Tổng các thành phần chi phí
+│   │   └── G1.4 Lưu hóa đơn trạng thái `ChuaThu` vào bảng `hoa_don` (`HOA_DON_TAO`)
+│   ├── G2. Xem_LịchSử_HóaĐơn [FR-15]
+│   │   ├── G2.1 Lọc hóa đơn theo tháng hoặc theo phòng (`HOA_DON_LAY_TAT_CA`)
+│   │   └── G2.2 Xem bảng kê chi tiết từng khoản cấu thành hóa đơn
+│   ├── G3. XácNhận_ThanhToán [FR-16 / BR-11]
+│   │   ├── G3.1 Chọn hóa đơn chưa thu cần xác nhận
+│   │   ├── G3.2 Cập nhật trạng thái `DaThu` và lưu thời điểm thu tiền `ngay_dong = NOW()` (`HOA_DON_THANH_TOAN`)
+│   │   └── G3.3 Khóa bất biến: không cho phép sửa đổi hay xóa hóa đơn đã thu tiền ở tầng CSDL
+│   ├── G4. QuảnLý_CôngNợ [FR-17]
+│   │   ├── G4.1 Lọc danh sách các phòng còn nợ tiền cước theo tháng
+│   │   └── G4.2 Tổng hợp số tiền nợ đọng cần đôn đốc thu hồi
+│   └── G5. KháchThuê_TraCứuCước [FR-27 / BR-14]
+│       ├── G5.1 Server tự suy phòng từ `UserId` phiên đăng nhập của khách (`HOA_DON_CUA_TOI`)
+│       ├── G5.2 Hiển thị bảng kê chi tiết cước tháng này kèm trạng thái nộp tiền
+│       ├── G5.3 Nút sao chép cú pháp chuyển khoản ngân hàng tự động vào clipboard
+│       └── G5.4 Tra cứu lịch sử hóa đơn các tháng trước có phân trang server-side
+├── H. ThốngKê_LưuTrú_CôngAn [FR-18, FR-19, FR-20, FR-29]
+│   ├── H1. ThốngKê_VậnHành [FR-18, FR-19]
+│   │   ├── H1.1 Tính tỷ lệ lấp đầy phòng và tổng số người đang cư trú
+│   │   ├── H1.2 Thống kê doanh thu đã thu và công nợ theo từng tháng
+│   │   └── H1.3 Hiển thị khối KPI trực quan trên bảng điều khiển tổng quan
+│   ├── H2. TraCứu_Nhanh [FR-20]
+│   │   └── H2.1 Tìm kiếm không phân biệt hoa thường theo tên, số phòng, CCCD, số điện thoại
+│   └── H3. NghiệpVụ_CôngAn_Phường [FR-29]
+│       ├── H3.1 Tra cứu danh sách công dân đăng ký tạm trú / lưu trú trên địa bàn
+│       ├── H3.2 Tra cứu tình trạng cư trú theo từng số phòng
+│       ├── H3.3 Xem lịch sử biến động cư trú (`LICH_SU_CU_TRU_LAY`)
+│       └── H3.4 Xuất file báo cáo lịch sử cư trú phục vụ kiểm tra hành chính (`XUAT_LICH_SU_CU_TRU`)
 ```
 
 ---
 
 ## 2. Xác định nhóm chức năng và đối tượng sử dụng
 
-**Ký hiệu đối tượng:**
-- **CT**: Chủ trọ (toàn quyền quản lý).
-- **QL**: Quản lý trọ (toàn quyền trong khu được phân công).
-- **CA**: Công an phường (chỉ xem thông tin lưu trú, cấm ghi).
-- **KH**: Khách thuê (chỉ tra cứu hóa đơn phòng mình).
-- **SV**: Máy chủ (tự động xử lý tính toán, giao dịch, phân quyền).
-
-| Nhóm chức năng | Mã FR bao hàm | Đối tượng sử dụng | Cơ chế kiểm soát tại Server |
+| Nhóm chức năng | Tên nhóm | Mô tả tóm tắt | Đối tượng sử dụng chính |
 |---|---|---|---|
-| **A. Hạ tầng mạng & CSDL** | FR-21, FR-22, NFR-01→05, 08, 09 | Toàn bộ vai trò + SV | Cấp luồng riêng mỗi kết nối; GiaoDich InnoDB; gói JSON có đuôi `\n`. |
-| **B. Xác thực & Phân quyền** | FR-23, FR-26, FR-29, NFR-06, 07, 10 | Toàn bộ vai trò + SV | Băm mật khẩu PBKDF2; khóa 1 phút sau 5 lần sai; chặn theo AreaId; từ chối ghi với CA. |
-| **C. Khu trọ & Phân công** | FR-24, FR-25, FR-27, (FR-04) | CT (ghi/phân công), QL (xem khu mình), CA (xem) | Chỉ Owner được thêm/sửa/xóa khu và phân công; chỉ xóa khu khi không còn phòng (BR-17). |
-| **D. Quản lý phòng trọ** | FR-01, FR-02, FR-03 | CT, QL (khu mình), CA (chỉ xem), SV | Số phòng duy nhất trong khu (BR-01, BR-14); chỉ xóa phòng trống (BR-12). |
-| **E. Người thuê & Tạm trú** | FR-05, FR-06, FR-07, FR-08, FR-28 | CT, QL (khu mình), CA (xem lưu trú), SV | CCCD duy nhất hệ thống (BR-03); kiểm tra sức chứa phòng (BR-02); chỉ xóa khi đã trả phòng. |
-| **F. Quản lý hợp đồng** | FR-09, FR-10, FR-11 | CT, QL (khu mình), CA (chỉ xem), SV | 1 phòng chỉ 1 HĐ hiệu lực (BR-04); người ký phải thuộc phòng (BR-05); ngày KT > ngày BĐ (BR-06). |
-| **G. Điện, nước** | FR-12, FR-13 | CT, QL (khu mình), CA (xem chỉ số), SV | Tự điền số cũ; từ chối số mới < số cũ (BR-07); Server tự nhân đơn giá kỳ (BR-10). |
-| **H. Hóa đơn & Thu tiền** | FR-14, FR-15, FR-16, FR-17, FR-30 | CT, QL (khu mình), KH (chỉ phòng mình), SV | 1 phòng 1 HĐ 1 hóa đơn/tháng (BR-08); cần chốt điện nước (BR-09); HĐ đã thu bất biến (BR-11, BR-18). |
-| **I. Thống kê & Tra cứu** | FR-18, FR-19, FR-20 | CT (toàn khu), QL (khu mình), CA (tra cứu lưu trú) | Máy chủ tính toán tổng hợp; tìm kiếm LIKE không phân biệt hoa thường. |
+| **A** | Hạ tầng mạng & CSDL | Kết nối TCP, giao thức JSON 29 actions, đa luồng, ACID, log console | Hệ thống, Kỹ thuật viên |
+| **B** | Xác thực & Phân quyền | Đăng nhập hợp nhất, khách tự đăng ký, ma trận phân quyền động RBAC, lockout | Tất cả vai trò |
+| **C** | Quản lý phòng trọ | Danh mục phòng, giá, sức chứa, trạng thái, cảnh báo Treo HĐ | Chủ trọ, Quản lý (Công an xem) |
+| **D** | Quản lý người thuê | Hồ sơ người thuê, CCCD, gán phòng, chuyển/trả phòng, xuất tạm trú | Chủ trọ, Quản lý (Công an xem) |
+| **E** | Hợp đồng & QR Check-In | Lập HĐ, sinh QR/PIN 128-bit, khách nhận phòng webcam/PIN, chấm dứt Luật Nhà ở | Chủ trọ, Quản lý, Khách thuê |
+| **F** | Quản lý điện, nước | Ghi chỉ số tháng, tự điền số cũ, tính tiền theo khối hoặc theo người | Chủ trọ, Quản lý (Công an xem) |
+| **G** | Hóa đơn & Thanh toán | Lập hóa đơn, xác nhận thu tiền, quản lý công nợ, khách tra cứu phân trang | Chủ trọ, Quản lý, Khách thuê |
+| **H** | Thống kê & Lưu trú Công an | KPI vận hành, doanh thu, tra cứu nhanh, kiểm tra và xuất lịch sử cư trú | Chủ trọ, Quản lý, Công an phường |
 
 ---
 
-## 3. Phân công công việc chi tiết cho 5 người
+## 3. Phân công trách nhiệm nhóm 5 thành viên
 
-### Phân bổ tổng quan
+Dự án được phân chia thành 5 module độc lập, có ranh giới giao tiếp rõ ràng thông qua hợp đồng giao thức TCP (ActionNames, RequestPacket, ResponsePacket):
 
 ```
-[Nhóm 5 thành viên]
- ├── P1 (Trưởng nhóm): Hạ tầng mạng TCP + Khung CSDL + Điều phối kiến trúc
- ├── P2: Xác thực tài khoản + Quản lý nhiều khu trọ + Phân quyền 4 vai
- ├── P3: Quản lý phòng trọ + Quản lý hồ sơ người thuê + Thủ tục tạm trú
- ├── P4: Vận hành hợp đồng + Chốt điện nước + Lập & Thu hóa đơn
- └── P5: Bảng điều khiển tổng quan + Thống kê báo cáo + Kiểm thử tích hợp
+                   ┌──────────────────────────────────────────────┐
+                   │               MÁY CHỦ SERVER                │
+                   │     TcpListener Server (Cổng 8888)           │
+                   └──────────────────────┬───────────────────────┘
+                                          │ Giao thức JSON qua TCP
+       ┌──────────────────┬───────────────┴──────────────┬──────────────────┐
+       ▼                  ▼                              ▼                  ▼
+┌──────────────┐  ┌──────────────┐                ┌──────────────┐  ┌──────────────┐
+│  Thành viên 1 │  │  Thành viên 2 │                │  Thành viên 3 │  │  Thành viên 4 │
+│  Hạ tầng mạng │  │  Phòng trọ,   │                │  Điện nước,   │  │  Khách thuê, │
+│  & Phân quyền │  │  Người thuê & │                │  Hóa đơn &    │  │  Tự đăng ký &│
+│  (Nhóm A, B)  │  │  Hợp đồng     │                │  Công nợ      │  │  QR Check-in │
+│              │  │  (Nhóm C, D, E)│                │  (Nhóm F, G)  │  │  (Nhóm B2,E3)│
+└──────────────┘  └──────────────┘                └──────────────┘  └──────────────┘
+                                          ▲
+                                          │ Phối hợp kiểm thử
+                                  ┌───────┴──────┐
+                                  │ Thành viên 5 │
+                                  │ Thống kê,    │
+                                  │ Công an lưu  │
+                                  │ trú & Test   │
+                                  │ (Nhóm H)     │
+                                  └──────────────┘
 ```
 
-### Bảng phân công chi tiết từng người
+### Chi tiết phân công từng thành viên
 
-| Thành viên | Trách nhiệm chính | Mã yêu cầu đảm nhiệm | Các file / module phụ trách | Sản phẩm bàn giao cụ thể |
-|---|---|---|---|---|
-| **P1**<br>*(Trưởng nhóm)* | **Hạ tầng mạng TCP, Kiến trúc Server & CSDL** | FR-21, FR-22<br>NFR-01→05<br>NFR-08, 09 | `TcpListenerServer.cs`<br>`ClientHandler.cs`<br>`DieuPhoiYeuCau.cs`<br>`Database.cs`<br>`KhoiTaoSchema.cs`<br>`schema.sql` | 1. Máy chủ TCP console chạy đa luồng ổn định.<br>2. Bộ định tuyến gói tin JSON đóng ngắt bằng `\n`.<br>3. CSDL MySQL 8 bảng hoàn chỉnh với ràng buộc toàn vẹn, giao dịch khóa dòng InnoDB. |
-| **P2** | **Xác thực, Phân quyền & Quản lý khu trọ** | FR-23, FR-24<br>FR-25, FR-26<br>FR-27, FR-29 | `XacThucService.cs`<br>`SessionStore.cs`<br>`MaTranPhanQuyen.cs`<br>`PasswordHasher.cs`<br>`AreaRepository.cs`<br>Giao diện Đăng nhập + Khu trọ | 1. Hệ thống đăng nhập băm mật khẩu, tự khóa 1 phút khi sai 5 lần.<br>2. Kiểm soát phạm vi dữ liệu theo khu cho vai Quản lý trọ.<br>3. Bộ lọc chặn toàn bộ lệnh ghi đối với vai Công an phường.<br>4. Màn hình quản lý danh mục khu trọ và phân công. |
-| **P3** | **Quản lý phòng trọ, Người thuê & Tạm trú** | FR-01→FR-08<br>FR-28<br>BR-01, 02, 03, 12 | `PhongService.cs`<br>`KhachThueService.cs`<br>`PhongRepository.cs`<br>`KhachThueRepository.cs`<br>`RoomsForm.cs`<br>`TenantsForm.cs` | 1. Quản lý phòng trọ: thêm, sửa, xóa an toàn (chỉ xóa phòng trống), đếm người ở thực tế.<br>2. Quản lý hồ sơ người thuê, kiểm tra duy nhất CCCD, kiểm tra sức chứa khi gán/chuyển.<br>3. Màn hình tra cứu lưu trú cho Công an phường và xuất file CSV tạm trú. |
-| **P4** | **Chuỗi tiền: Hợp đồng, Điện nước & Hóa đơn** | FR-09→FR-17<br>FR-30<br>BR-04→11, 13, 18 | `HopDongService.cs`<br>`DienNuocService.cs`<br>`HoaDonService.cs`<br>`ContractsForm.cs`<br>`UtilitiesForm.cs`<br>`InvoicesForm.cs`<br>`MyInvoicesForm.cs` | 1. Lập hợp đồng ràng buộc đại diện phòng, cảnh báo hợp đồng sắp hết hạn trong 30 ngày.<br>2. Chốt chỉ số điện nước tự điền số cũ, máy chủ tự tính tiền theo đơn giá kỳ.<br>3. Lập hóa đơn tổng hợp theo tháng, thu tiền lưu thời gian, khóa bất biến hóa đơn đã thu.<br>4. Màn hình riêng cho Khách thuê tự tra cứu hóa đơn phòng mình. |
-| **P5** | **Bảng điều khiển, Báo cáo & Kiểm thử** | FR-04, FR-18<br>FR-19, FR-20<br>Tích hợp hệ thống | `BaoCaoService.cs`<br>`BaoCaoRepository.cs`<br>`DashboardForm.cs`<br>`ReportsForm.cs`<br>`Form1.cs`<br>`QuanLyTro.Tests` | 1. Bảng điều khiển trung tâm với các thẻ số liệu KPI và danh sách đôn đốc nợ.<br>2. Màn hình thống kê doanh thu theo khoảng tháng và vẽ biểu đồ lấp đầy.<br>3. Chức năng tra cứu nhanh không phân biệt hoa thường.<br>4. Bộ kịch bản kiểm thử tích hợp (Unit test + Integration test) và tài liệu nghiệm thu. |
+#### Thành viên 1: Kiến trúc hạ tầng mạng, Giao thức TCP & Phân quyền động (Trưởng nhóm)
+- **Phụ trách:** Nhóm chức năng A, B (A1, A2, A3, B1, B3, B4).
+- **Công việc cụ thể:**
+  + Xây dựng `TcpListenerServer`, `ClientHandler`, cơ chế cấp Task đa luồng xử lý đồng thời.
+  + Thiết kế giao thức `RequestPacket`, `ResponsePacket`, xử lý phân tách gói tin theo ký tự xuống dòng `\n`.
+  + Xây dựng `SessionStore`, cơ chế khóa dò mật khẩu (Lockout 5 lần).
+  + Cài đặt ma trận phân quyền động (`quyen_vai_tro`, `MaTranPhanQuyen`), sổ cái gieo quyền tự động `quyen_mac_dinh_da_ap_dung`.
+  + Xây dựng cơ chế Console ServerLog có cấu trúc.
+  + Khung giao diện WinForms WebView2 host (`Form1.cs`), cầu nối JavaScript bridge (`window.bridge.call`).
 
-### Kế hoạch phối hợp và thứ tự triển khai
+#### Thành viên 2: Quản lý Phòng trọ, Người thuê & Hợp đồng thuê phòng
+- **Phụ trách:** Nhóm chức năng C, D, E (C1, C2, C3, D1, D2, D3, D4, E1, E4, E5).
+- **Công việc cụ thể:**
+  + Xây dựng CSDL và Repository cho các bảng `phong`, `khach_thue`, `hop_dong`.
+  + Thực thi các ràng buộc nghiệp vụ: số phòng duy nhất (BR-01), sức chứa tối đa (BR-02), CCCD duy nhất (BR-03), chỉ xóa phòng trống (BR-12).
+  + Xây dựng nghiệp vụ lập hợp đồng, gia hạn và chấm dứt hợp đồng tuân thủ Luật Nhà ở 2023 (bắt buộc lý do, ngày bàn giao ≥ 30 ngày).
+  + Xây dựng tính năng cảnh báo thẻ cam `Treo HĐ` trên giao diện danh sách phòng.
+  + Thiết kế giao diện tab Phòng, tab Người thuê, tab Hợp đồng cho shell Chủ trọ/Quản lý.
 
-1. **Tuần 1 (P1 khởi động nền móng):** P1 hoàn thành mô hình CSDL MySQL và khung máy chủ `TcpListenerServer` + giao thức đóng gói gói tin.
-2. **Tuần 2 (P2 dựng khung bảo mật):** P2 phát triển module xác thực `XacThucService`, cấp token, bảng ma trận phân quyền `MaTranPhanQuyen` và phân công khu trọ.
-3. **Tuần 3 & 4 (P3 & P4 xây dựng nghiệp vụ song song):**
-   - P3 hoàn thành các chức năng Phòng và Người thuê.
-   - P4 hoàn thành chuỗi nghiệp vụ Hợp đồng -> Điện nước -> Hóa đơn.
-4. **Tuần 5 (P5 hoàn thiện giao diện tổng hợp & Kiểm thử):** P5 kết nối dữ liệu lên Dashboard, hoàn thiện chức năng Thống kê/Báo cáo và chạy toàn bộ bộ kiểm thử tự động trên nhiều máy trạm đồng thời.
+#### Thành viên 3: Quản lý Điện nước, Lập hóa đơn & Theo dõi công nợ
+- **Phụ trách:** Nhóm chức năng F, G (F1, F2, G1, G2, G3, G4).
+- **Công việc cụ thể:**
+  + Xây dựng CSDL và Repository cho bảng `chi_so_dien_nuoc` và `hoa_don`.
+  + Thực thi các quy tắc: tự điền số cũ (BR-07), mỗi phòng 1 hóa đơn/tháng (BR-08), điều kiện có HĐ hiệu lực và chốt cước (BR-09), tính tổng tiền (BR-10).
+  + Khóa bất biến hóa đơn đã thanh toán ở tầng CSDL (BR-11).
+  + Xây dựng thuật toán tính tiền điện, tiền nước (hỗ trợ tính theo khối hoặc khoán theo số người).
+  + Xây dựng giao diện tab Điện nước, tab Hóa đơn, bộ lọc phòng nợ cước.
 
----
+#### Thành viên 4: Quy trình Tự đăng ký & Nhận phòng số hóa QR / PIN
+- **Phụ trách:** Nhóm chức năng B2, E2, E3, G5.
+- **Công việc cụ thể:**
+  + Xây dựng route công khai `DANG_KY` cho phép khách thuê tự đăng ký tài khoản không cần token.
+  + Tích hợp thuật toán CSPRNG sinh mã token QR 128-bit và mã PIN 8 số trong `HopDongService`.
+  + Tích hợp thư viện `qrcode.min.js` hiển thị và in phiếu QR/PIN bàn giao phòng.
+  + Xây dựng giao diện nhận phòng phía khách thuê: tải ảnh QR, quét webcam trực tiếp qua HTML5 Canvas và `jsQR.min.js`, nhập mã PIN 8 số.
+  + Xây dựng transaction nhận phòng `KHACH_THUE_NHAN_PHONG_QR` an toàn (khóa HĐ, gán phòng, tự hủy token/PIN chống replay).
+  + Xây dựng màn hình tra cứu cước cá nhân của khách thuê (suy phòng từ phiên, phân trang server-side, nút copy chuyển khoản).
 
-*Ghi chú kỹ thuật đã chốt: Không xây dựng màn hình nhập IP máy chủ trên giao diện (nạp tự động từ file cấu hình `App.config`).*
+#### Thành viên 5: Thống kê KPI, Nghiệp vụ Công an & Đảm bảo chất lượng (QA/Tester)
+- **Phụ trách:** Nhóm chức năng H (H1, H2, H3), công tác kiểm thử và tài liệu.
+- **Công việc cụ thể:**
+  + Xây dựng module thống kê công suất lấp đầy, doanh thu thu cước và nợ đọng theo tháng.
+  + Xây dựng shell giao diện chuyên biệt cho Công an phường (`congan/index.html`): tra cứu công dân, tạm trú, xuất lịch sử biến động cư trú.
+  + Đảm bảo cơ chế chặn quyền ghi đối với vai Công an phường (BR-16).
+  + Xây dựng bộ kiểm thử tự động (Unit Test, Integration Test trên MSTest) bao phủ toàn bộ 240 test cases.
+  + Duy trì công cụ kiểm tra tính đồng bộ giao diện `tools/xcheck.js`.
