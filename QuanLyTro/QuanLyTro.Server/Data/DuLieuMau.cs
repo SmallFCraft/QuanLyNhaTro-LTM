@@ -119,25 +119,17 @@ public static class DuLieuMau
 
     private static async Task SeedQuyenMacDinhAsync(MySqlConnection connection, CancellationToken ct)
     {
-        // Kiểm tra theo từng vai trò: nếu bảng đã có dữ liệu nhưng thiếu vai trò mới,
-        // vẫn gieo đủ cho vai trò đó mà không đè cấu hình của vai trò đã tùy biến.
-        const string checkVaiTroSql = "SELECT COUNT(*) FROM quyen_vai_tro WHERE vai_tro = @vaiTro";
-        const string insertSql = "INSERT IGNORE INTO quyen_vai_tro (vai_tro, hanh_dong) VALUES (@vaiTro, @hanhDong)";
+        // Gieo mọi quyền mặc định vào quyen_vai_tro và sổ cái quyen_mac_dinh_da_ap_dung.
+        // Dùng INSERT IGNORE để nếu đã có rồi thì bỏ qua, nếu code thêm quyền mới thì tự động bù.
+        const string insertQuyenSql = "INSERT IGNORE INTO quyen_vai_tro (vai_tro, hanh_dong) VALUES (@vaiTro, @hanhDong)";
+        const string insertSoCaiSql = "INSERT IGNORE INTO quyen_mac_dinh_da_ap_dung (vai_tro, hanh_dong) VALUES (@vaiTro, @hanhDong)";
 
         foreach (var (vaiTro, danhSachHanhDong) in QuyenMacDinhTheoVaiTro.All)
         {
-            await using var checkCmd = new MySqlCommand(checkVaiTroSql, connection);
-            checkCmd.Parameters.AddWithValue("@vaiTro", vaiTro);
-            if (Convert.ToInt64(await checkCmd.ExecuteScalarAsync(ct)) > 0)
-            {
-                // Vai trò này đã có dòng trong DB — không ghi đè cấu hình hiện tại.
-                continue;
-            }
-
             foreach (var hanhDong in danhSachHanhDong)
             {
-                await ExecuteAsync(connection, insertSql, ct,
-                    ("@vaiTro", vaiTro), ("@hanhDong", hanhDong));
+                await ExecuteAsync(connection, insertQuyenSql, ct, ("@vaiTro", vaiTro), ("@hanhDong", hanhDong));
+                await ExecuteAsync(connection, insertSoCaiSql, ct, ("@vaiTro", vaiTro), ("@hanhDong", hanhDong));
             }
         }
     }

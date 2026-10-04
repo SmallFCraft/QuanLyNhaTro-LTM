@@ -4,17 +4,24 @@ const searchKey = () => (searchBox()?.value || '').toLowerCase().trim();
 
 function filterCitizens(rows) {
   const q = searchKey();
-  if (!q) return rows || [];
-  return (rows || []).filter(t =>
-    (t.hoTen || '').toLowerCase().includes(q) ||
-    (t.cccd || '').toLowerCase().includes(q) ||
-    ((t.soDienThoai ?? t.so_dien_thoai) || '').includes(q));
+  const room = document.getElementById('p-room-filter')?.value || '';
+  const status = document.getElementById('p-status-filter')?.value || '';
+  return (rows || []).filter(t => {
+    if (room && String(t.soPhong ?? '') !== room) return false;
+    if (status === 'registered' && !t.daDangKyTamTru) return false;
+    if (status === 'unregistered' && t.daDangKyTamTru) return false;
+    if (!q) return true;
+    return (t.hoTen || '').toLowerCase().includes(q) ||
+      (t.cccd || '').toLowerCase().includes(q) ||
+      ((t.soDienThoai ?? t.so_dien_thoai) || '').includes(q);
+  });
 }
 
 function renderCitizens(rows) {
   const body = document.querySelector('#ptab-citizens tbody');
   if (!body) return;
-  body.innerHTML = filterCitizens(rows).map(t => `
+  const list = filterCitizens(rows);
+  body.innerHTML = list.map(t => `
     <tr>
       <td><b>${esc(t.hoTen)}</b></td>
       <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
@@ -24,6 +31,9 @@ function renderCitizens(rows) {
       <td class="num"><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">
         ${t.daDangKyTamTru ? 'Đã đăng ký' : 'Chưa đăng ký'}</span></td>
     </tr>`).join('') || `<tr class="empty"><td colspan="6">Không có công dân nào</td></tr>`;
+
+  const foot = document.querySelector('#ptab-citizens .tblfoot span');
+  if (foot) foot.textContent = `Tổng: ${list.length} bản ghi`;
 }
 
 async function exportCitizens() {

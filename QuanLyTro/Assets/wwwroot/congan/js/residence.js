@@ -1,8 +1,16 @@
-// Tab Tạm trú (PM-04): chỉ những người CHƯA đăng ký tạm trú.
+// Tab Tạm trú (PM-04): mặc định chỉ người CHƯA đăng ký, đổi được qua dropdown trạng thái.
+function residenceRows(rows) {
+  const room = document.getElementById('p-res-room-filter')?.value || '';
+  const all = document.getElementById('p-res-status-filter')?.value === 'all';
+  return (rows || []).filter(t =>
+    (all || !t.daDangKyTamTru) &&
+    (!room || String(t.soPhong ?? '') === room));
+}
+
 function renderResidence(rows) {
   const body = document.querySelector('#ptab-residence tbody');
   if (!body) return;
-  const pending = (rows || []).filter(t => !t.daDangKyTamTru);
+  const pending = residenceRows(rows);
   body.innerHTML = pending.map(t => `
     <tr>
       <td><b>${esc(t.hoTen)}</b></td>
@@ -11,15 +19,15 @@ function renderResidence(rows) {
       <td>${esc(t.queQuan ?? t.que_quan)}</td>
       <td><b>${esc(t.soPhong)}</b></td>
       <td class="mono">—</td>
-      <td><span class="tag warn">Chưa đăng ký</span></td>
-    </tr>`).join('') || `<tr class="empty"><td colspan="7">Tất cả đã đăng ký tạm trú</td></tr>`;
+      <td><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">${t.daDangKyTamTru ? 'Đã đăng ký' : 'Chưa đăng ký'}</span></td>
+    </tr>`).join('') || `<tr class="empty"><td colspan="7">Không có bản ghi nào</td></tr>`;
 
   const foot = document.querySelector('#ptab-residence .tblfoot span');
-  if (foot) foot.textContent = `Tổng: ${pending.length} chưa đăng ký`;
+  if (foot) foot.textContent = `Tổng: ${pending.length} bản ghi`;
 }
 
 async function exportResidence() {
-  const pending = (policeCache || []).filter(t => !t.daDangKyTamTru);
+  const pending = residenceRows(policeCache);
   if (pending.length === 0) {
     toast('Không có bản ghi chưa đăng ký tạm trú nào để xuất.', 'info');
     return;

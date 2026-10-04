@@ -142,7 +142,9 @@ Dành cho: công an phường (chỉ đọc, giao diện riêng 3 tab).
 Cán bộ công an phường đăng nhập bằng tài khoản được cấp và chỉ thấy màn hình này:
 - **Tab Công dân:** thẻ số liệu (tổng phòng, người lưu trú, đã đăng ký, chưa đăng ký); tìm kiếm theo số CCCD, họ tên (không phân biệt hoa thường) hoặc số điện thoại; xem hồ sơ chi tiết và phòng đang ở.
 - **Tab Tạm trú:** lọc riêng các trường hậu cần chưa đăng ký tạm trú theo từng phòng; xuất danh sách ra file phục vụ công tác kiểm tra hành chính.
-- **Tab Biến động:** chọn khoảng ngày, lọc theo loại biến động (vào, ra, chuyển phòng); xem trước và xuất file báo cáo lịch sử cư trú.
+- **Tab Biến động:** chọn khoảng ngày (mặc định từ đầu tháng hiện tại đến hôm nay), lọc theo loại biến động (**Đang ở**, **Trả phòng**, **Chuyển phòng**); xem trước và xuất file báo cáo lịch sử cư trú.
+
+  Ba thẻ số liệu ở tab Công dân (tổng phòng, người đang lưu trú, đã đăng ký tạm trú, chưa đăng ký) và danh sách phòng trong mọi dropdown đều được nạp động từ máy chủ qua `PHONG_LAY_TAT_CA` và danh sách người thuê — không có số liệu hay mã phòng tĩnh nào trong shell.
 
 Toàn bộ nút thao tác ghi đều bị khóa; máy chủ chặn mọi lệnh sửa đổi dữ liệu từ vai này (quy tắc BR-16). Ngoài ra, công an **không** được xem danh sách khách chưa được gán phòng — chỉ chủ trọ và quản lý mới có quyền xem nhóm này.
 

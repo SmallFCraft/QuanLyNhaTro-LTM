@@ -5,7 +5,7 @@ public sealed record LichSuCuTruDto(
     string HoTen,
     string Cccd,
     string SoPhong,
-    string LoaiBienDong, // "Vào", "Ra", "Chuyển phòng"
+    string LoaiBienDong, // "Đang ở", "Trả phòng", "Chuyển phòng"
     DateTime NgayBienDong,
     string? GhiChu);
 

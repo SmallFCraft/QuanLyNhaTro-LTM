@@ -370,5 +370,5 @@ Dự án được phân chia thành 5 module độc lập, có ranh giới giao 
   + Xây dựng module thống kê công suất lấp đầy, doanh thu thu cước và nợ đọng theo tháng.
   + Xây dựng shell giao diện chuyên biệt cho Công an phường (`congan/index.html`): tra cứu công dân, tạm trú, xuất lịch sử biến động cư trú.
   + Đảm bảo cơ chế chặn quyền ghi đối với vai Công an phường (BR-16).
-  + Xây dựng bộ kiểm thử tự động (Unit Test, Integration Test trên MSTest) bao phủ toàn bộ 240 test cases.
+  + Xây dựng bộ kiểm thử tự động (Unit Test, Integration Test trên MSTest) bao phủ toàn bộ 242 test cases.
   + Duy trì công cụ kiểm tra tính đồng bộ giao diện `tools/xcheck.js`.

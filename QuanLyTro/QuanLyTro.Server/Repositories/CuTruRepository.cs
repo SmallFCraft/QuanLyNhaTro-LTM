@@ -38,8 +38,8 @@ public class CuTruRepository(Database database)
         var result = new List<LichSuCuTruDto>();
         while (await reader.ReadAsync(ct))
         {
-            // Suy loại biến động từ phòng hiện tại: null = đã trả phòng (Ra).
-            var loaiBienDong = reader.IsDBNull(reader.GetOrdinal("phong_id")) ? "Ra" : "Vào";
+            // Suy loại biến động từ phòng hiện tại: null = đã trả phòng.
+            var loaiBienDong = reader.IsDBNull(reader.GetOrdinal("phong_id")) ? "Trả phòng" : "Đang ở";
             var queQuan = reader.IsDBNull(reader.GetOrdinal("que_quan")) ? null : reader.GetString("que_quan");
             result.Add(new LichSuCuTruDto(
                 reader.GetInt32("id"),

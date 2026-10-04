@@ -122,6 +122,50 @@ public sealed class PoliceShellContractTests
             "nút export đầu tiên trong vùng Công dân phải là exportCitizens()");
     }
 
+    /// <summary>
+    /// Đồng bộ dynamic police shell: 4 KPI không giữ số tĩnh, dropdown phòng dựng từ dữ liệu thật,
+    /// footer Công dân đếm từ render, ngày Biến động mặc định từ tháng hiện tại.
+    /// </summary>
+    [TestMethod]
+    public void PoliceShell_DerivesKpisAndFiltersFromLiveData()
+    {
+        var html = File.ReadAllText(PoliceHtml);
+        var mainJs = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "main.js"));
+        var citizensJs = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "citizens.js"));
+        var historyJs = File.ReadAllText(Path.Combine(Wwwroot, "congan", "js", "history.js"));
+
+        // 1. 4 KPI có id động để JS gán từ cache thật.
+        foreach (var id in new[] { "kpi-rooms", "kpi-tenants", "kpi-registered", "kpi-unregistered" })
+        {
+            Assert.IsTrue(html.Contains($"id=\"{id}\""), $"congan/index.html thiếu KPI động id='{id}'");
+        }
+        Assert.IsTrue(mainJs.Contains("renderPoliceKpis"),
+            "congan/js/main.js thiếu renderPoliceKpis() — KPI vẫn là số tĩnh");
+        // Số tĩnh 24/41/36/5 không được nằm trong thẻ .val.
+        Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(html, "class=\"val\">[0-9]"),
+            "congan/index.html vẫn chứa số tĩnh trong thẻ .val — phải để JS gán từ server");
+
+        // 2. Dropdown phòng động: không hard-code P101/P102/P103, có id để JS dựng option.
+        foreach (var id in new[] { "p-room-filter", "p-res-room-filter", "p-hist-room" })
+        {
+            Assert.IsTrue(html.Contains($"id=\"{id}\""), $"congan/index.html thiếu dropdown động id='{id}'");
+        }
+        Assert.IsFalse(html.Contains("<option>P101</option>"),
+            "dropdown phòng công an vẫn hard-code P101 — phải dựng từ PHONG_LAY_TAT_CA");
+        Assert.IsTrue(mainJs.Contains("syncRoomDropdowns"),
+            "congan/js/main.js thiếu syncRoomDropdowns()");
+
+        // 3. Footer Công dân đếm từ render, không dùng số tĩnh.
+        Assert.IsTrue(citizensJs.Contains("#ptab-citizens .tblfoot"),
+            "citizens.js phải cập nhật footer #ptab-citizens theo dữ liệu hiển thị");
+
+        // 4. Ngày mặc định Biến động tính từ tháng hiện tại, không fix 2026-09.
+        Assert.IsFalse(html.Contains("value=\"2026-09-01\"") || html.Contains("value=\"2026-09-30\""),
+            "congan/index.html vẫn fix ngày 2026-09 — historyRange() phải tự tính theo tháng hiện tại");
+        Assert.IsTrue(historyJs.Contains("firstOfMonth"),
+            "history.js phải tự tính ngày đầu tháng hiện tại trong historyRange()");
+    }
+
     /// <summary>Tab Tạm trú phải có nút Xuất danh sách hoạt động, nối sang exportResidence.</summary>
     [TestMethod]
     public void ResidenceTab_ExportButton_ExportsPendingResidence()
