@@ -72,7 +72,7 @@ public sealed class ContractServiceTests
     [TestMethod]
     public async Task ContractService_TerminatePassesNotesAndReportsMissingContract()
     {
-        var repo = new StubContractRepo();
+        var repo = new StubContractRepo { Existing = Contract(11) };
         var service = new HopDongService(repo);
 
         Assert.IsTrue(await service.TerminateAsync(11, "Trả phòng"));
@@ -80,7 +80,29 @@ public sealed class ContractServiceTests
 
         repo.TerminateSucceeds = false;
         await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
-            () => service.TerminateAsync(11, null));
+            () => service.TerminateAsync(11, "Chấm dứt sớm có lý do"));
+    }
+
+    [TestMethod]
+    public async Task ContractService_TerminateEarlyRequiresReason()
+    {
+        // Hợp đồng còn hạn (kết thúc cuối năm) chấm dứt mà không có lý do -> chặn theo Luật Nhà ở 2023 Điều 172
+        var repo = new StubContractRepo { Existing = Contract(11, end: DateOnly.FromDateTime(DateTime.Today.AddMonths(3))) };
+        var service = new HopDongService(repo);
+
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(
+            () => service.TerminateAsync(11, "   "));
+        StringAssert.Contains(ex.Message, "lý do");
+    }
+
+    [TestMethod]
+    public async Task ContractService_TerminateExpiredAllowsEmptyReason()
+    {
+        // Hợp đồng đã quá hạn kết thúc: cho phép chấm dứt dọn dẹp không bắt buộc lý do dài dòng
+        var repo = new StubContractRepo { Existing = Contract(11, start: new DateOnly(2020, 1, 1), end: new DateOnly(2020, 12, 31)) };
+        var service = new HopDongService(repo);
+
+        Assert.IsTrue(await service.TerminateAsync(11, null));
     }
 
     // US-10
@@ -250,7 +272,7 @@ file sealed class StubContractRepo : IHopDongRepository
         return Task.FromResult(Added);
     }
 
-    public Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, CancellationToken ct = default)
+    public Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default)
     {
         TerminateNotes = ghi_chu;
         return Task.FromResult(TerminateSucceeds);

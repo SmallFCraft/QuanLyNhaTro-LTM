@@ -93,7 +93,7 @@ file sealed class FakeHopDongRepo : IHopDongRepository
         return Task.FromResult(Added);
     }
 
-    public Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, CancellationToken ct = default) =>
+    public Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default) =>
         Task.FromResult(true);
 
     public Task<bool> UpdateEndDateAsync(int hopDongId, DateOnly newEndDate, CancellationToken ct = default) =>

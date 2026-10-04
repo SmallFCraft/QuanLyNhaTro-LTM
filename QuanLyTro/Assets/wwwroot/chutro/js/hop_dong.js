@@ -27,6 +27,12 @@ const plusYearIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+const plusDaysIso = (days = 30) => {
+  const d = new Date();
+  d.setDate(d.getDate() + Number(days));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const daysLeft = c => Math.round(
   (new Date(String(c.ngayKetThuc ?? c.endDate).slice(0, 10)) - new Date(todayIso())) / 86400000);
 
@@ -325,11 +331,37 @@ function renewContract(id) {
 function terminateContract(id) {
   const c = findContract(id);
   if (!c) { toast('Vui lòng chọn hợp đồng cần chấm dứt.', 'err'); return; }
+  const conHan = (c.trangThai ?? c.trang_thai) === 'ChoNhanPhong' || daysLeft(c) > 0;
+
+  const fields = [];
+  if (conHan) {
+    fields.push({
+      name: 'ngayBanGiao',
+      label: 'Ngày bàn giao dự kiến (quy định báo trước ≥ 30 ngày)',
+      type: 'date',
+      value: plusDaysIso(30),
+      required: true
+    });
+  }
+  fields.push({
+    name: 'ghiChu',
+    label: conHan
+      ? 'Lý do chấm dứt trước hạn (bắt buộc: nợ tiền 3 tháng, vi phạm nội quy...)'
+      : 'Lý do chấm dứt (tùy chọn)',
+    value: c.ghiChu ?? c.ghi_chu ?? '',
+    required: conHan,
+    placeholder: conHan ? 'Nhập căn cứ chấm dứt hợp đồng...' : 'Để trống nếu không có ghi chú'
+  });
+
   openModal({
-    title: `Chấm dứt — phòng ${c.soPhong ?? c.phongId}`,
-    fields: [{ name: 'ghiChu', label: 'Lý do chấm dứt', value: c.ghiChu ?? c.ghi_chu ?? '' }],
+    title: `Chấm dứt — phòng ${c.soPhong ?? c.phongId}${conHan ? ' (trước hạn)' : ''}`,
+    fields,
     onSubmit: async v => {
-      await window.bridge.call('HOP_DONG_CHAM_DUT', { hopDongId: c.id, ghi_chu: v.ghiChu || null });
+      let ghiChuCombined = (v.ghiChu || '').trim();
+      if (conHan && v.ngayBanGiao) {
+        ghiChuCombined = `[Bàn giao dự kiến: ${v.ngayBanGiao}] ${ghiChuCombined}`.trim();
+      }
+      await window.bridge.call('HOP_DONG_CHAM_DUT', { hopDongId: c.id, ghi_chu: ghiChuCombined || null });
       toast('Đã chấm dứt hợp đồng.', 'ok');
       await loadContracts();
     }

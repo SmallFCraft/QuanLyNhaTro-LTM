@@ -1,9 +1,20 @@
 // Tab Phòng: danh sách + thêm/sửa/xóa. BR-12: chỉ xóa phòng trống.
 let _roomsCache = [];
+let _activeContractsByRoom = new Set();
 
 async function loadRooms() {
   try {
-    _roomsCache = await window.bridge.call('PHONG_LAY_TAT_CA', {}) || [];
+    const [rooms, contracts] = await Promise.all([
+      window.bridge.call('PHONG_LAY_TAT_CA', {}) || [],
+      window.bridge.call('HOP_DONG_LAY_TAT_CA', {}).catch(() => []) || []
+    ]);
+    _roomsCache = rooms || [];
+    _activeContractsByRoom = new Set(
+      (contracts || [])
+        .map(x => x.contract || x.hopDong || x)
+        .filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc')
+        .map(c => Number(c.phongId ?? c.phong_id))
+    );
     renderRooms(_roomsCache);
   } catch (err) {
     toast(err.message, 'err');
@@ -43,17 +54,26 @@ function renderRooms(rows) {
   });
 
   body.innerHTML = list.map(r => {
-    const full = (r.soNguoiHienTai ?? 0) > 0;
+    const count = r.soNguoiHienTai ?? 0;
+    const full = count > 0;
+    const hasActiveContract = _activeContractsByRoom.has(Number(r.id));
+    // Cảnh báo: phòng có người ở nhưng không còn hợp đồng hiệu lực (vừa bị chấm dứt hoặc chưa ký)
+    const treoPhapLy = full && !hasActiveContract;
+
     const st = r.trangThai ?? r.trang_thai;
     const gia = r.giaThue ?? r.gia_thue;
     const moTa = r.moTa ?? r.mo_ta ?? '';
+    const stTag = treoPhapLy
+      ? `<span class="tag warn" title="Phòng có người nhưng không có hợp đồng hiệu lực — cần làm thủ tục trả phòng hoặc ký lại hợp đồng."><i class="fas fa-exclamation-triangle"></i> Treo HĐ (${count} người)</span>`
+      : `<span class="tag ${st === 'DaThue' ? 'rent' : st === 'BaoTri' ? 'warn' : 'avail'}">
+        ${st === 'DaThue' ? 'Đang thuê' : st === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span>`;
+
     return `<tr data-id="${r.id}"${r.id === keep ? ' class="sel"' : ''} onclick="this.parentNode.querySelectorAll('tr').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');refreshRoomToolbar()">
       <td><b>${esc(r.soPhong)}</b></td>
       <td class="num">${fmtMoney(gia)}</td>
       <td class="num">${r.soNguoiToiDa}</td>
-      <td class="num ${full ? 'due-red' : ''}">${r.soNguoiHienTai ?? 0}/${r.soNguoiToiDa}</td>
-      <td><span class="tag ${st === 'DaThue' ? 'rent' : st === 'BaoTri' ? 'warn' : 'avail'}">
-        ${st === 'DaThue' ? 'Đang thuê' : st === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span></td>
+      <td class="num ${full ? 'due-red' : ''}">${count}/${r.soNguoiToiDa}</td>
+      <td>${stTag}</td>
       <td>${esc(moTa)}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editRoom(${r.id})"><i class="fas fa-edit"></i></button>

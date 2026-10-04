@@ -14,7 +14,7 @@ public interface IHopDongRepository
     Task<bool> HasActiveContractAsync(int phongId, CancellationToken ct = default);
     Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default);
     Task<HopDongDto> AddAsync(HopDongDto contract, CancellationToken ct = default);
-    Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, CancellationToken ct = default);
+    Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default);
     Task<bool> UpdateEndDateAsync(int hopDongId, DateOnly newEndDate, CancellationToken ct = default);
     Task<List<MucHopDongItem>> GetAllAsync(CancellationToken ct = default);
 
@@ -109,9 +109,13 @@ public sealed class HopDongRepository(Database database) : IHopDongRepository
         return contract with { Id = id };
     }
 
-    /// <summary>Chấm dứt hợp đồng: trang_thai = 'ChamDut', ghi chú thêm lý do. Nhận cả HieuLuc lẫn ChoNhanPhong.</summary>
-    public async Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, CancellationToken ct = default)
+    /// <summary>Chấm dứt hợp đồng: trang_thai = 'ChamDut', ghi chú thêm ngày thông báo và lý do. Nhận cả HieuLuc lẫn ChoNhanPhong.</summary>
+    public async Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default)
     {
+        var lyDoVoiNgay = string.IsNullOrWhiteSpace(ghi_chu)
+            ? $"Chấm dứt ngày {ngayThongBao:yyyy-MM-dd}"
+            : $"[TB: {ngayThongBao:yyyy-MM-dd}] {ghi_chu.Trim()}";
+
         const string sql = """
             UPDATE hop_dong
             SET trang_thai = 'ChamDut',
@@ -124,7 +128,7 @@ public sealed class HopDongRepository(Database database) : IHopDongRepository
         await using var connection = await database.OpenAsync(ct);
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@id", hopDongId);
-        command.Parameters.AddWithValue("@ghi_chu", (object?)ghi_chu ?? DBNull.Value);
+        command.Parameters.AddWithValue("@ghi_chu", lyDoVoiNgay);
 
         return await command.ExecuteNonQueryAsync(ct) > 0;
     }

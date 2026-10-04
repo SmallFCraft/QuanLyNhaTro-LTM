@@ -104,9 +104,29 @@ public sealed class HopDongService(IHopDongRepository hop_dong)
             contract.Id, contract.MaQrToken, contract.MaPin, DinhDangQrPayload(contract.MaQrToken));
     }
 
+    /// <summary>
+    /// Chấm dứt hợp đồng còn thời hạn = chủ trọ đơn phương chấm dứt sớm (Điều 172 Luật Nhà ở 2023).
+    /// Bắt buộc nhập LÝ DO để lưu thành căn cứ thông báo; hợp đồng phải có lý do hợp lệ mới chấm dứt.
+    /// Lưu cả ngày thông báo để sau này truy vết/thanh toán cước tồn.
+    /// </summary>
     public async Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, CancellationToken ct = default)
     {
-        if (!await hop_dong.TerminateAsync(hopDongId, ghi_chu?.Trim(), ct))
+        var contract = await hop_dong.GetByIdAsync(hopDongId, ct)
+            ?? throw new LoiNghiepVu("Không tìm thấy hợp đồng.");
+
+        if (contract.TrangThai is not (TrangThaiHopDong.HieuLuc or TrangThaiHopDong.ChoNhanPhong))
+        {
+            throw new LoiNghiepVu("Chỉ chấm dứt được hợp đồng đang hiệu lực hoặc đang chờ nhận phòng.");
+        }
+
+        var canhHiep = contract.TrangThai == TrangThaiHopDong.ChoNhanPhong
+            || contract.NgayKetThuc > DateOnly.FromDateTime(DateTime.Today);
+        if (canhHiep && string.IsNullOrWhiteSpace(ghi_chu))
+        {
+            throw new LoiNghiepVu("Chấm dứt hợp đồng còn thời hạn phải ghi rõ lý do (nợ tiền thuê 3 tháng, dùng sai mục đích, tự ý cải tạo...).");
+        }
+
+        if (!await hop_dong.TerminateAsync(hopDongId, ghi_chu?.Trim(), DateOnly.FromDateTime(DateTime.Today), ct))
         {
             throw new LoiNghiepVu("Không tìm thấy hợp đồng có thể chấm dứt (đang hiệu lực hoặc chờ nhận phòng).");
         }
