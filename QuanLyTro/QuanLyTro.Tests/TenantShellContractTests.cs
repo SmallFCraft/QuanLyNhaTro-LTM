@@ -9,14 +9,22 @@ namespace QuanLyTro.Tests;
 [TestClass]
 public sealed class TenantShellContractTests
 {
-    // Toàn bộ action ghi — shell khách thuê chỉ đọc.
-    private static readonly string[] WriteActions =
+    // Shell khách thuê chỉ được gọi đúng 2 action: 1 đọc hóa đơn, 1 check-in QR (BR-17/18/19).
+    private static readonly HashSet<string> AllowedActions = new(StringComparer.Ordinal)
     {
-        "HOA_DON_THANH_TOAN", "PHONG_THEM", "PHONG_XOA", "PHONG_CAP_NHAT",
-        "KHACH_THUE_CAP_NHAT", "KHACH_THUE_XOA", "KHACH_THUE_THEM",
-        "HOP_DONG_TAO", "HOP_DONG_CHAM_DUT", "HOP_DONG_GIA_HAN",
-        "DIEN_NUOC_GHI_SO", "PHAN_QUYEN_CAP_NHAT_VAI_TRO",
+        "HOA_DON_CUA_TOI", "KHACH_THUE_NHAN_PHONG_QR",
     };
+
+    /// <summary>Mọi literal tên action (CHU_HOA_CO_GACH) truyền vào bridge.call(...) trong file JS.</summary>
+    private static HashSet<string> GetBridgeCallActions(string js)
+    {
+        var actions = new HashSet<string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(js, "bridge\\s*\\.\\s*call\\s*\\(\\s*['\"]([A-Z][A-Z0-9_]*)['\"]"))
+        {
+            actions.Add(m.Groups[1].Value);
+        }
+        return actions;
+    }
 
     private static string Wwwroot =>
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "wwwroot");
@@ -49,7 +57,7 @@ public sealed class TenantShellContractTests
     }
 
     [TestMethod]
-    public void TenantShell_HasSingleTab_AndNoWriteButtons()
+    public void TenantShell_TabsAndNoWriteButtons()
     {
         var html = TenantHtml;
 
@@ -62,14 +70,16 @@ public sealed class TenantShellContractTests
             "Tập data-tab của #tenantTabs phải đúng {overview, current, history}; nhận: {"
             + string.Join(", ", actual) + "}");
 
-        Assert.IsFalse(Regex.IsMatch(html, "data-write\\s*=\\s*\"true\"", RegexOptions.IgnoreCase),
+        Assert.IsFalse(Regex.IsMatch(html, "data-write\\s*=\\s*['\"]?true", RegexOptions.IgnoreCase),
             "Shell khách thuê không được có attribute data-write=\"true\"");
 
-        var js = TenantJs;
-        foreach (var action in WriteActions)
-        {
-            Assert.IsFalse(js.Contains(action), $"khach_thue.js không được chứa action ghi: {action}");
-        }
+        // Allowlist: action thứ 13 hay tên gõ sai cũng bắt đỏ — chặn theo danh sách known-bad thì kẽ hở.
+        var used = GetBridgeCallActions(TenantJs);
+        Assert.IsTrue(used.IsSubsetOf(AllowedActions),
+            "khach_thue.js gọi action ngoài allowlist {HOA_DON_CUA_TOI, KHACH_THUE_NHAN_PHONG_QR}; nhận: {"
+            + string.Join(", ", used) + "}");
+        Assert.IsTrue(used.Contains("KHACH_THUE_NHAN_PHONG_QR"),
+            "khach_thue.js phải có action check-in QR KHACH_THUE_NHAN_PHONG_QR");
     }
 
     [TestMethod]
@@ -80,8 +90,8 @@ public sealed class TenantShellContractTests
         Assert.IsTrue(tabs.Count > 0, "Không trích được data-tab nào — test sẽ xanh vô nghĩa");
         foreach (var tab in tabs)
         {
-            Assert.IsTrue(html.Contains($"id=\"tab-{tab}\""),
-                $"Tab \"{tab}\" trong #tenantTabs thiếu section id=\"tab-{tab}\"");
+            Assert.IsTrue(html.Contains($"<section id=\"tab-{tab}\""),
+                $"Tab \"{tab}\" trong #tenantTabs thiếu <section id=\"tab-{tab}\">");
         }
     }
 
