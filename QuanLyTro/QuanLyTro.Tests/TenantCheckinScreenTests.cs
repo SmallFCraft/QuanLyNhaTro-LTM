@@ -108,6 +108,7 @@ public sealed class TenantShellDataTests
     private const string RoomNumber = "P931";
     private const string TenantCccd = "999999999231";
     private const string KyCuoc = "2099-07";
+    private const string KyCuocMoiHon = "2099-08";
 
     [TestMethod]
     public async Task GetByTenantAsync_TraHopDongDangHieuLucVaChiSoKy()
@@ -124,7 +125,10 @@ public sealed class TenantShellDataTests
         Assert.AreEqual(new DateOnly(2099, 1, 1), dto.HopDong.NgayBatDau);
         Assert.AreEqual(new DateOnly(2099, 12, 31), dto.HopDong.NgayKetThuc);
 
-        Assert.IsNotNull(dto.ChiSoKyNay, "Có chỉ số đã chốt của phòng thì ChiSoKyNay phải khác null.");
+        Assert.IsTrue(dto.DanhSach.Count > 0, "Phải có hóa đơn để gắn chỉ số kỳ.");
+        Assert.IsNotNull(dto.ChiSoKyNay, "Có chỉ số đã chốt của kỳ hóa đơn thì ChiSoKyNay phải khác null.");
+        Assert.AreEqual(dto.DanhSach[0].KyCuoc, dto.ChiSoKyNay.KyCuoc,
+            "ChiSoKyNay phải gắn với kỳ của hóa đơn đang hiển thị, không phải kỳ mới nhất của phòng.");
         Assert.AreEqual(KyCuoc, dto.ChiSoKyNay.KyCuoc);
         Assert.AreEqual(100, dto.ChiSoKyNay.DienCu);
         Assert.AreEqual(150, dto.ChiSoKyNay.DienMoi);
@@ -136,6 +140,21 @@ public sealed class TenantShellDataTests
         // Hành vi cũ giữ nguyên.
         Assert.AreEqual(RoomId, dto.PhongId);
         Assert.AreEqual(RoomNumber, dto.SoPhong);
+    }
+
+    [TestMethod]
+    public async Task GetByTenantAsync_ChiSoKyNay_LoaiBoChiSoKyKhac()
+    {
+        var khachThueId = await SeedTenantWithContractAsync();
+
+        var repo = new QuanLyTro.Server.Repositories.HoaDonRepository(Db);
+        var dto = await repo.GetByTenantAsync(khachThueId, 1, 10);
+
+        Assert.IsTrue(dto.DanhSach.Count > 0);
+        Assert.IsNotNull(dto.ChiSoKyNay);
+        Assert.AreEqual(dto.DanhSach[0].KyCuoc, dto.ChiSoKyNay.KyCuoc);
+        Assert.AreNotEqual(KyCuocMoiHon, dto.ChiSoKyNay.KyCuoc,
+            "Chỉ số của kỳ khác (dù mới hơn) không được lọt vào ChiSoKyNay.");
     }
 
     [TestMethod]
@@ -205,22 +224,45 @@ public sealed class TenantShellDataTests
         }
 
         await using (var cmd = new MySqlCommand(
-            "DELETE FROM hop_dong WHERE phong_id = @phongId", conn))
+            "DELETE FROM hoa_don WHERE phong_id = @phongId", conn))
         {
             cmd.Parameters.AddWithValue("@phongId", RoomId);
             await cmd.ExecuteNonQueryAsync();
         }
 
         await using (var cmd = new MySqlCommand(
+            "DELETE FROM hop_dong WHERE phong_id = @phongId", conn))
+        {
+            cmd.Parameters.AddWithValue("@phongId", RoomId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        int hopDongId;
+        await using (var cmd = new MySqlCommand(
             """
             INSERT INTO hop_dong (phong_id, nguoi_dai_dien_id, ngay_bat_dau, ngay_ket_thuc,
                                   gia_thue, tien_coc, trang_thai, ghi_chu)
             VALUES (@phongId, @khachThueId, '2099-01-01', '2099-12-31',
-                    3000000, 1500000, 'HieuLuc', 'TenantShellDataTests')
+                    3000000, 1500000, 'HieuLuc', 'TenantShellDataTests');
+            SELECT LAST_INSERT_ID();
             """, conn))
         {
             cmd.Parameters.AddWithValue("@phongId", RoomId);
             cmd.Parameters.AddWithValue("@khachThueId", khachThueId);
+            hopDongId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        }
+
+        // Hóa đơn kỳ KyCuoc — chỉ số phải khớp đúng kỳ này.
+        await using (var cmd = new MySqlCommand(
+            """
+            INSERT INTO hoa_don (phong_id, hop_dong_id, ky_cuoc, tien_phong, tien_dien,
+                                 tien_nuoc, phi_khac, tong_tien, trang_thai)
+            VALUES (@phongId, @hopDongId, @kyCuoc, 3000000, 175000, 50000, 0, 3225000, 'ChuaThu')
+            """, conn))
+        {
+            cmd.Parameters.AddWithValue("@phongId", RoomId);
+            cmd.Parameters.AddWithValue("@hopDongId", hopDongId);
+            cmd.Parameters.AddWithValue("@kyCuoc", KyCuoc);
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -237,6 +279,20 @@ public sealed class TenantShellDataTests
             await cmd.ExecuteNonQueryAsync();
         }
 
+        // Kỳ mới hơn nhưng KHÔNG có hóa đơn — không được lọt vào ChiSoKyNay.
+        await using (var cmd = new MySqlCommand(
+            """
+            INSERT INTO chi_so_dien_nuoc (phong_id, ky_cuoc, dien_cu, dien_moi, gia_dien,
+                                          nuoc_cu, nuoc_moi, gia_nuoc, hinh_thuc_nuoc, so_nguoi_nuoc)
+            VALUES (@phongId, @kyCuoc, 999, 9999, 9999, 99, 999, 9999, 'Khoi', 0)
+            ON DUPLICATE KEY UPDATE dien_cu = 999, dien_moi = 9999
+            """, conn))
+        {
+            cmd.Parameters.AddWithValue("@phongId", RoomId);
+            cmd.Parameters.AddWithValue("@kyCuoc", KyCuocMoiHon);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
         return khachThueId;
     }
 
@@ -246,6 +302,12 @@ public sealed class TenantShellDataTests
         try
         {
             await using var conn = await Db.OpenAsync();
+            await using (var cmd = new MySqlCommand("DELETE FROM hoa_don WHERE phong_id = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", RoomId);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
             await using (var cmd = new MySqlCommand("DELETE FROM hop_dong WHERE phong_id = @id", conn))
             {
                 cmd.Parameters.AddWithValue("@id", RoomId);

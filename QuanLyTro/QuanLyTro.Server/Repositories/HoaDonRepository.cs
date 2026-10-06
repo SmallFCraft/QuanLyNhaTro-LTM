@@ -300,20 +300,22 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             }
         }
 
+        // Chỉ số gắn với hóa đơn đang hiển thị (DanhSach[0] = kỳ mới nhất của trang),
+        // không phải kỳ mới nhất của phòng — số liệu phải khớp đúng tờ hóa đơn trên màn hình.
         ChiSoKyNayDto? chiSoKyNay = null;
-        if (phongId is { } room)
+        if (phongId is { } room && hoa_don.Count > 0)
         {
             const string chiSoSql = """
                 SELECT ky_cuoc, dien_cu, dien_moi, gia_dien, nuoc_cu, nuoc_moi, gia_nuoc,
                        COALESCE(hinh_thuc_nuoc, 'Khoi') AS hinh_thuc_nuoc,
                        COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
                 FROM chi_so_dien_nuoc
-                WHERE phong_id = @phongId
-                ORDER BY ky_cuoc DESC
+                WHERE phong_id = @phongId AND ky_cuoc = @kyCuoc
                 LIMIT 1
                 """;
             await using var chiSoCmd = new MySqlCommand(chiSoSql, connection);
             chiSoCmd.Parameters.AddWithValue("@phongId", room);
+            chiSoCmd.Parameters.AddWithValue("@kyCuoc", hoa_don[0].KyCuoc);
             await using var chiSoReader = await chiSoCmd.ExecuteReaderAsync(ct);
             if (await chiSoReader.ReadAsync(ct))
             {

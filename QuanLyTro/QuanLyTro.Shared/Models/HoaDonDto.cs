@@ -36,7 +36,7 @@ public sealed record HopDongCuaToiDto(
     decimal TienCoc
 );
 
-/// <summary>Chỉ số điện nước đã chốt của kỳ cước đang xem — để khách tự kiểm tra cách tính.</summary>
+/// <summary>Chỉ số điện nước đã chốt của hóa đơn đang hiển thị — để khách tự kiểm tra cách tính.</summary>
 public sealed record ChiSoKyNayDto(
     string KyCuoc,
     int DienCu,
