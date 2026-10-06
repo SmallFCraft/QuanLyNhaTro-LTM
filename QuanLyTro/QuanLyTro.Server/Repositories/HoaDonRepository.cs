@@ -258,21 +258,80 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             LEFT JOIN phong r ON r.id = t.phong_id
             WHERE t.id = @khachThueId
             """;
-        await using var roomCmd = new MySqlCommand(roomSql, connection);
-        roomCmd.Parameters.AddWithValue("@khachThueId", khachThueId);
-        await using var roomReader = await roomCmd.ExecuteReaderAsync(ct);
-
         int? phongId = null;
         string? soPhong = null;
-        if (await roomReader.ReadAsync(ct) && !roomReader.IsDBNull(roomReader.GetOrdinal("phong_id")))
+        await using (var roomCmd = new MySqlCommand(roomSql, connection))
         {
-            phongId = roomReader.GetInt32("phong_id");
-            soPhong = roomReader.IsDBNull(roomReader.GetOrdinal("so_phong"))
-                ? null
-                : roomReader.GetString("so_phong");
+            roomCmd.Parameters.AddWithValue("@khachThueId", khachThueId);
+            await using var roomReader = await roomCmd.ExecuteReaderAsync(ct);
+            if (await roomReader.ReadAsync(ct) && !roomReader.IsDBNull(roomReader.GetOrdinal("phong_id")))
+            {
+                phongId = roomReader.GetInt32("phong_id");
+                soPhong = roomReader.IsDBNull(roomReader.GetOrdinal("so_phong"))
+                    ? null
+                    : roomReader.GetString("so_phong");
+            }
         }
 
-        return new TrangHoaDonCuaToiDto(hoa_don, tongSo, safePage, safePageSize, phongId, soPhong);
+        HopDongCuaToiDto? hopDong = null;
+        const string hopDongSql = """
+            SELECT c.id, c.ngay_bat_dau, c.ngay_ket_thuc, c.gia_thue, c.tien_coc, r.so_phong
+            FROM hop_dong c
+            LEFT JOIN phong r ON r.id = c.phong_id
+            WHERE c.nguoi_dai_dien_id = @khachThueId AND c.trang_thai = 'HieuLuc'
+            ORDER BY c.ngay_bat_dau DESC
+            LIMIT 1
+            """;
+        await using (var hopDongCmd = new MySqlCommand(hopDongSql, connection))
+        {
+            hopDongCmd.Parameters.AddWithValue("@khachThueId", khachThueId);
+            await using var hopDongReader = await hopDongCmd.ExecuteReaderAsync(ct);
+            if (await hopDongReader.ReadAsync(ct))
+            {
+                hopDong = new HopDongCuaToiDto(
+                    hopDongReader.GetInt32("id"),
+                    hopDongReader.IsDBNull(hopDongReader.GetOrdinal("so_phong"))
+                        ? null
+                        : hopDongReader.GetString("so_phong"),
+                    hopDongReader.GetDateOnly("ngay_bat_dau"),
+                    hopDongReader.GetDateOnly("ngay_ket_thuc"),
+                    hopDongReader.GetDecimal("gia_thue"),
+                    hopDongReader.GetDecimal("tien_coc"));
+            }
+        }
+
+        ChiSoKyNayDto? chiSoKyNay = null;
+        if (phongId is { } room)
+        {
+            const string chiSoSql = """
+                SELECT ky_cuoc, dien_cu, dien_moi, gia_dien, nuoc_cu, nuoc_moi, gia_nuoc,
+                       COALESCE(hinh_thuc_nuoc, 'Khoi') AS hinh_thuc_nuoc,
+                       COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
+                FROM chi_so_dien_nuoc
+                WHERE phong_id = @phongId
+                ORDER BY ky_cuoc DESC
+                LIMIT 1
+                """;
+            await using var chiSoCmd = new MySqlCommand(chiSoSql, connection);
+            chiSoCmd.Parameters.AddWithValue("@phongId", room);
+            await using var chiSoReader = await chiSoCmd.ExecuteReaderAsync(ct);
+            if (await chiSoReader.ReadAsync(ct))
+            {
+                chiSoKyNay = new ChiSoKyNayDto(
+                    chiSoReader.GetString("ky_cuoc"),
+                    chiSoReader.GetInt32("dien_cu"),
+                    chiSoReader.GetInt32("dien_moi"),
+                    chiSoReader.GetDecimal("gia_dien"),
+                    chiSoReader.GetInt32("nuoc_cu"),
+                    chiSoReader.GetInt32("nuoc_moi"),
+                    chiSoReader.GetDecimal("gia_nuoc"),
+                    chiSoReader.GetString("hinh_thuc_nuoc"),
+                    chiSoReader.GetInt32("so_nguoi_nuoc"));
+            }
+        }
+
+        return new TrangHoaDonCuaToiDto(
+            hoa_don, tongSo, safePage, safePageSize, phongId, soPhong, hopDong, chiSoKyNay);
     }
 
     private static HoaDonDto Map(MySqlDataReader reader) => new(

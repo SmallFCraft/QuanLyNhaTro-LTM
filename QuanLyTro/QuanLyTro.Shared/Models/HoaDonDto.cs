@@ -21,5 +21,30 @@ public sealed record TrangHoaDonCuaToiDto(
     int Trang,
     int SoLuongMoiTrang,
     int? PhongId = null,
-    string? SoPhong = null
+    string? SoPhong = null,
+    HopDongCuaToiDto? HopDong = null,
+    ChiSoKyNayDto? ChiSoKyNay = null
+);
+
+/// <summary>Hợp đồng đang hiệu lực của khách — shell khách thuê hiển thị hạn + giá thuê.</summary>
+public sealed record HopDongCuaToiDto(
+    int Id,
+    string? SoPhong,
+    DateOnly NgayBatDau,
+    DateOnly NgayKetThuc,
+    decimal GiaThue,
+    decimal TienCoc
+);
+
+/// <summary>Chỉ số điện nước đã chốt của kỳ cước đang xem — để khách tự kiểm tra cách tính.</summary>
+public sealed record ChiSoKyNayDto(
+    string KyCuoc,
+    int DienCu,
+    int DienMoi,
+    decimal GiaDien,
+    int NuocCu,
+    int NuocMoi,
+    decimal GiaNuoc,
+    string HinhThucNuoc,
+    int SoNguoiNuoc
 );
