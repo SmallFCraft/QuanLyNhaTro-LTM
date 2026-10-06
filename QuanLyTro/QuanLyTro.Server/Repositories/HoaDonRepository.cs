@@ -312,22 +312,24 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
                 FROM chi_so_dien_nuoc
                 WHERE phong_id = @phongId AND ky_cuoc = @kyCuoc
                 """;
-            await using var chiSoCmd = new MySqlCommand(chiSoSql, connection);
-            chiSoCmd.Parameters.AddWithValue("@phongId", room);
-            chiSoCmd.Parameters.AddWithValue("@kyCuoc", hoa_don[0].KyCuoc);
-            await using var chiSoReader = await chiSoCmd.ExecuteReaderAsync(ct);
-            if (await chiSoReader.ReadAsync(ct))
+            await using (var chiSoCmd = new MySqlCommand(chiSoSql, connection))
             {
-                chiSoKyNay = new ChiSoKyNayDto(
-                    chiSoReader.GetString("ky_cuoc"),
-                    chiSoReader.GetInt32("dien_cu"),
-                    chiSoReader.GetInt32("dien_moi"),
-                    chiSoReader.GetDecimal("gia_dien"),
-                    chiSoReader.GetInt32("nuoc_cu"),
-                    chiSoReader.GetInt32("nuoc_moi"),
-                    chiSoReader.GetDecimal("gia_nuoc"),
-                    chiSoReader.GetString("hinh_thuc_nuoc"),
-                    chiSoReader.GetInt32("so_nguoi_nuoc"));
+                chiSoCmd.Parameters.AddWithValue("@phongId", room);
+                chiSoCmd.Parameters.AddWithValue("@kyCuoc", hoa_don[0].KyCuoc);
+                await using var chiSoReader = await chiSoCmd.ExecuteReaderAsync(ct);
+                if (await chiSoReader.ReadAsync(ct))
+                {
+                    chiSoKyNay = new ChiSoKyNayDto(
+                        chiSoReader.GetString("ky_cuoc"),
+                        chiSoReader.GetInt32("dien_cu"),
+                        chiSoReader.GetInt32("dien_moi"),
+                        chiSoReader.GetDecimal("gia_dien"),
+                        chiSoReader.GetInt32("nuoc_cu"),
+                        chiSoReader.GetInt32("nuoc_moi"),
+                        chiSoReader.GetDecimal("gia_nuoc"),
+                        chiSoReader.GetString("hinh_thuc_nuoc"),
+                        chiSoReader.GetInt32("so_nguoi_nuoc"));
+                }
             }
         }
 
