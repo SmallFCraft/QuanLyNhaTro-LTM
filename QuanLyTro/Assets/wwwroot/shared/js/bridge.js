@@ -48,7 +48,7 @@ if (window.chrome && window.chrome.webview) {
         tongSo: SAMPLE.length, page, soLuongMoiTrang: size,
         phongId: 102, soPhong: '102',
         hopDong: { id: 1, soPhong: '102', ngayBatDau: '2026-01-05', ngayKetThuc: '2026-09-22', giaThue: 2000000, tienCoc: 2000000 },
-        chiSoKyNay: { kyCuoc: '2026-09', dienCu: 1240, dienMoi: 1285, giaDien: 3500, nuocCu: 12, nuocMoi: 15, giaNuoc: 12000, hinhThucNuoc: 'DongHo', soNguoiNuoc: 2 }
+        chiSoKyNay: { kyCuoc: '2026-09', dienCu: 1240, dienMoi: 1285, giaDien: 3500, nuocCu: 12, nuocMoi: 15, giaNuoc: 12000, hinhThucNuoc: 'Khoi', soNguoiNuoc: 2 }
       });
     }
     return Promise.resolve({});

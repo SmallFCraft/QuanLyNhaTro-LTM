@@ -130,6 +130,17 @@ public sealed class TenantShellContractTests
             "index.html không được chứa sẵn <svg> — biểu đồ phải sinh trong JS");
     }
 
+    /// <summary>Ruling controller: chart vẽ SẢN LƯỢNG (kWh/khối), không phải tiền — tổng đ phải biến mất khỏi <title>.</summary>
+    [TestMethod]
+    public void TenantJs_ChartPlotsQuantitiesNotMoney()
+    {
+        var js = TenantJs;
+        Assert.IsTrue(js.Contains("elecQty"), "buildTenantChart phải tính sản lượng điện (kWh), không dùng trực tiếp tienDien");
+        Assert.IsFalse(js.Contains("tổng ${fmtMoney(sum)} đ"),
+            "<title> của chart không được trình bày tổng tiền (đ) — dấu hiệu chart đang vẽ theo tiền");
+        Assert.IsTrue(js.Contains("kWh điện"), "chart <title> phải nêu đơn vị sản lượng");
+    }
+
     /// <summary>Ruling A: mỗi KPI Tiện ích phải có sub ghi phạm vi — 4 KPI, không số nào trần.</summary>
     [TestMethod]
     public void TenantJs_UtilityKpisCarryScopeSub()

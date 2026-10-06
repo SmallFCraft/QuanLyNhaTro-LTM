@@ -391,8 +391,8 @@ function renderTenantHistory(rows) {
   const body = document.getElementById('tenant-history-body');
   if (body) {
     body.innerHTML = list.map(i => `
-      <tr class="clickable-row" onclick="showInvoiceDetail(${Number(i.id)})" title="Bấm để xem chi tiết kỳ ${esc(i.kyCuoc)}">
-        <td class="mono" data-label="Kỳ cước">${esc(i.kyCuoc)}</td>
+      <tr class="clickable-row" onclick="showInvoiceDetail(${Number(i.id)})" title="Bấm để xem chi tiết kỳ ${esc(fmtKyCuoc(i.kyCuoc))}" aria-label="Kỳ ${esc(fmtKyCuoc(i.kyCuoc))}">
+        <td class="mono" data-label="Kỳ cước">${esc(fmtKyCuoc(i.kyCuoc))}</td>
         <td class="num amount" data-label="Tổng tiền">${fmtMoney(i.tongTien)}</td>
         <td class="mono" data-label="Ngày đóng">${isPaidInvoice(i) ? fmtDate(i.ngayDong) : '—'}</td>
         <td class="num" data-label="Trạng thái"><span class="tag ${isPaidInvoice(i) ? 'paid' : 'unpaid'}">
@@ -456,6 +456,10 @@ async function refreshTenantSummary() {
   try {
     const res = await window.bridge.call('HOA_DON_CUA_TOI', { page: 1, soLuongMoiTrang: 1 });
     const dto = normalizeHistoryDto(res);
+    // Đồng bộ chỉ số/hợp đồng của ĐÚNG trang 1 trước khi vẽ: nếu không, tổng tiền kỳ mới nhất
+    // bị ghép với chỉ số của kỳ trang cũ → khách tự kiểm tra phép tính sẽ ra số sai.
+    if (dto && dto.hopDong) tenantHopDong = dto.hopDong;
+    if (dto && dto.chiSoKyNay) tenantChiSo = dto.chiSoKyNay;
     const latest = (dto && dto.items && dto.items[0]) || currentTenantInvoices[0];
     if (latest) { renderTenantSummary(latest); return; }
   } catch (err) {
@@ -507,7 +511,7 @@ function renderTenantSummary(unpaid) {
   setText('rc-total', fmtMoney(unpaid.tongTien));
   const paid = isPaidInvoice(unpaid);
   setText('rc-code', `MÃ SỐ BẢNG KÊ: HD-${String(unpaid.kyCuoc || '').replace('-', '')}-${unpaid.phongId || unpaid.id}`);
-  setText('rc-title', `Chi tiết quyết toán cước tháng ${String(unpaid.kyCuoc || '').replace('-', '/')}`);
+  setText('rc-title', `Chi tiết quyết toán cước tháng ${fmtKyCuoc(unpaid.kyCuoc)}`);
   setTag('rc-trang_thai-tag', paid, 'Đã thanh toán', 'Chưa thanh toán');
   setTag('rc-due-tag', !paid, 'Chưa thu', 'Đã thu');
 
@@ -516,7 +520,7 @@ function renderTenantSummary(unpaid) {
   setText('ov-elec', cs ? fmtMoney(cs.dienMoi - cs.dienCu) : '0');
   // Nước đổi đơn vị theo hình thức: theo khối (m³) hoặc theo đầu người.
   if (cs) {
-    const per = cs.hinhThucNuoc === 'Nguoi';
+    const per = String(cs.hinhThucNuoc || '').toLowerCase() === 'nguoi';
     setText('ov-nuoc', fmtMoney(per ? cs.soNguoiNuoc : cs.nuocMoi - cs.nuocCu));
     setText('ov-nuoc-unit', per ? 'người' : 'khối');
     setText('ov-nuoc-sub', `${per ? `${fmtMoney(cs.soNguoiNuoc)} người × ${fmtMoney(cs.giaNuoc)} đ` : `${fmtMoney(cs.nuocCu)} → ${fmtMoney(cs.nuocMoi)} khối × ${fmtMoney(cs.giaNuoc)} đ`}`);
@@ -561,7 +565,7 @@ function showInvoiceDetail(id) {
   const paid = isPaidInvoice(target);
   if (typeof openModal === 'function') {
     openModal({
-      title: `Chi tiết kỳ cước ${target.kyCuoc}`,
+      title: `Chi tiết kỳ cước ${fmtKyCuoc(target.kyCuoc)}`,
       fields: [
         { name: 'room', label: 'Tiền phòng', type: 'text', value: fmtMoney(target.tienPhong) + ' đ', disabled: true },
         { name: 'elec', label: 'Tiền điện', type: 'text', value: fmtMoney(target.tienDien) + ' đ', disabled: true },
@@ -624,16 +628,29 @@ function renderTenantUtilities() {
     <div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">${fmtMoney(top.tongTien)} đ</div><div class="sub">${esc(fmtKyCuoc(top.kyCuoc))} · tính trên ${n} kỳ trang này</div></div>
     <div class="kpi green"><div class="lbl">Tổng đã nộp</div><div class="val">${fmtMoney(paidSum)} đ</div><div class="sub">chỉ kỳ đã thu · ${n} kỳ trang này</div></div>`;
   charts.innerHTML = '';
-  charts.appendChild(buildTenantChart(rows));
-  // Khe "Xu hướng cước" ở Tổng quan — cùng dữ liệu, dùng lại chính SVG đó.
+  // Bọc trong .card chuẩn của shell (cùng vocab với .duo/.kpis) — SVG co giãn theo bề rộng card.
+  const chartCard = document.createElement('div');
+  chartCard.className = 'card';
+  const chartHdr = document.createElement('div');
+  chartHdr.className = 'hdr';
+  chartHdr.innerHTML = '<i class="fas fa-chart-column"></i> Điện (kWh) &amp; nước theo kỳ';
+  chartCard.appendChild(chartHdr);
+  chartCard.appendChild(buildTenantChart(rows));
+  charts.appendChild(chartCard);
+  // Khe "Xu hướng cước" ở Tổng quan — cùng dữ liệu, dựng lại SVG (không di chuyển node).
   const ov = document.getElementById('ov-chart');
   if (ov) { ov.innerHTML = ''; ov.appendChild(buildTenantChart(rows)); }
 }
 
 /**
- * Biểu đồ SVG cột đôi (điện amber #E0AF68, nước sage #8BD7A3) theo kyCuoc tăng dần.
+ * Biểu đồ SVG cột đôi (điện amber #E0AF68: kWh, nước sage #8BD7A3: khối/người) theo kyCuoc tăng dần.
  * Vẽ bằng document.createElementNS — không thư viện (test TenantJs_BuildsChartWithoutLibrary).
- * ponytail: scale theo max, kỳ gần nhất ≤ 12 — đủ cho 1 phòng, thêm trục khi cần nhiều kỳ.
+ * Controller ruling: vẽ THEO SẢN LƯỢNG (kWh và khối), không vẽ theo tiền — tránh việc tiền nước
+ * (~20k) bị tiền điện (~175k) đè bẹp khiến cột nước gần như tàng hình trên cùng một thang đo.
+ * Quy đổi: tiền / đơn giá (lấy từ chiSoKyNay hiện có, hoặc đơn giá chuẩn 3.500 đ/kWh, 12.000 đ/khối).
+ * Thang đo riêng cho từng chuỗi (chuẩn hoá theo max của chuỗi đó) để cả hai luôn nhìn thấy được.
+ * ponytail: sản lượng suy từ tiền nên sai lệch nếu đơn giá đổi giữa các kỳ — chuyển sang đọc
+ * chỉ số thật theo từng dòng khi server trả kèm chi_so trong danh sách hóa đơn.
  */
 function buildTenantChart(rows) {
   const NS = 'http://www.w3.org/2000/svg';
@@ -641,33 +658,53 @@ function buildTenantChart(rows) {
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'bar-chart');
   svg.setAttribute('role', 'img');
-  const sum = data.reduce((a, h) => a + Number(h.tongTien || 0), 0);
+
+  const cs = tenantChiSo;
+  const giaD = (cs && Number(cs.giaDien)) || 3500;
+  const giaN = (cs && Number(cs.giaNuoc)) || 12000;
+  const perNguoi = cs && String(cs.hinhThucNuoc || '').toLowerCase() === 'nguoi';
+  const donViNuoc = perNguoi ? 'người' : 'khối';
+  // Sản lượng ước tính từ hóa đơn — làm tròn về số nguyên
+  const series = data.map(h => ({
+    kyCuoc: h.kyCuoc,
+    elecQty: Math.max(0, Math.round(Number(h.tienDien || 0) / giaD)),
+    waterQty: Math.max(0, Math.round(Number(h.tienNuoc || 0) / giaN))
+  }));
+
+  const totE = series.reduce((a, s) => a + s.elecQty, 0);
+  const totW = series.reduce((a, s) => a + s.waterQty, 0);
   const title = document.createElementNS(NS, 'title');
-  title.textContent = `Cước ${data.length} kỳ từ ${data[0].kyCuoc} đến ${data[data.length - 1].kyCuoc}, tổng ${fmtMoney(sum)} đ`;
+  title.textContent = `${data.length} kỳ từ ${fmtKyCuoc(data[0].kyCuoc)} đến ${fmtKyCuoc(data[data.length - 1].kyCuoc)}: tổng ${fmtMoney(totE)} kWh điện, ${fmtMoney(totW)} ${donViNuoc} nước`;
   svg.appendChild(title);
+
   const W = 320, H = 120, pad = 18;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const maxV = Math.max(1, ...data.map(h => Math.max(Number(h.tienDien || 0), Number(h.tienNuoc || 0))));
-  const gw = (W - pad * 2) / data.length;
-  data.forEach((h, i) => {
+  const maxE = Math.max(1, ...series.map(s => s.elecQty));
+  const maxW = Math.max(1, ...series.map(s => s.waterQty));
+  const gw = (W - pad * 2) / series.length;
+
+  series.forEach((s, i) => {
     // Kỳ không tiêu thụ vẫn để 1px — cột 0px biến mất khỏi trục, đọc thành "thiếu dữ liệu".
-    const eH = Math.max(1, Math.round(Number(h.tienDien || 0) / maxV * (H - pad * 2)));
-    const wH = Math.max(1, Math.round(Number(h.tienNuoc || 0) / maxV * (H - pad * 2)));
+    const eH = Math.max(1, Math.round(s.elecQty / maxE * (H - pad * 2)));
+    const wH = Math.max(1, Math.round(s.waterQty / maxW * (H - pad * 2)));
     const x = pad + i * gw;
+
     const e = document.createElementNS(NS, 'rect');
     e.setAttribute('x', x + 1); e.setAttribute('y', H - pad - eH);
     e.setAttribute('width', Math.max(1, gw / 2 - 2)); e.setAttribute('height', eH);
     e.setAttribute('fill', '#E0AF68');
     svg.appendChild(e);
+
     const w = document.createElementNS(NS, 'rect');
     w.setAttribute('x', x + gw / 2); w.setAttribute('y', H - pad - wH);
     w.setAttribute('width', Math.max(1, gw / 2 - 2)); w.setAttribute('height', wH);
     w.setAttribute('fill', '#8BD7A3');
     svg.appendChild(w);
+
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', x + gw / 2); t.setAttribute('y', H - 5);
     t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '8'); t.setAttribute('fill', '#767E88');
-    t.textContent = fmtKyCuoc(h.kyCuoc);
+    t.textContent = fmtKyCuoc(s.kyCuoc);
     svg.appendChild(t);
   });
   return svg;
