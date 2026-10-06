@@ -539,12 +539,12 @@ function renderTenantSummary(unpaid) {
   } else {
     setText('tcontract-due', 'Chưa có hợp đồng hiệu lực');
   }
-  setText('ov-month', String(unpaid.kyCuoc || '').replace('-', '/'));
+  setText('ov-month', fmtKyCuoc(unpaid.kyCuoc));
   setText('ov-total', fmtMoney(unpaid.tongTien) + ' đ');
   setText('ov-trang_thai', paid ? 'Đã thanh toán' : 'Chưa nộp');
   setText('due-alert-text', paid
-    ? `Kỳ cước ${unpaid.kyCuoc} đã được thanh toán. Cảm ơn bạn!`
-    : `Kỳ cước ${unpaid.kyCuoc} chưa hoàn tất thanh toán. Tổng cần nộp: ${fmtMoney(unpaid.tongTien)} đ.`);
+    ? `Kỳ cước ${fmtKyCuoc(unpaid.kyCuoc)} đã được thanh toán. Cảm ơn bạn!`
+    : `Kỳ cước ${fmtKyCuoc(unpaid.kyCuoc)} chưa hoàn tất thanh toán. Tổng cần nộp: ${fmtMoney(unpaid.tongTien)} đ.`);
   setTag('due-alert-tag', paid, 'Đã nộp', 'Chưa nộp');
 }
 
