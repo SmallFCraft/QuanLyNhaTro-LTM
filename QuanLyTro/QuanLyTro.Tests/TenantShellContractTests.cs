@@ -63,11 +63,11 @@ public sealed class TenantShellContractTests
 
         var expected = new HashSet<string>(StringComparer.Ordinal)
         {
-            "overview", "current", "history",
+            "overview", "current", "history", "utilities",
         };
         var actual = GetTenantTabs(html);
         Assert.IsTrue(expected.SetEquals(actual),
-            "Tập data-tab của #tenantTabs phải đúng {overview, current, history}; nhận: {"
+            "Tập data-tab của #tenantTabs phải đúng {overview, current, history, utilities}; nhận: {"
             + string.Join(", ", actual) + "}");
 
         Assert.IsFalse(Regex.IsMatch(html, "data-write\\s*=\\s*['\"]?true", RegexOptions.IgnoreCase),

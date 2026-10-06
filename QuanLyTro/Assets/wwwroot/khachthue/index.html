@@ -30,61 +30,56 @@
         <h1 id="thead-title">Hóa Đơn Của Tôi</h1>
       </div>
     </div>
-    <div class="tabs" id="tenantTabs">
-      <div class="tab on" data-tab="overview" onclick="switchTenantTab('overview')"><i class="fas fa-home"></i> Tổng quan</div>
-      <div class="tab" data-tab="current" onclick="switchTenantTab('current')"><i class="fas fa-receipt"></i> Kỳ này</div>
-      <div class="tab" data-tab="history" onclick="switchTenantTab('history')"><i class="fas fa-history"></i> Lịch sử cước</div>
+    <div class="tabs" id="tenantTabs" role="tablist">
+      <div class="tab on" role="tab" data-tab="overview" aria-selected="true" tabindex="0" onclick="switchTenantTab('overview')"><i class="fas fa-home"></i> Tổng quan</div>
+      <div class="tab" role="tab" data-tab="current" aria-selected="false" tabindex="-1" onclick="switchTenantTab('current')"><i class="fas fa-receipt"></i> Kỳ này</div>
+      <div class="tab" role="tab" data-tab="history" aria-selected="false" tabindex="-1" onclick="switchTenantTab('history')"><i class="fas fa-history"></i> Lịch sử cước</div>
+      <div class="tab" role="tab" data-tab="utilities" aria-selected="false" tabindex="-1" onclick="switchTenantTab('utilities')"><i class="fas fa-tachometer-alt"></i> Tiện ích</div>
     </div>
     <div class="content">
       <!-- ====== MÀN HÌNH NHẬN PHÒNG (BR-19): chỉ hiện khi khách chưa có phòng ====== -->
       <section id="tab-nhan-phong" class="tab-pane">
-        <div class="card" style="text-align:center;padding:22px 16px">
-          <div style="width:54px;height:54px;border-radius:50%;background:rgba(217,93,57,.16);
-                      border:1px solid rgba(217,93,57,.32);display:flex;align-items:center;justify-content:center;
-                      margin:0 auto 12px;color:var(--terracotta);font-size:22px">
-            <i class="fas fa-qrcode"></i>
+        <div class="card checkin-card">
+          <div class="hero">
+            <img class="hero-img" src="img/banner-nhan-phong.jpg" alt="" onerror="this.closest('.hero').classList.add('no-img')">
           </div>
-          <h2 style="font-size:16px;color:var(--cream-light);margin:0 0 6px">Nhận phòng trọ</h2>
-          <p style="font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:420px;margin-left:auto;margin-right:auto">
+          <div class="checkin-ico"><i class="fas fa-qrcode"></i></div>
+          <h2 class="checkin-title">Nhận phòng trọ</h2>
+          <p class="checkin-sub">
             Bạn chưa được gán vào phòng nào. Hãy quét mã QR mà chủ trọ đã gửi, hoặc nhập mã PIN 8 số để xác
             nhận nhận phòng.
           </p>
 
-          <div class="tabs" id="checkinTabs" style="justify-content:center">
-            <div class="tab on" data-tab="anh" onclick="switchCheckinTab('anh')"><i class="fas fa-image"></i> Tải ảnh QR</div>
-            <div class="tab" data-tab="camera" onclick="switchCheckinTab('camera')"><i class="fas fa-camera"></i> Quét webcam</div>
-            <div class="tab" data-tab="pin" onclick="switchCheckinTab('pin')"><i class="fas fa-keyboard"></i> Nhập mã PIN</div>
+          <div class="tabs center" id="checkinTabs" role="tablist">
+            <div class="tab on" role="tab" data-tab="anh" aria-selected="true" tabindex="0" onclick="switchCheckinTab('anh')"><i class="fas fa-image"></i> Tải ảnh QR</div>
+            <div class="tab" role="tab" data-tab="camera" aria-selected="false" tabindex="-1" onclick="switchCheckinTab('camera')"><i class="fas fa-camera"></i> Quét webcam</div>
+            <div class="tab" role="tab" data-tab="pin" aria-selected="false" tabindex="-1" onclick="switchCheckinTab('pin')"><i class="fas fa-keyboard"></i> Nhập mã PIN</div>
           </div>
 
           <!-- Tab 1: tải ảnh QR -->
-          <div id="checkin-anh" class="checkin-pane active" style="margin-top:14px">
-            <input type="file" id="qrFile" accept="image/*" onchange="decodeQrFile(this)" style="display:none">
+          <div id="checkin-anh" class="checkin-pane active">
+            <input type="file" id="qrFile" accept="image/*" hidden onchange="decodeQrFile(this)">
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('qrFile').click()">
               <i class="fas fa-upload"></i> Chọn ảnh QR từ máy
             </button>
-            <canvas id="qrCanvas" style="display:none;margin-top:12px;max-width:100%"></canvas>
+            <canvas id="qrCanvas" class="qr-canvas" hidden></canvas>
           </div>
 
           <!-- Tab 2: quét webcam -->
-          <div id="checkin-camera" class="checkin-pane" style="display:none;margin-top:14px">
-            <video id="qrVideo" playsinline autoplay muted style="width:100%;max-width:360px;border-radius:8px;background:#000"></video>
-            <div style="margin-top:10px">
-              <button class="btn btn-primary btn-sm" id="btn-cam" onclick="toggleCamera()">
-                <i class="fas fa-camera"></i> Bật camera
-              </button>
-            </div>
+          <div id="checkin-camera" class="checkin-pane">
+            <video id="qrVideo" class="qr-video" playsinline autoplay muted></video>
+            <button class="btn btn-primary btn-sm" id="btn-cam" onclick="toggleCamera()">
+              <i class="fas fa-camera"></i> Bật camera
+            </button>
           </div>
 
           <!-- Tab 3: nhập PIN -->
-          <div id="checkin-pin" class="checkin-pane" style="display:none;margin-top:14px">
-            <input class="inp mono" id="qrPin" maxlength="8" inputmode="numeric" placeholder="••••••••"
-                   style="text-align:center;font-size:22px;letter-spacing:8px;max-width:240px;margin:0 auto">
-            <div style="margin-top:10px">
-              <button class="btn btn-primary btn-sm" onclick="submitPin()"><i class="fas fa-check"></i> Xác nhận mã PIN</button>
-            </div>
+          <div id="checkin-pin" class="checkin-pane">
+            <input class="inp mono pin-inp" id="qrPin" maxlength="8" inputmode="numeric" placeholder="••••••••">
+            <button class="btn btn-primary btn-sm" onclick="submitPin()"><i class="fas fa-check"></i> Xác nhận mã PIN</button>
           </div>
 
-          <div class="rowbn" style="justify-content:center;margin-top:16px">
+          <div class="rowbn center">
             <button class="btn btn-outline btn-sm" onclick="checkinQr()"><i class="fas fa-rotate"></i> Kiểm tra lại trạng thái</button>
           </div>
         </div>
@@ -92,58 +87,71 @@
 
       <!-- ====== TAB 1: TỔNG QUAN ====== -->
       <section id="tab-overview" class="tab-pane active">
-        <!-- profile + contract -->
-        <div class="card" style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-            <div style="display:flex;align-items:center;gap:10px;min-width:0">
-              <div style="width:36px;height:36px;border-radius:4px;background:#202730;border:1px solid #303945;
-                          color:var(--cream);display:flex;align-items:center;justify-content:center;
-                          font-weight:700;font-size:12px;font-family:'JetBrains Mono',Consolas,monospace" id="tavatar">KT</div>
-              <div style="min-width:0">
-                <div style="display:flex;align-items:center;gap:7px">
-                  <b style="font-size:14px;color:var(--cream-light)" id="tname-card">Khách thuê</b>
-                  <span class="tag avail" id="troom-badge">Phòng</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--dim)" id="tsub-info">Khu trọ Ngũ Hành Sơn · Hệ thống phòng trọ</div>
+        <div class="hero">
+          <img class="hero-img" src="img/hero-khu-tro.jpg" alt="" onerror="this.closest('.hero').classList.add('no-img')">
+        </div>
+
+        <!-- profile -->
+        <div class="card mb10">
+          <div class="profile">
+            <div class="pavatar" id="tavatar">KT</div>
+            <div class="pinfo">
+              <div class="pname">
+                <b id="tname-card">Khách thuê</b>
+                <span class="tag avail" id="troom-badge">Phòng</span>
               </div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <span class="vchip" id="tcontract-due">Hợp đồng: Đang hiệu lực</span>
+              <div class="psub" id="tsub-info">Khu trọ Ngũ Hành Sơn · Hệ thống phòng trọ</div>
             </div>
           </div>
         </div>
 
         <!-- due alert -->
-        <div id="due-alert-box" style="background:#1F1715;border:1px solid rgba(217,93,57,.40);border-radius:8px;padding:11px 13px;
-                    display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:9px;min-width:0">
-            <div style="width:26px;height:26px;border-radius:4px;background:rgba(217,93,57,.20);
-                        border:1px solid rgba(217,93,57,.30);display:flex;align-items:center;justify-content:center;
-                        color:var(--terracotta);flex:none"><i class="fas fa-exclamation"></i></div>
-            <span style="font-size:12.5px;color:var(--cream)" id="due-alert-text">Kỳ cước gần nhất đang được cập nhật...</span>
+        <div class="alert-due" id="due-alert-box">
+          <div class="l">
+            <span class="ico"><i class="fas fa-exclamation"></i></span>
+            <span class="txt" id="due-alert-text">Kỳ cước gần nhất đang được cập nhật...</span>
           </div>
-          <span class="tag unpaid" id="due-alert-tag" style="flex:none">Chưa nộp</span>
+          <span class="tag unpaid" id="due-alert-tag">Chưa nộp</span>
         </div>
 
         <!-- summary snapshot card -->
-        <div class="card" style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Tóm tắt cước gần nhất</span>
+        <div class="card mb10">
+          <div class="hdr">
+            <span>Tóm tắt cước gần nhất</span>
             <button class="btn btn-ghost btn-sm" onclick="switchTenantTab('current')"><i class="fas fa-external-link-alt"></i> Xem chi tiết kỳ này</button>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
-            <div class="stat-box">
-              <div class="stat-lbl">Kỳ cước</div>
-              <div class="stat-val mono" id="ov-month">—</div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="lbl"><i class="fas fa-calendar-days"></i> Kỳ cước</div>
+              <div class="val"><span id="ov-month">—</span></div>
             </div>
-            <div class="stat-box">
-              <div class="stat-lbl">Tổng cần nộp</div>
-              <div class="stat-val mono amount" id="ov-total">0 đ</div>
+            <div class="kpi warn">
+              <div class="lbl"><i class="fas fa-money-bill-wave"></i> Tổng cần nộp</div>
+              <div class="val"><span id="ov-total">—</span></div>
+              <div class="sub" id="ov-trang_thai">Chưa nạp</div>
             </div>
-            <div class="stat-box">
-              <div class="stat-lbl">Trạng thái</div>
-              <div class="stat-val" id="ov-trang_thai">—</div>
+            <div class="kpi">
+              <div class="lbl"><i class="fas fa-bolt"></i> Điện tiêu thụ</div>
+              <div class="val"><span id="ov-elec">—</span></div>
+              <div class="sub">Chưa có chỉ số kỳ này</div>
             </div>
+            <div class="kpi green">
+              <div class="lbl"><i class="fas fa-tint"></i> Nước tiêu thụ</div>
+              <div class="val"><span id="ov-nuoc">—</span></div>
+              <div class="sub">Chưa có chỉ số kỳ này</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="duo">
+          <div class="card">
+            <div class="hdr"><i class="fas fa-file-signature"></i> Hợp đồng &amp; hạn</div>
+            <div class="vchip" id="tcontract-due">Hợp đồng: Đang hiệu lực</div>
+          </div>
+          <div class="card">
+            <div class="hdr"><i class="fas fa-chart-column"></i> Xu hướng cước</div>
+            <!-- ponytail: #ov-chart là khe cắm SVG — Task 4 vẽ; khung có min-height để lưới .duo không nhảy khi rỗng -->
+            <div class="chart-slot" id="ov-chart"></div>
           </div>
         </div>
 
@@ -155,54 +163,49 @@
       <!-- ====== TAB 2: KỲ NÀY ====== -->
       <section id="tab-current" class="tab-pane">
         <!-- receipt -->
-        <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
-          <div style="padding:11px 13px;background:#1A2027;border-bottom:1px solid var(--hairline);
-                      display:flex;align-items:center;justify-content:space-between;gap:10px">
-            <div style="display:flex;align-items:center;gap:9px;min-width:0">
-              <i class="fas fa-file-invoice-dollar" style="color:var(--muted)"></i>
+        <div class="card receipt mb10">
+          <div class="rhdr">
+            <div class="l">
+              <i class="fas fa-file-invoice-dollar"></i>
               <div>
-                <div style="font-size:12.5px;font-weight:600;color:var(--cream-light);text-transform:uppercase;letter-spacing:.04em" id="rc-title">Chi tiết quyết toán cước</div>
-                <div class="mono" style="font-size:11px;color:var(--dim)" id="rc-code">MÃ SỐ BẢNG KÊ: —</div>
+                <div class="rtitle" id="rc-title">Chi tiết quyết toán cước</div>
+                <div class="mono rcode" id="rc-code">MÃ SỐ BẢNG KÊ: —</div>
               </div>
             </div>
-            <span class="tag unpaid" id="rc-trang_thai-tag" style="flex:none">Chưa thanh toán</span>
+            <span class="tag unpaid" id="rc-trang_thai-tag">Chưa thanh toán</span>
           </div>
-          <div style="padding:10px 13px">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
-              <span style="font-size:12.5px;color:var(--cream)"><i class="fas fa-door-closed" style="color:var(--dim);margin-right:7px"></i>Tiền thuê phòng cố định</span>
-              <span class="amount" id="rc-room">0 đ</span>
+          <div class="rbody">
+            <div class="rrow">
+              <div class="rline">
+                <span class="rlbl"><i class="fas fa-door-closed"></i>Tiền thuê phòng cố định</span>
+                <span class="amount" id="rc-room">0 đ</span>
+              </div>
             </div>
-            <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:12.5px;color:var(--cream)"><i class="fas fa-bolt" style="color:var(--amber);margin-right:7px"></i>Điện năng tiêu thụ</span>
+            <div class="rrow">
+              <div class="rline">
+                <span class="rlbl"><i class="fas fa-bolt amber"></i>Điện năng tiêu thụ</span>
                 <span class="amount" id="rc-elec">0 đ</span>
               </div>
-              <div class="mono" style="font-size:11px;color:var(--dim);padding-left:20px;display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:space-between">
-                <span id="rc-elec-sub">Theo công tơ điện tháng</span><span>Đã chốt công tơ</span>
-              </div>
+              <div class="mono rsub"><span id="rc-elec-sub">Theo công tơ điện tháng</span><span>Đã chốt công tơ</span></div>
             </div>
-            <div style="padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:12.5px;color:var(--cream)"><i class="fas fa-tint" style="color:var(--dim);margin-right:7px"></i>Nước sinh hoạt</span>
+            <div class="rrow">
+              <div class="rline">
+                <span class="rlbl"><i class="fas fa-tint"></i>Nước sinh hoạt</span>
                 <span class="amount" id="rc-water">0 đ</span>
               </div>
-              <div class="mono" style="font-size:11px;color:var(--dim);padding-left:20px;display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:space-between">
-                <span id="rc-water-sub">Theo đồng hồ nước</span><span>Đồng hồ nhánh</span>
+              <div class="mono rsub"><span id="rc-water-sub">Theo đồng hồ nước</span><span>Đồng hồ nhánh</span></div>
+            </div>
+            <div class="rrow">
+              <div class="rline">
+                <span class="rlbl"><i class="fas fa-wifi"></i>Dịch vụ quản lý &amp; tiện ích</span>
+                <span class="amount" id="rc-other">0 đ</span>
               </div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-subtle)">
-              <span style="font-size:12.5px;color:var(--cream)"><i class="fas fa-wifi" style="color:var(--dim);margin-right:7px"></i>Dịch vụ quản lý &amp; tiện ích</span>
-              <span class="amount" id="rc-other">0 đ</span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
-              <span style="font-size:12.5px;color:var(--dim)"><i class="fas fa-history" style="color:var(--dim);margin-right:7px"></i>Nợ tồn kỳ trước chuyển sang</span>
-              <span class="amount" style="color:var(--muted)">0 đ</span>
-            </div>
           </div>
-          <div style="padding:12px 13px;background:#111519;border-top:2px solid #2B333E;display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+          <div class="rfoot">
             <div>
-              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Tổng cần thanh toán</div>
-              <div class="mono" style="font-size:22px;font-weight:700;color:var(--cream-light);letter-spacing:-.02em"><span id="rc-total">0</span> <span style="font-size:12px;color:var(--muted);font-weight:400">đ</span></div>
+              <div class="flbl">Tổng cần thanh toán</div>
+              <div class="mono ftot"><span id="rc-total">0</span> <span class="cur">đ</span></div>
             </div>
             <span class="tag unpaid" id="rc-due-tag">Chưa thu</span>
           </div>
@@ -219,7 +222,7 @@
           <table class="tbl">
             <thead><tr><th>Kỳ cước</th><th class="num">Tổng tiền</th><th>Thời điểm đóng</th><th class="num">Trạng thái</th></tr></thead>
             <tbody id="tenant-history-body">
-              <tr><td colspan="4" style="text-align:center;color:var(--dim)">Đang nạp dữ liệu...</td></tr>
+              <tr class="empty"><td colspan="4">Đang nạp dữ liệu...</td></tr>
             </tbody>
           </table>
           <div class="tblfoot">
@@ -236,10 +239,16 @@
           </div>
         </div>
       </section>
+
+      <!-- ====== TAB 4: TIỆN ÍCH — nội dung do Task 4 dựng ====== -->
+      <section id="tab-utilities" class="tab-pane">
+        <div class="kpis" id="util-kpis"></div>
+        <div id="util-charts"></div>
+      </section>
     </div>
   </div>
   <div class="statusstrip">
-    <div class="l"><i class="fas fa-user" style="color:var(--sage)"></i><span id="tstatus-text">Người thuê (KhachThue)</span></div>
+    <div class="l"><i class="fas fa-user role-ico"></i><span id="tstatus-text">Người thuê (KhachThue)</span></div>
     <div class="r"><span>LẬP TRÌNH MẠNG</span></div>
   </div>
 </div>
