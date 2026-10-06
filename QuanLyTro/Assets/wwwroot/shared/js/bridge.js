@@ -42,7 +42,14 @@ if (window.chrome && window.chrome.webview) {
       const page = Number((data && data.page) || 1);
       const size = Number((data && data.soLuongMoiTrang) || 10);
       const start = (page - 1) * size;
-      return Promise.resolve({ items: SAMPLE.slice(start, start + size), tongSo: SAMPLE.length, page, soLuongMoiTrang: size });
+      // ponytail: đủ field để preview 1 mình khỏi cần Server TCP — thêm phòng/hợp đồng/chỉ số kỳ này.
+      return Promise.resolve({
+        items: SAMPLE.slice(start, start + size),
+        tongSo: SAMPLE.length, page, soLuongMoiTrang: size,
+        phongId: 102, soPhong: '102',
+        hopDong: { id: 1, soPhong: '102', ngayBatDau: '2026-01-05', ngayKetThuc: '2026-09-22', giaThue: 2000000, tienCoc: 2000000 },
+        chiSoKyNay: { kyCuoc: '2026-09', dienCu: 1240, dienMoi: 1285, giaDien: 3500, nuocCu: 12, nuocMoi: 15, giaNuoc: 12000, hinhThucNuoc: 'DongHo', soNguoiNuoc: 2 }
+      });
     }
     return Promise.resolve({});
   };

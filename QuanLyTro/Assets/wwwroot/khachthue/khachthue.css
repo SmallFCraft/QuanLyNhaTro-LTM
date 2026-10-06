@@ -211,6 +211,14 @@
   .toolbar { gap: 6px; padding: 6px; }
   .toolbar .spacer { display: none; }
   .ftot { font-size: 20px; }
+  /* Card stack lịch sử: ẩn thead, mỗi tr thành card, nhãn từ data-label (Task 4 thêm attribute). */
+  .tblwrap thead { display: none; }
+  .tblwrap tbody tr { display: block; margin-bottom: 8px; }
+  .tblwrap tbody td {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    white-space: normal; border-bottom: 1px solid var(--hair-subtle);
+  }
+  .tblwrap tbody td::before { content: attr(data-label); font-weight: 600; color: var(--muted); }
 }
 @media (max-width: 420px) {
   .kpis { grid-template-columns: 1fr; }

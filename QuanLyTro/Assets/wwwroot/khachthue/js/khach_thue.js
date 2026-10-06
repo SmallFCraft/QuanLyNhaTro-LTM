@@ -19,8 +19,10 @@ async function loadTenantInvoices() {
       return;
     }
     showCheckinScreen(false);
+    announceTenant(`Đã nạp xong ${currentTenantInvoices.length} kỳ cước, tổng ${tenantHistoryTotal} bản ghi`);
   } catch (err) {
     toast(err.message, 'err');
+    announceTenant('Không tải được dữ liệu: ' + err.message);
     renderTenantEmpty();
     syncTenantRoomHeader();
   }
@@ -78,11 +80,44 @@ function syncTenantRoomHeader() {
   if (hasRoom) setText('troom-badge', roomLabel);
 }
 
+// Giữ aria-selected + tabindex khớp class="on" để screen reader + bàn phím thấy đúng tab.
+function syncTabBar(barId, name) {
+  document.querySelectorAll(`#${barId} .tab`).forEach(t => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+  });
+}
+
+// Bàn phím cho tab bar: Arrow chuyển tab kế/trước, Home/End về đầu/cuối, focus tab được chọn.
+function wireTabKeys(barId, onPick) {
+  const bar = document.getElementById(barId);
+  if (!bar) return;
+  bar.addEventListener('keydown', e => {
+    const tabs = [...bar.querySelectorAll('.tab')];
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    onPick(tabs[next].dataset.tab);
+    tabs[next].focus();
+  });
+}
+
+function announceTenant(msg) {
+  const live = document.getElementById('tenant-live');
+  if (live) live.textContent = msg;
+}
+
 function switchCheckinTab(tabName) {
   stopCamera();
-  document.querySelectorAll('#checkinTabs .tab').forEach(t => {
-    t.classList.toggle('on', t.dataset.tab === tabName);
-  });
+  syncTabBar('checkinTabs', tabName);
   document.querySelectorAll('.checkin-pane').forEach(p => {
     const on = p.id === `checkin-${tabName}`;
     p.classList.toggle('active', on);
@@ -396,9 +431,7 @@ function showInvoiceDetail(id) {
 }
 
 function switchTenantTab(name) {
-  document.querySelectorAll('#tenantTabs .tab').forEach(t => {
-    t.classList.toggle('on', t.dataset.tab === name);
-  });
+  syncTabBar('tenantTabs', name);
   document.querySelectorAll('.tab-pane').forEach(p => {
     p.classList.toggle('active', p.id === `tab-${name}`);
   });
@@ -435,6 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (legacy) legacy.textContent = name;
   }
   switchTenantTab(params.get('tab') === 'history' ? 'history' : 'overview');
+  wireTabKeys('tenantTabs', switchTenantTab);
+  wireTabKeys('checkinTabs', switchCheckinTab);
   loadTenantInvoices();
   // ponytail: tự động làm mới toàn trang mỗi 30s + khi quay lại cửa sổ — thay nút sync tay.
   startAutoRefresh(loadTenantInvoices, 30000);

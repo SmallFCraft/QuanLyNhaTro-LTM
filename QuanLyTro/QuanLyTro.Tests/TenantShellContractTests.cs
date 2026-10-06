@@ -95,6 +95,20 @@ public sealed class TenantShellContractTests
         }
     }
 
+    /// <summary>Bàn phím cho cả 2 tab bar: Arrow chuyển tab, aria-selected khớp class="on".</summary>
+    [TestMethod]
+    public void TenantShell_TabsAreKeyboardReachable()
+    {
+        var js = TenantJs;
+        Assert.IsTrue(js.Contains("ArrowRight"), "khach_thue.js phải xử lý ArrowRight cho tab bar");
+        Assert.IsTrue(js.Contains("ArrowLeft"), "khach_thue.js phải xử lý ArrowLeft cho tab bar");
+        Assert.IsTrue(js.Contains("aria-selected"), "khach_thue.js phải giữ aria-selected khi chuyển tab");
+        Assert.IsTrue(js.Contains("#tenant-live") || js.Contains("tenant-live"),
+            "khach_thue.js phải ghi thông báo nạp xong vào #tenant-live");
+        var html = TenantHtml;
+        Assert.IsTrue(html.Contains("id=\"tenant-live\""), "index.html phải có #tenant-live (aria-live)");
+    }
+
     [TestMethod]
     public void TenantJs_RendersReceiptDetailAndHistoryFromServer()
     {
