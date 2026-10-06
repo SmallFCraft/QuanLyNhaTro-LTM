@@ -311,7 +311,6 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
                        COALESCE(so_nguoi_nuoc, 0) AS so_nguoi_nuoc
                 FROM chi_so_dien_nuoc
                 WHERE phong_id = @phongId AND ky_cuoc = @kyCuoc
-                LIMIT 1
                 """;
             await using var chiSoCmd = new MySqlCommand(chiSoSql, connection);
             chiSoCmd.Parameters.AddWithValue("@phongId", room);

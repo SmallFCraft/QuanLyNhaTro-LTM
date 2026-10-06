@@ -99,6 +99,8 @@ public sealed class TenantCheckinScreenTests
 [DoNotParallelize]
 public sealed class TenantShellDataTests
 {
+    public TestContext? TestContext { get; set; }
+
     private const string ConnectionString =
         "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User Id=root;Password=;SslMode=None;";
 
@@ -155,6 +157,26 @@ public sealed class TenantShellDataTests
         Assert.AreEqual(dto.DanhSach[0].KyCuoc, dto.ChiSoKyNay.KyCuoc);
         Assert.AreNotEqual(KyCuocMoiHon, dto.ChiSoKyNay.KyCuoc,
             "Chỉ số của kỳ khác (dù mới hơn) không được lọt vào ChiSoKyNay.");
+    }
+
+    [TestMethod]
+    public async Task GetByTenantAsync_HoaDonKhongChiSoKy_ChiSoKyNayNull()
+    {
+        var khachThueId = await SeedTenantWithContractAsync();
+        await using (var conn = await Db.OpenAsync())
+        {
+            await using var cmd = new MySqlCommand(
+                "DELETE FROM chi_so_dien_nuoc WHERE phong_id = @id", conn);
+            cmd.Parameters.AddWithValue("@id", RoomId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        var repo = new QuanLyTro.Server.Repositories.HoaDonRepository(Db);
+        var dto = await repo.GetByTenantAsync(khachThueId, 1, 10);
+
+        Assert.IsTrue(dto.DanhSach.Count > 0, "Thiếu hóa đơn thì test này vô nghĩa.");
+        Assert.IsNull(dto.ChiSoKyNay, "Kỳ hóa đơn chưa có chỉ số thì ChiSoKyNay phải null.");
+        Assert.IsNotNull(dto.HopDong, "HopDong là scope hợp đồng, không được ảnh hưởng.");
     }
 
     [TestMethod]
@@ -332,9 +354,10 @@ public sealed class TenantShellDataTests
                 await cmd.ExecuteNonQueryAsync();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // DB chưa sẵn sàng — bỏ qua.
+            // DB chưa sẵn sàng — bỏ qua, nhưng không im lặng: lỗi cleanup để lại rác và làm đỏ test kế tiếp.
+            TestContext?.WriteLine($"[cleanup] {ex.GetType().Name}: {ex.Message}");
         }
     }
 }
