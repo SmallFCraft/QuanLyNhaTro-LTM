@@ -458,8 +458,9 @@ async function refreshTenantSummary() {
     const dto = normalizeHistoryDto(res);
     // Đồng bộ chỉ số/hợp đồng của ĐÚNG trang 1 trước khi vẽ: nếu không, tổng tiền kỳ mới nhất
     // bị ghép với chỉ số của kỳ trang cũ → khách tự kiểm tra phép tính sẽ ra số sai.
-    if (dto && dto.hopDong) tenantHopDong = dto.hopDong;
-    if (dto && dto.chiSoKyNay) tenantChiSo = dto.chiSoKyNay;
+    // Gán vô điều kiện khi dto non-null: null là giá trị hợp lệ (khách vừa trả phòng /
+    // kỳ chưa chốt chỉ số) — giữ giá trị cũ mới là ghép sai.
+    if (dto) { tenantHopDong = dto.hopDong ?? null; tenantChiSo = dto.chiSoKyNay ?? null; }
     const latest = (dto && dto.items && dto.items[0]) || currentTenantInvoices[0];
     if (latest) { renderTenantSummary(latest); return; }
   } catch (err) {
