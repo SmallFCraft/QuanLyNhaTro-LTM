@@ -14,12 +14,15 @@ let tenantLoaded = false;
 let camStream = null;
 let camInterval = null;
 let camStarting = false;
+// Lần nạp gần nhất có lỗi không — khi đúng thì tóm tắt KHÔNG được khẳng định "chưa phát sinh".
+let tenantLoadError = false;
 
 async function loadTenantInvoices() {
   if (!tenantLoaded) renderTenantLoading();
   try {
     await loadTenantHistoryPage(tenantHistoryPage, tenantHistoryPageSize);
     tenantLoaded = true;
+    tenantLoadError = false;
     // BR-19: chỉ hiện màn nhận phòng khi server xác nhận khach_thue.phong_id IS NULL.
     // KHÔNG suy từ số hóa đơn — khách vừa nhận phòng chưa phát sinh kỳ cước nào vẫn phải vào app.
     if (tenantRoomId === null) {
@@ -35,6 +38,7 @@ async function loadTenantInvoices() {
     syncTenantRoomHeader();
     // Cho phép skeleton chạy lại ở lần nạp kế tiếp (thủ công hoặc auto-refresh 30s).
     tenantLoaded = false;
+    tenantLoadError = true;
   }
   await refreshTenantSummary();
 }
@@ -442,6 +446,9 @@ function renderTenantEmpty() {
 // hóa đơn mới nhất (server ORDER BY ky_cuoc DESC) nên render ngay, tiết kiệm 1 round-trip.
 // Chỉ gọi request riêng { page: 1, soLuongMoiTrang: 1 } khi khách đang đứng ở trang > 1.
 async function refreshTenantSummary() {
+  // Lỗi nạp: KHÔNG được khẳng định "chưa phát sinh kỳ cước nào" — đó là sự thật app chưa biết.
+  // (Ruling A: số không tính được thì không được trình bày như số.)
+  if (tenantLoadError) { renderTenantSummaryError(); return; }
   if (tenantHistoryPage === 1 && currentTenantInvoices.length > 0) {
     renderTenantSummary(currentTenantInvoices[0]);
     return;
@@ -452,9 +459,16 @@ async function refreshTenantSummary() {
     const latest = (dto && dto.items && dto.items[0]) || currentTenantInvoices[0];
     if (latest) { renderTenantSummary(latest); return; }
   } catch (err) {
-    // Không đọc được trang 1 → rơi xuống trạng thái rỗng thật bên dưới.
+    renderTenantSummaryError();
+    return;
   }
   renderTenantNoInvoice();
+}
+
+// Không có dữ liệu vì lỗi tải (khác hẳn "khách chưa phát sinh kỳ cước nào").
+function renderTenantSummaryError() {
+  setText('due-alert-text', 'Không tải được dữ liệu cước.');
+  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa nộp');
 }
 
 // Khách chưa phát sinh kỳ cước nào: số 0 thật thay cho dấu — và due-alert-text không giữ câu placeholder.
@@ -573,11 +587,17 @@ function switchTenantTab(name) {
  * Ruling A — MỌI KPI đều gắn sub ghi phạm vi, vì mảng chỉ là 1 trang: số kỳ → `trên N trang`,
  * còn lại → `tính trên M kỳ trang này`.
  */
+// Kỳ cước 'yyyy-MM' → 'MM/yyyy'; giá trị rỗng/không khớp → '—'.
+// Dùng chung cho KPI Tiện ích và nhãn trục biểu đồ — một nguồn định dạng, không nhân bản.
+function fmtKyCuoc(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}$/.test(s) ? s.slice(5) + '/' + s.slice(0, 4) : '—';
+}
+
 function renderTenantUtilities() {
   const kpis = document.getElementById('util-kpis');
   const charts = document.getElementById('util-charts');
   if (!kpis || !charts) return;
-  const ky = v => String(v || '').includes('-') ? String(v).replace(/^(\d{4})-(\d{2})$/, '$2/$1') : String(v);
   const rows = currentTenantInvoices || [];
   const n = rows.length;
   const totalPages = Math.max(1, Math.ceil(tenantHistoryTotal / tenantHistoryPageSize));
@@ -586,7 +606,7 @@ function renderTenantUtilities() {
     kpis.innerHTML = [
       `<div class="kpi"><div class="lbl">Số kỳ đã phát sinh</div><div class="val">${tenantHistoryTotal}</div><div class="sub">trên ${totalPages} trang</div></div>`,
       `<div class="kpi"><div class="lbl">Trung bình mỗi kỳ</div><div class="val">0 đ</div><div class="sub">tính trên 0 kỳ trang này</div></div>`,
-      `<div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">0 đ</div><div class="sub">— · 0 kỳ trang này</div></div>`,
+      `<div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">0 đ</div><div class="sub">chưa có kỳ · 0 kỳ trang này</div></div>`,
       `<div class="kpi green"><div class="lbl">Tổng đã nộp</div><div class="val">0 đ</div><div class="sub">chỉ kỳ đã thu · 0 kỳ trang này</div></div>`,
     ].join('');
     charts.innerHTML = '<div class="chart-empty">Chưa phát sinh kỳ cước nào — biểu đồ sẽ hiện khi có dữ liệu.</div>';
@@ -601,7 +621,7 @@ function renderTenantUtilities() {
   kpis.innerHTML = `
     <div class="kpi"><div class="lbl">Số kỳ đã phát sinh</div><div class="val">${tenantHistoryTotal}</div><div class="sub">trên ${totalPages} trang</div></div>
     <div class="kpi"><div class="lbl">Trung bình mỗi kỳ</div><div class="val">${fmtMoney(avg)} đ</div><div class="sub">tính trên ${n} kỳ trang này</div></div>
-    <div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">${fmtMoney(top.tongTien)} đ</div><div class="sub">${esc(ky(top.kyCuoc))} · tính trên ${n} kỳ trang này</div></div>
+    <div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">${fmtMoney(top.tongTien)} đ</div><div class="sub">${esc(fmtKyCuoc(top.kyCuoc))} · tính trên ${n} kỳ trang này</div></div>
     <div class="kpi green"><div class="lbl">Tổng đã nộp</div><div class="val">${fmtMoney(paidSum)} đ</div><div class="sub">chỉ kỳ đã thu · ${n} kỳ trang này</div></div>`;
   charts.innerHTML = '';
   charts.appendChild(buildTenantChart(rows));
@@ -630,23 +650,24 @@ function buildTenantChart(rows) {
   const maxV = Math.max(1, ...data.map(h => Math.max(Number(h.tienDien || 0), Number(h.tienNuoc || 0))));
   const gw = (W - pad * 2) / data.length;
   data.forEach((h, i) => {
-    const eH = Math.round(Number(h.tienDien || 0) / maxV * (H - pad * 2));
-    const wH = Math.round(Number(h.tienNuoc || 0) / maxV * (H - pad * 2));
+    // Kỳ không tiêu thụ vẫn để 1px — cột 0px biến mất khỏi trục, đọc thành "thiếu dữ liệu".
+    const eH = Math.max(1, Math.round(Number(h.tienDien || 0) / maxV * (H - pad * 2)));
+    const wH = Math.max(1, Math.round(Number(h.tienNuoc || 0) / maxV * (H - pad * 2)));
     const x = pad + i * gw;
     const e = document.createElementNS(NS, 'rect');
     e.setAttribute('x', x + 1); e.setAttribute('y', H - pad - eH);
-    e.setAttribute('width', Math.max(1, gw / 2 - 2)); e.setAttribute('height', Math.max(1, eH));
+    e.setAttribute('width', Math.max(1, gw / 2 - 2)); e.setAttribute('height', eH);
     e.setAttribute('fill', '#E0AF68');
     svg.appendChild(e);
     const w = document.createElementNS(NS, 'rect');
     w.setAttribute('x', x + gw / 2); w.setAttribute('y', H - pad - wH);
-    w.setAttribute('width', Math.max(1, gw / 2 - 2)); w.setAttribute('height', Math.max(1, wH));
+    w.setAttribute('width', Math.max(1, gw / 2 - 2)); w.setAttribute('height', wH);
     w.setAttribute('fill', '#8BD7A3');
     svg.appendChild(w);
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', x + gw / 2); t.setAttribute('y', H - 5);
     t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '8'); t.setAttribute('fill', '#767E88');
-    t.textContent = String(h.kyCuoc || '').slice(5) + '/' + String(h.kyCuoc || '').slice(0, 4);
+    t.textContent = fmtKyCuoc(h.kyCuoc);
     svg.appendChild(t);
   });
   return svg;
