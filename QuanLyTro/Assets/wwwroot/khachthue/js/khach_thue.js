@@ -1,17 +1,31 @@
 // ponytail: shell khách thuê — server tự suy ra phòng từ token. Phân trang phía server (page/soLuongMoiTrang).
+// ponytail: chưa có hồ sơ nhận tiền trên server → hằng tĩnh rỗng. Chuyển sang bảng cấu hình server khi có.
+const BANK_INFO = '';
 let currentTenantInvoices = [];
 let tenantHistoryPage = 1;
 let tenantHistoryPageSize = 10;
 let tenantHistoryTotal = 0;
 let tenantRoomId = null;
 let tenantRoomName = null;
+let tenantHopDong = null;
+let tenantChiSo = null;
+// Tab app đang chọn — showCheckinScreen strip .active khi hiện màn QR nên phải ghi lại
+// để màn ẩn đi còn dựng lại đúng pane, không mặc định 'overview'.
+let tenantActiveTab = 'overview';
+// Skeleton chỉ hiện khi CHƯA từng nạp được gì — auto-refresh 30s không được làm nhấp nháy bảng đang xem.
+let tenantLoaded = false;
 let camStream = null;
 let camInterval = null;
 let camStarting = false;
+// Lần nạp gần nhất có lỗi không — khi đúng thì tóm tắt KHÔNG được khẳng định "chưa phát sinh".
+let tenantLoadError = false;
 
 async function loadTenantInvoices() {
+  if (!tenantLoaded) renderTenantLoading();
   try {
     await loadTenantHistoryPage(tenantHistoryPage, tenantHistoryPageSize);
+    tenantLoaded = true;
+    tenantLoadError = false;
     // BR-19: chỉ hiện màn nhận phòng khi server xác nhận khach_thue.phong_id IS NULL.
     // KHÔNG suy từ số hóa đơn — khách vừa nhận phòng chưa phát sinh kỳ cước nào vẫn phải vào app.
     if (tenantRoomId === null) {
@@ -19,10 +33,15 @@ async function loadTenantInvoices() {
       return;
     }
     showCheckinScreen(false);
+    announceTenant(`Đã nạp xong ${currentTenantInvoices.length} kỳ cước, tổng ${tenantHistoryTotal} bản ghi`);
   } catch (err) {
     toast(err.message, 'err');
+    announceTenant('Không tải được dữ liệu: ' + err.message);
     renderTenantEmpty();
     syncTenantRoomHeader();
+    // Cho phép skeleton chạy lại ở lần nạp kế tiếp (thủ công hoặc auto-refresh 30s).
+    tenantLoaded = false;
+    tenantLoadError = true;
   }
   await refreshTenantSummary();
 }
@@ -44,6 +63,9 @@ function showCheckinScreen(show) {
         p.style.display = 'none';
       } else {
         p.style.display = '';
+        // Dựng lại pane đang chọn: nhánh trên đã gỡ .active nên .tab-pane{display:none}
+        // vẫn ẩn mọi pane nếu chỉ trả lại display — màn hình sẽ trắng.
+        p.classList.toggle('active', p.id === `tab-${tenantActiveTab}`);
       }
     });
   }
@@ -78,15 +100,48 @@ function syncTenantRoomHeader() {
   if (hasRoom) setText('troom-badge', roomLabel);
 }
 
+// Giữ aria-selected + tabindex khớp class="on" để screen reader + bàn phím thấy đúng tab.
+function syncTabBar(barId, name) {
+  document.querySelectorAll(`#${barId} .tab`).forEach(t => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+  });
+}
+
+// Bàn phím cho tab bar: Arrow chuyển tab kế/trước, Home/End về đầu/cuối, focus tab được chọn.
+function wireTabKeys(barId, onPick) {
+  const bar = document.getElementById(barId);
+  if (!bar) return;
+  bar.addEventListener('keydown', e => {
+    const tabs = [...bar.querySelectorAll('.tab')];
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    onPick(tabs[next].dataset.tab);
+    tabs[next].focus();
+  });
+}
+
+function announceTenant(msg) {
+  const live = document.getElementById('tenant-live');
+  if (live) live.textContent = msg;
+}
+
 function switchCheckinTab(tabName) {
   stopCamera();
-  document.querySelectorAll('#checkinTabs .tab').forEach(t => {
-    t.classList.toggle('on', t.dataset.tab === tabName);
-  });
+  syncTabBar('checkinTabs', tabName);
+  // Chỉ đổi class — .checkin-pane{display:none} / .active{display:block} trong khachthue.css
+  // là nguồn hiển thị duy nhất; ghi style.display sẽ đè rules và làm mất animation.
   document.querySelectorAll('.checkin-pane').forEach(p => {
-    const on = p.id === `checkin-${tabName}`;
-    p.classList.toggle('active', on);
-    p.style.display = on ? '' : 'none';
+    p.classList.toggle('active', p.id === `checkin-${tabName}`);
   });
 }
 
@@ -110,6 +165,8 @@ function decodeQrFile(input) {
       }
       try {
         const canvas = document.getElementById('qrCanvas');
+        // Canvas khai báo `hidden` trong index.html — chưa bỏ thì ctx.drawImage vẽ vào 0×0.
+        canvas.hidden = false;
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
@@ -226,8 +283,11 @@ async function submitCheckinCode(rawCode) {
     await alertDialog(
       `Chào mừng bạn đến phòng ${res.soPhong || ''}! Hợp đồng đã có hiệu lực từ ${res.ngayBatDau || ''}.`,
       'Nhận phòng thành công', 'ok');
-    // Reload lại giao diện để hiển thị dashboard phòng và cước
-    window.location.reload();
+    tenantHistoryPage = 1;
+    tenantLoaded = false;
+    // Nạp lại dữ liệu mà không mất tab — khác window.location.reload().
+    await loadTenantInvoices();
+    switchTenantTab('overview');
   } catch (err) {
     alertDialog(err.message, 'Nhận phòng thất bại', 'err');
   }
@@ -246,9 +306,12 @@ async function loadTenantHistoryPage(page, soLuongMoiTrang) {
     ? dto.phongId
     : (currentTenantInvoices.length > 0 ? tenantRoomId : null);
   tenantRoomName = (dto && dto.soPhong) || null;
+  tenantHopDong = (dto && dto.hopDong) || null;
+  tenantChiSo = (dto && dto.chiSoKyNay) || null;
   syncTenantRoomHeader();
   renderTenantHistory(currentTenantInvoices);
   renderTenantPagination();
+  renderTenantUtilities();
 }
 
 async function changeTenantPage(delta) {
@@ -279,10 +342,49 @@ function normalizeHistoryDto(res) {
       // Giữ undefined khi field VẮNG MẶT khác null THẬT: loadTenantHistoryPage dùng '!== undefined'
       // để giữ phòng cũ cho server/mock cũ không trả phongId, không ép về "chưa nhận phòng".
       phongId: 'phongId' in res ? res.phongId : ('PhongId' in res ? res.PhongId : undefined),
-      soPhong: res.soPhong ?? res.SoPhong ?? null
+      soPhong: res.soPhong ?? res.SoPhong ?? null,
+      hopDong: normalizeHopDong(res.hopDong ?? res.HopDong),
+      chiSoKyNay: normalizeChiSo(res.chiSoKyNay ?? res.ChiSoKyNay)
     };
   }
   return null;
+}
+
+// hopDong / chiSoKyNay: server serialize camelCase (JsonNamingPolicy.CamelCase), vẫn nhận PascalCase cho mock & server cũ.
+function subField(o, camel, pascal) {
+  return o[camel] !== undefined ? o[camel] : o[pascal];
+}
+
+function subNum(o, camel, pascal) {
+  const v = Number(subField(o, camel, pascal));
+  return Number.isFinite(v) ? v : 0;
+}
+
+function normalizeHopDong(hd) {
+  if (!hd) return null;
+  return {
+    id: subField(hd, 'id', 'Id'),
+    soPhong: subField(hd, 'soPhong', 'SoPhong') ?? null,
+    ngayBatDau: subField(hd, 'ngayBatDau', 'NgayBatDau') ?? null,
+    ngayKetThuc: subField(hd, 'ngayKetThuc', 'NgayKetThuc') ?? null,
+    giaThue: subNum(hd, 'giaThue', 'GiaThue'),
+    tienCoc: subNum(hd, 'tienCoc', 'TienCoc')
+  };
+}
+
+function normalizeChiSo(cs) {
+  if (!cs) return null;
+  return {
+    kyCuoc: subField(cs, 'kyCuoc', 'KyCuoc') ?? null,
+    dienCu: subNum(cs, 'dienCu', 'DienCu'),
+    dienMoi: subNum(cs, 'dienMoi', 'DienMoi'),
+    giaDien: subNum(cs, 'giaDien', 'GiaDien'),
+    nuocCu: subNum(cs, 'nuocCu', 'NuocCu'),
+    nuocMoi: subNum(cs, 'nuocMoi', 'NuocMoi'),
+    giaNuoc: subNum(cs, 'giaNuoc', 'GiaNuoc'),
+    hinhThucNuoc: subField(cs, 'hinhThucNuoc', 'HinhThucNuoc') || 'Khoi',
+    soNguoiNuoc: subNum(cs, 'soNguoiNuoc', 'SoNguoiNuoc')
+  };
 }
 
 function isPaidInvoice(i) {
@@ -295,19 +397,24 @@ function renderTenantHistory(rows) {
   const body = document.getElementById('tenant-history-body');
   if (body) {
     body.innerHTML = list.map(i => `
-      <tr class="clickable-row" onclick="showInvoiceDetail(${Number(i.id)})" title="Bấm để xem chi tiết kỳ ${esc(i.kyCuoc)}">
-        <td class="mono">${esc(i.kyCuoc)}</td>
-        <td class="num amount">${fmtMoney(i.tongTien)}</td>
-        <td class="mono">${isPaidInvoice(i) ? fmtDate(i.ngayDong) : '—'}</td>
-        <td class="num"><span class="tag ${isPaidInvoice(i) ? 'paid' : 'unpaid'}">
+      <tr class="clickable-row" onclick="showInvoiceDetail(${Number(i.id)})" title="Bấm để xem chi tiết kỳ ${esc(fmtKyCuoc(i.kyCuoc))}" aria-label="Kỳ ${esc(fmtKyCuoc(i.kyCuoc))}">
+        <td class="mono" data-label="Kỳ cước">${esc(fmtKyCuoc(i.kyCuoc))}</td>
+        <td class="num amount" data-label="Tổng tiền">${fmtMoney(i.tongTien)}</td>
+        <td class="mono" data-label="Ngày đóng">${isPaidInvoice(i) ? fmtDate(i.ngayDong) : '—'}</td>
+        <td class="num" data-label="Trạng thái"><span class="tag ${isPaidInvoice(i) ? 'paid' : 'unpaid'}">
           ${isPaidInvoice(i) ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></td>
-      </tr>`).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--dim)">Không có hóa đơn nào</td></tr>`;
+      </tr>`).join('') || `<tr class="empty"><td colspan="4" data-label="Kỳ cước">Chưa phát sinh kỳ cước nào</td></tr>`;
   }
   const info = document.getElementById('tenant-page-info');
   if (info) info.textContent = `Tổng: ${tenantHistoryTotal} bản ghi`;
 }
 
 function renderTenantPagination() {
+  // Không có bản ghi thì "Trang 1 / 1" vô nghĩa — ẩn cụm phân trang.
+  // (Viết `total < 1` chứ không so `=== 0`: contract BR-19 cấm chuỗi đó trong file này,
+  // vì nó là dấu hiệu suy 'chưa có phòng' từ số hóa đơn.)
+  const cluster = document.getElementById('tenant-pagination');
+  if (cluster) cluster.hidden = tenantHistoryTotal < 1;
   const tongSoTrang = Math.max(1, Math.ceil(tenantHistoryTotal / tenantHistoryPageSize));
   const indicator = document.getElementById('tenant-page-indicator');
   if (indicator) indicator.textContent = `Trang ${tenantHistoryPage} / ${tongSoTrang}`;
@@ -317,17 +424,46 @@ function renderTenantPagination() {
   if (next) next.disabled = tenantHistoryPage >= tongSoTrang;
 }
 
+function renderTenantLoading() {
+  const body = document.getElementById('tenant-history-body');
+  if (body) {
+    const skel = `<div class="skel"></div>`;
+    body.innerHTML = `<tr><td colspan="4">${skel}${skel}${skel}</td></tr>`;
+  }
+}
+
 function renderTenantEmpty() {
   const body = document.getElementById('tenant-history-body');
-  if (body) body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--dim)">Không tải được dữ liệu</td></tr>`;
+  if (body) {
+    body.innerHTML = `<tr class="empty"><td colspan="4">
+      <div class="empty-state">Không tải được dữ liệu
+        <div><button type="button" class="btn btn-outline btn-sm" onclick="loadTenantInvoices()">Thử lại</button></div>
+      </div></td></tr>`;
+  }
+  const info = document.getElementById('tenant-page-info');
+  if (info) info.textContent = '';
   tenantHistoryTotal = 0;
   renderTenantPagination();
+  // Không vẽ lại KPI khi đã từng vẽ: currentTenantInvoices vẫn là số cũ của lần nạp
+  // thành công trước — xóa KPI khi lỗi mạng chợt chớn sẽ nói "0 kỳ" oan.
+  // Nhưng lần nạp ĐẦU đã lỗi thì pane Tiện ích chưa từng được vẽ → trống trơn, phải báo lỗi.
+  const kpis = document.getElementById('util-kpis');
+  const charts = document.getElementById('util-charts');
+  if (kpis && !kpis.innerHTML.trim()) {
+    kpis.innerHTML = `<div class="empty-state">Không tải được dữ liệu cước
+        <div><button type="button" class="btn btn-outline btn-sm" onclick="loadTenantInvoices()">Thử lại</button></div>
+      </div>`;
+    if (charts) charts.innerHTML = '';
+  }
 }
 
 // Tóm tắt Tổng quan + chi tiết Kỳ này: khi đang ở trang 1, currentTenantInvoices[0] đã là
 // hóa đơn mới nhất (server ORDER BY ky_cuoc DESC) nên render ngay, tiết kiệm 1 round-trip.
 // Chỉ gọi request riêng { page: 1, soLuongMoiTrang: 1 } khi khách đang đứng ở trang > 1.
 async function refreshTenantSummary() {
+  // Lỗi nạp: KHÔNG được khẳng định "chưa phát sinh kỳ cước nào" — đó là sự thật app chưa biết.
+  // (Ruling A: số không tính được thì không được trình bày như số.)
+  if (tenantLoadError) { renderTenantSummaryError(); return; }
   if (tenantHistoryPage === 1 && currentTenantInvoices.length > 0) {
     renderTenantSummary(currentTenantInvoices[0]);
     return;
@@ -335,15 +471,65 @@ async function refreshTenantSummary() {
   try {
     const res = await window.bridge.call('HOA_DON_CUA_TOI', { page: 1, soLuongMoiTrang: 1 });
     const dto = normalizeHistoryDto(res);
+    // Đồng bộ chỉ số/hợp đồng của ĐÚNG trang 1 trước khi vẽ: nếu không, tổng tiền kỳ mới nhất
+    // bị ghép với chỉ số của kỳ trang cũ → khách tự kiểm tra phép tính sẽ ra số sai.
+    // Gán vô điều kiện khi dto non-null: null là giá trị hợp lệ (khách vừa trả phòng /
+    // kỳ chưa chốt chỉ số) — giữ giá trị cũ mới là ghép sai.
+    // CHỈ số trang 1 được đưa vào local: ghi vào tenantChiSo sẽ đổi đơn giá mà
+    // buildTenantChart đọc, khiến biểu đồ trang khách đang xem lệch với KPI kế bên.
+    let chiSoTrang1 = tenantChiSo;
+    if (dto) {
+      tenantHopDong = dto.hopDong ?? null;
+      chiSoTrang1 = dto.chiSoKyNay ?? null;
+    }
     const latest = (dto && dto.items && dto.items[0]) || currentTenantInvoices[0];
-    if (latest) renderTenantSummary(latest);
+    if (latest) { renderTenantSummary(latest, chiSoTrang1); return; }
   } catch (err) {
-    const fallback = currentTenantInvoices[0];
-    if (fallback) renderTenantSummary(fallback);
+    renderTenantSummaryError();
+    return;
   }
+  renderTenantNoInvoice();
 }
 
-function renderTenantSummary(unpaid) {
+// Không có dữ liệu vì lỗi tải (khác hẳn "khách chưa phát sinh kỳ cước nào").
+function renderTenantSummaryError() {
+  setText('due-alert-text', 'Không tải được dữ liệu cước.');
+  // Không khẳng định trạng thái thu khi không tải được — số cũ còn đó nhưng app không biết gì mới.
+  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa rõ');
+  setText('ov-trang_thai', 'Chưa rõ');
+  setTag('rc-trang_thai-tag', false, 'Đã thanh toán', 'Chưa rõ');
+  setTag('rc-due-tag', false, 'Đã thu', 'Chưa rõ');
+}
+
+// Khách chưa phát sinh kỳ cước nào: số 0 thật thay cho dấu — và due-alert-text không giữ câu placeholder.
+function renderTenantNoInvoice() {
+  const recv = tenantHopDong && tenantHopDong.ngayBatDau
+    ? ` · Nhận phòng từ ${fmtDateOnly(tenantHopDong.ngayBatDau)}`
+    : '';
+  setText('due-alert-text', 'Chưa phát sinh kỳ cước nào' + recv + '.');
+  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa nộp');
+  setText('rc-title', 'Chi tiết quyết toán cước');
+  setText('rc-code', 'MÃ SỐ BẢNG KÊ: —');
+  ['rc-room', 'rc-elec', 'rc-water', 'rc-other'].forEach(id => setText(id, '0 đ'));
+  setText('rc-total', '0');
+  setTag('rc-trang_thai-tag', false, 'Đã thanh toán', 'Chưa thanh toán');
+  setTag('rc-due-tag', false, 'Đã thu', 'Chưa thu');
+  setText('ov-month', '—');
+  setText('ov-total', '0 đ');
+  setText('ov-trang_thai', 'Chưa phát sinh kỳ cước');
+  setText('ov-elec', '0');
+  setText('ov-nuoc', '0');
+  setText('ov-nuoc-unit', 'khối');
+  setText('ov-elec-sub', 'Chưa có chỉ số kỳ này');
+  setText('ov-nuoc-sub', 'Chưa có chỉ số kỳ này');
+  setText('rc-elec-sub', 'Chưa có chỉ số kỳ này');
+  setText('rc-water-sub', 'Chưa có chỉ số kỳ này');
+  setText('tcontract-due', tenantHopDong
+    ? `HĐ đến ${fmtDateOnly(tenantHopDong.ngayKetThuc)} · ${fmtMoney(tenantHopDong.giaThue)} đ/tháng`
+    : 'Chưa có hợp đồng hiệu lực');
+}
+
+function renderTenantSummary(unpaid, csOverride) {
   // Khối Kỳ này
   setText('rc-room', fmtMoney(unpaid.tienPhong) + ' đ');
   setText('rc-elec', fmtMoney(unpaid.tienDien) + ' đ');
@@ -352,19 +538,45 @@ function renderTenantSummary(unpaid) {
   setText('rc-total', fmtMoney(unpaid.tongTien));
   const paid = isPaidInvoice(unpaid);
   setText('rc-code', `MÃ SỐ BẢNG KÊ: HD-${String(unpaid.kyCuoc || '').replace('-', '')}-${unpaid.phongId || unpaid.id}`);
-  setText('rc-title', `Chi tiết quyết toán cước tháng ${String(unpaid.kyCuoc || '').replace('-', '/')}`);
+  setText('rc-title', `Chi tiết quyết toán cước tháng ${fmtKyCuoc(unpaid.kyCuoc)}`);
   setTag('rc-trang_thai-tag', paid, 'Đã thanh toán', 'Chưa thanh toán');
   setTag('rc-due-tag', !paid, 'Chưa thu', 'Đã thu');
 
-  // Khối Tổng quan
-  setText('ov-month', String(unpaid.kyCuoc || '').replace('-', '/'));
+  // Khối Tổng quan — tiêu thụ điện, nước, hạn hợp đồng, và chỉ số kỳ này
+  // csOverride = chỉ số trang 1 lấy từ request riêng; mặc định = tenantChiSo (khi đang ở trang 1).
+  const cs = csOverride === undefined ? tenantChiSo : csOverride;
+  setText('ov-elec', cs ? fmtMoney(cs.dienMoi - cs.dienCu) : '0');
+  // Nước đổi đơn vị theo hình thức: theo khối (m³) hoặc theo đầu người.
+  if (cs) {
+    const per = String(cs.hinhThucNuoc || '').toLowerCase() === 'nguoi';
+    setText('ov-nuoc', fmtMoney(per ? cs.soNguoiNuoc : cs.nuocMoi - cs.nuocCu));
+    setText('ov-nuoc-unit', per ? 'người' : 'khối');
+    setText('ov-nuoc-sub', `${per ? `${fmtMoney(cs.soNguoiNuoc)} người × ${fmtMoney(cs.giaNuoc)} đ` : `${fmtMoney(cs.nuocCu)} → ${fmtMoney(cs.nuocMoi)} khối × ${fmtMoney(cs.giaNuoc)} đ`}`);
+    setText('ov-elec-sub', `${fmtMoney(cs.dienCu)} → ${fmtMoney(cs.dienMoi)} kWh × ${fmtMoney(cs.giaDien)} đ`);
+    setText('rc-elec-sub', `${fmtMoney(cs.dienCu)} → ${fmtMoney(cs.dienMoi)} kWh × ${fmtMoney(cs.giaDien)} đ`);
+    // rc-water-sub dùng định dạng khác: theo hinhThucNuoc (đầu người hoặc khối)
+    setText('rc-water-sub', per ? `${fmtMoney(cs.soNguoiNuoc)} người × ${fmtMoney(cs.giaNuoc)} đ` : `${fmtMoney(cs.nuocCu)} → ${fmtMoney(cs.nuocMoi)} khối × ${fmtMoney(cs.giaNuoc)} đ`);
+  } else {
+    setText('ov-nuoc', '0');
+    setText('ov-nuoc-unit', 'khối');
+    setText('ov-elec-sub', 'Chưa có chỉ số kỳ này');
+    setText('ov-nuoc-sub', 'Chưa có chỉ số kỳ này');
+    setText('rc-elec-sub', 'Chưa có chỉ số kỳ này');
+    setText('rc-water-sub', 'Chưa có chỉ số kỳ này');
+  }
+
+  // Khối Tổng quan — hợp đồng & hạn
+  if (tenantHopDong) {
+    setText('tcontract-due', `HĐ đến ${fmtDateOnly(tenantHopDong.ngayKetThuc)} · ${fmtMoney(tenantHopDong.giaThue)} đ/tháng`);
+  } else {
+    setText('tcontract-due', 'Chưa có hợp đồng hiệu lực');
+  }
+  setText('ov-month', fmtKyCuoc(unpaid.kyCuoc));
   setText('ov-total', fmtMoney(unpaid.tongTien) + ' đ');
   setText('ov-trang_thai', paid ? 'Đã thanh toán' : 'Chưa nộp');
-  // troom-badge dùng SỐ PHÒNG (soPhong), không phải phongId — syncTenantRoomHeader() đã gán.
-  setText('tcontract-due', paid ? 'Hợp đồng: Đang hiệu lực' : 'Hợp đồng: Còn cước chưa nộp');
   setText('due-alert-text', paid
-    ? `Kỳ cước ${unpaid.kyCuoc} đã được thanh toán. Cảm ơn bạn!`
-    : `Kỳ cước ${unpaid.kyCuoc} chưa hoàn tất thanh toán. Tổng cần nộp: ${fmtMoney(unpaid.tongTien)} đ.`);
+    ? `Kỳ cước ${fmtKyCuoc(unpaid.kyCuoc)} đã được thanh toán. Cảm ơn bạn!`
+    : `Kỳ cước ${fmtKyCuoc(unpaid.kyCuoc)} chưa hoàn tất thanh toán. Tổng cần nộp: ${fmtMoney(unpaid.tongTien)} đ.`);
   setTag('due-alert-tag', paid, 'Đã nộp', 'Chưa nộp');
 }
 
@@ -381,7 +593,7 @@ function showInvoiceDetail(id) {
   const paid = isPaidInvoice(target);
   if (typeof openModal === 'function') {
     openModal({
-      title: `Chi tiết kỳ cước ${target.kyCuoc}`,
+      title: `Chi tiết kỳ cước ${fmtKyCuoc(target.kyCuoc)}`,
       fields: [
         { name: 'room', label: 'Tiền phòng', type: 'text', value: fmtMoney(target.tienPhong) + ' đ', disabled: true },
         { name: 'elec', label: 'Tiền điện', type: 'text', value: fmtMoney(target.tienDien) + ' đ', disabled: true },
@@ -396,30 +608,163 @@ function showInvoiceDetail(id) {
 }
 
 function switchTenantTab(name) {
-  document.querySelectorAll('#tenantTabs .tab').forEach(t => {
-    t.classList.toggle('on', t.dataset.tab === name);
-  });
+  tenantActiveTab = name;
+  syncTabBar('tenantTabs', name);
   document.querySelectorAll('.tab-pane').forEach(p => {
     p.classList.toggle('active', p.id === `tab-${name}`);
   });
 }
 
+/**
+ * Tab "Tiện ích": 4 KPI + biểu đồ SVG cột đôi tính từ dữ liệu đã nạp trong currentTenantInvoices.
+ * Ruling A — MỌI KPI đều gắn sub ghi phạm vi, vì mảng chỉ là 1 trang: số kỳ → `trên N trang`,
+ * còn lại → `tính trên M kỳ trang này`.
+ */
+// Kỳ cước 'yyyy-MM' → 'MM/yyyy'; giá trị rỗng/không khớp → '—'.
+// Dùng chung cho KPI Tiện ích và nhãn trục biểu đồ — một nguồn định dạng, không nhân bản.
+function fmtKyCuoc(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}$/.test(s) ? s.slice(5) + '/' + s.slice(0, 4) : '—';
+}
+
+function renderTenantUtilities() {
+  const kpis = document.getElementById('util-kpis');
+  const charts = document.getElementById('util-charts');
+  if (!kpis || !charts) return;
+  const rows = currentTenantInvoices || [];
+  const n = rows.length;
+  const totalPages = Math.max(1, Math.ceil(tenantHistoryTotal / tenantHistoryPageSize));
+  if (!n) {
+    // Ruling A: sub phạm vi vẫn đúng khi 0 kỳ — không bơm số giả.
+    kpis.innerHTML = [
+      `<div class="kpi"><div class="lbl">Số kỳ đã phát sinh</div><div class="val">${tenantHistoryTotal}</div><div class="sub">trên ${totalPages} trang</div></div>`,
+      `<div class="kpi"><div class="lbl">Trung bình mỗi kỳ</div><div class="val">0 đ</div><div class="sub">tính trên 0 kỳ trang này</div></div>`,
+      `<div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">0 đ</div><div class="sub">chưa có kỳ · 0 kỳ trang này</div></div>`,
+      `<div class="kpi green"><div class="lbl">Tổng đã nộp</div><div class="val">0 đ</div><div class="sub">chỉ kỳ đã thu · 0 kỳ trang này</div></div>`,
+    ].join('');
+    charts.innerHTML = '<div class="chart-empty">Chưa phát sinh kỳ cước nào — biểu đồ sẽ hiện khi có dữ liệu.</div>';
+    const ovEmpty = document.getElementById('ov-chart');
+    if (ovEmpty) ovEmpty.innerHTML = '<div class="chart-empty">Chưa phát sinh kỳ cước nào.</div>';
+    return;
+  }
+  const sum = rows.reduce((a, h) => a + Number(h.tongTien || 0), 0);
+  const avg = Math.round(sum / n);
+  const top = rows.reduce((a, b) => Number(b.tongTien || 0) > Number(a.tongTien || 0) ? b : a, rows[0]);
+  const paidSum = rows.filter(isPaidInvoice).reduce((a, h) => a + Number(h.tongTien || 0), 0);
+  kpis.innerHTML = `
+    <div class="kpi"><div class="lbl">Số kỳ đã phát sinh</div><div class="val">${tenantHistoryTotal}</div><div class="sub">trên ${totalPages} trang</div></div>
+    <div class="kpi"><div class="lbl">Trung bình mỗi kỳ</div><div class="val">${fmtMoney(avg)} đ</div><div class="sub">tính trên ${n} kỳ trang này</div></div>
+    <div class="kpi"><div class="lbl">Kỳ cao nhất</div><div class="val">${fmtMoney(top.tongTien)} đ</div><div class="sub">${esc(fmtKyCuoc(top.kyCuoc))} · tính trên ${n} kỳ trang này</div></div>
+    <div class="kpi green"><div class="lbl">Tổng đã nộp</div><div class="val">${fmtMoney(paidSum)} đ</div><div class="sub">chỉ kỳ đã thu · ${n} kỳ trang này</div></div>`;
+  charts.innerHTML = '';
+  // Bọc trong .card chuẩn của shell (cùng vocab với .duo/.kpis) — SVG co giãn theo bề rộng card.
+  const chartCard = document.createElement('div');
+  chartCard.className = 'card';
+  const chartHdr = document.createElement('div');
+  chartHdr.className = 'hdr';
+  chartHdr.innerHTML = '<i class="fas fa-chart-column"></i> Điện (kWh) &amp; nước theo kỳ';
+  chartCard.appendChild(chartHdr);
+  chartCard.appendChild(buildTenantChart(rows));
+  charts.appendChild(chartCard);
+  // Khe "Xu hướng cước" ở Tổng quan — cùng dữ liệu, dựng lại SVG (không di chuyển node).
+  const ov = document.getElementById('ov-chart');
+  if (ov) { ov.innerHTML = ''; ov.appendChild(buildTenantChart(rows)); }
+}
+
+/**
+ * Biểu đồ SVG cột đôi (điện amber #E0AF68: kWh, nước sage #8BD7A3: khối/người) theo kyCuoc tăng dần.
+ * Vẽ bằng document.createElementNS — không thư viện (test TenantJs_BuildsChartWithoutLibrary).
+ * Controller ruling: vẽ THEO SẢN LƯỢNG (kWh và khối), không vẽ theo tiền — tránh việc tiền nước
+ * (~20k) bị tiền điện (~175k) đè bẹp khiến cột nước gần như tàng hình trên cùng một thang đo.
+ * Quy đổi: tiền / đơn giá (lấy từ chiSoKyNay hiện có, hoặc đơn giá chuẩn 3.500 đ/kWh, 12.000 đ/khối).
+ * Thang đo riêng cho từng chuỗi (chuẩn hoá theo max của chuỗi đó) để cả hai luôn nhìn thấy được.
+ * ponytail: sản lượng suy từ tiền nên sai lệch nếu đơn giá đổi giữa các kỳ — chuyển sang đọc
+ * chỉ số thật theo từng dòng khi server trả kèm chi_so trong danh sách hóa đơn.
+ */
+function buildTenantChart(rows) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const data = [...rows].sort((a, b) => String(a.kyCuoc).localeCompare(String(b.kyCuoc))).slice(-12);
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'bar-chart');
+  svg.setAttribute('role', 'img');
+
+  const cs = tenantChiSo;
+  const giaD = (cs && Number(cs.giaDien)) || 3500;
+  const giaN = (cs && Number(cs.giaNuoc)) || 12000;
+  const perNguoi = cs && String(cs.hinhThucNuoc || '').toLowerCase() === 'nguoi';
+  const donViNuoc = perNguoi ? 'người' : 'khối';
+  // Sản lượng ước tính từ hóa đơn — làm tròn về số nguyên
+  const series = data.map(h => ({
+    kyCuoc: h.kyCuoc,
+    elecQty: Math.max(0, Math.round(Number(h.tienDien || 0) / giaD)),
+    waterQty: Math.max(0, Math.round(Number(h.tienNuoc || 0) / giaN))
+  }));
+
+  const totE = series.reduce((a, s) => a + s.elecQty, 0);
+  const totW = series.reduce((a, s) => a + s.waterQty, 0);
+  const title = document.createElementNS(NS, 'title');
+  title.textContent = `${data.length} kỳ từ ${fmtKyCuoc(data[0].kyCuoc)} đến ${fmtKyCuoc(data[data.length - 1].kyCuoc)}: tổng ${fmtMoney(totE)} kWh điện, ${fmtMoney(totW)} ${donViNuoc} nước`;
+  svg.appendChild(title);
+
+  const W = 320, H = 120, pad = 18;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const maxE = Math.max(1, ...series.map(s => s.elecQty));
+  const maxW = Math.max(1, ...series.map(s => s.waterQty));
+  const gw = (W - pad * 2) / series.length;
+
+  series.forEach((s, i) => {
+    // Kỳ không tiêu thụ vẫn để 1px — cột 0px biến mất khỏi trục, đọc thành "thiếu dữ liệu".
+    const eH = Math.max(1, Math.round(s.elecQty / maxE * (H - pad * 2)));
+    const wH = Math.max(1, Math.round(s.waterQty / maxW * (H - pad * 2)));
+    const x = pad + i * gw;
+
+    const e = document.createElementNS(NS, 'rect');
+    e.setAttribute('x', x + 1); e.setAttribute('y', H - pad - eH);
+    e.setAttribute('width', Math.max(1, gw / 2 - 2)); e.setAttribute('height', eH);
+    e.setAttribute('fill', '#E0AF68');
+    svg.appendChild(e);
+
+    const w = document.createElementNS(NS, 'rect');
+    w.setAttribute('x', x + gw / 2); w.setAttribute('y', H - pad - wH);
+    w.setAttribute('width', Math.max(1, gw / 2 - 2)); w.setAttribute('height', wH);
+    w.setAttribute('fill', '#8BD7A3');
+    svg.appendChild(w);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x + gw / 2); t.setAttribute('y', H - 5);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '8'); t.setAttribute('fill', '#767E88');
+    t.textContent = fmtKyCuoc(s.kyCuoc);
+    svg.appendChild(t);
+  });
+  return svg;
+}
+
+/**
+ * Ruling B — copy thông tin chuyển khoản: <soPhong> <kyCuoc>: <tongTien> đ.
+ * BANK_INFO còn '' (chưa có hồ sơ nhận tiền trên server) → copy dòng kỳ cước hôm nay
+ * kèm ghi chú chưa cấu hình STK; KHÔNG render placeholder STK nào lên màn hình.
+ */
 async function copyTransfer() {
   const target = (currentTenantInvoices || []).find(i => !isPaidInvoice(i)) || (currentTenantInvoices || [])[0];
   if (!target) {
     if (typeof toast === 'function') toast('Không có hóa đơn để sao chép', 'warn');
     return;
   }
-  const text = `HD-${String(target.kyCuoc || '').replace('-', '')}-${target.phongId || target.id} ${fmtMoney(target.tongTien)} đ`;
+  const room = String(tenantRoomName || target.soPhong || '').trim();
+  const period = fmtKyCuoc(target.kyCuoc);
+  const line = `${room ? room + ' ' : ''}${period}: ${fmtMoney(target.tongTien)} đ`;
+  const hint = BANK_INFO ? '' : ' (thông tin nhận tiền chưa cấu hình)';
+  // hint phải vào clipboard: toast biến mất sau 4s, còn clipboard mới là thứ khách dán vào app ngân hàng.
+  const text = BANK_INFO ? `${BANK_INFO}\n${line}` : `${line}${hint}`;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
-      if (typeof toast === 'function') toast(`Đã sao chép: ${text}`, 'ok');
+      if (typeof toast === 'function') toast(`Đã sao chép: ${line}${hint}`, 'ok');
     } else {
-      if (typeof toast === 'function') toast(`Nội dung chuyển khoản: ${text}`, 'info');
+      if (typeof toast === 'function') toast(`Nội dung chuyển khoản: ${text}${hint}`, 'info');
     }
   } catch (err) {
-    if (typeof toast === 'function') toast(`Nội dung: ${text}`, 'info');
+    if (typeof toast === 'function') toast(`Nội dung: ${text}${hint}`, 'info');
   }
 }
 
@@ -435,6 +780,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (legacy) legacy.textContent = name;
   }
   switchTenantTab(params.get('tab') === 'history' ? 'history' : 'overview');
+  wireTabKeys('tenantTabs', switchTenantTab);
+  wireTabKeys('checkinTabs', switchCheckinTab);
   loadTenantInvoices();
   // ponytail: tự động làm mới toàn trang mỗi 30s + khi quay lại cửa sổ — thay nút sync tay.
   startAutoRefresh(loadTenantInvoices, 30000);

@@ -9,12 +9,20 @@ body{
 .mono{font-family:'JetBrains Mono','SF Mono',Consolas,monospace}
 .nums{font-variant-numeric:tabular-nums}
 
+/* Chỉ dành cho screen reader — 1 định nghĩa dùng chung cho cả 3 shell. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0
+}
+
 .inp{
   padding:7px 10px;border:1px solid var(--input-line);border-radius:4px;font:inherit;font-size:13.5px;
   background:var(--field);color:var(--cream);transition:border-color .15s;width:100%
 }
 .inp::placeholder{color:var(--ph)}
 .inp:focus{border-color:var(--terracotta);outline:0;box-shadow:0 0 0 1px var(--terracotta),0 0 0 4px rgba(217,93,57,.12)}
+/* Bàn phím: viền outline thay cho box-shadow ở trên để không chồng 2 vòng. */
+.inp:focus-visible{box-shadow:none}
 select.inp{height:32px;padding:4px 8px}
 
 /* buttons */
@@ -36,6 +44,8 @@ select.inp{height:32px;padding:4px 8px}
 .btn-sm{padding:4px 9px;font-size:11.5px}
 .btn-sm i{font-size:11.5px}
 .btn[disabled]{opacity:.4;cursor:default;pointer-events:none}
+/* Focus ring chung — :focus-visible để chuột không nháy viền. */
+.btn:focus-visible,.inp:focus-visible,.tbl tr.clickable-row:focus-visible{outline:2px solid var(--terracotta);outline-offset:1px}
 kbd{font-family:'JetBrains Mono',Consolas,monospace;font-size:10.5px;color:var(--dim);
   background:var(--field);border:1px solid #2B3036;border-radius:3px;padding:0 4px}
 
