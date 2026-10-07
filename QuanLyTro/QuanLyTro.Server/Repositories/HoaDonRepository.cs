@@ -232,7 +232,7 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
             FROM hoa_don i
             JOIN hop_dong c ON c.id = i.hop_dong_id
             WHERE c.nguoi_dai_dien_id = @khachThueId
-            ORDER BY i.ky_cuoc DESC
+            ORDER BY i.ky_cuoc DESC, i.id DESC
             LIMIT @limit OFFSET @offset
             """;
 

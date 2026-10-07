@@ -21,6 +21,8 @@ body{
 }
 .inp::placeholder{color:var(--ph)}
 .inp:focus{border-color:var(--terracotta);outline:0;box-shadow:0 0 0 1px var(--terracotta),0 0 0 4px rgba(217,93,57,.12)}
+/* Bàn phím: viền outline thay cho box-shadow ở trên để không chồng 2 vòng. */
+.inp:focus-visible{box-shadow:none}
 select.inp{height:32px;padding:4px 8px}
 
 /* buttons */

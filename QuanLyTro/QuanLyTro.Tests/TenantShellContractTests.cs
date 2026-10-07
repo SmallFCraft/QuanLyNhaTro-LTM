@@ -70,8 +70,24 @@ public sealed class TenantShellContractTests
             "Tập data-tab của #tenantTabs phải đúng {overview, current, history, utilities}; nhận: {"
             + string.Join(", ", actual) + "}");
 
-        Assert.IsFalse(Regex.IsMatch(html, "data-write\\s*=\\s*['\"]?true", RegexOptions.IgnoreCase),
-            "Shell khách thuê không được có attribute data-write=\"true\"");
+        // Đúng 1 tab active — HashSet dedup sẽ nuốt tab trùng, nên đếm trực tiếp trên navBlock.
+        var navStart2 = html.IndexOf("id=\"tenantTabs\"", StringComparison.Ordinal);
+        var navEnd2 = html.IndexOf("id=\"tab-nhan-phong\"", StringComparison.Ordinal);
+        var navBlock2 = navEnd2 > navStart2
+            ? html.Substring(navStart2, navEnd2 - navStart2)
+            : html.Substring(navStart2);
+        Assert.AreEqual(1, Regex.Matches(navBlock2, "class=\"tab on\"").Count,
+            "Thanh #tenantTabs phải có đúng 1 tab active");
+
+        // Không nút ghi: quét label literal như PoliceShellContractTests — attribute
+        // data-write="true" không tồn tại ở bất kỳ file wwwroot nào nên assert nó không bao giờ đỏ.
+        var shellStart = html.IndexOf("id=\"khachthue\"", StringComparison.Ordinal);
+        Assert.IsTrue(shellStart >= 0, "khachthue/index.html thiếu cửa sổ #khachthue");
+        var shellBlock = html.Substring(shellStart);
+        foreach (var verb in new[] { "Thêm", "Sửa", "Xóa" })
+        {
+            Assert.IsFalse(Regex.IsMatch(shellBlock, $">{verb}<"), $"Shell khách thuê có nút ghi: {verb}");
+        }
 
         // Allowlist: action thứ 13 hay tên gõ sai cũng bắt đỏ — chặn theo danh sách known-bad thì kẽ hở.
         var used = GetBridgeCallActions(TenantJs);
@@ -136,9 +152,13 @@ public sealed class TenantShellContractTests
     {
         var js = TenantJs;
         Assert.IsTrue(js.Contains("elecQty"), "buildTenantChart phải tính sản lượng điện (kWh), không dùng trực tiếp tienDien");
-        Assert.IsFalse(js.Contains("tổng ${fmtMoney(sum)} đ"),
-            "<title> của chart không được trình bày tổng tiền (đ) — dấu hiệu chart đang vẽ theo tiền");
-        Assert.IsTrue(js.Contains("kWh điện"), "chart <title> phải nêu đơn vị sản lượng");
+        // Chỉ soi thân hàm buildTenantChart: khẳng định trên cả file là vô nghĩa vì tiền vẫn
+        // hợp lệ ở KPI/tóm tắt. Trong hàm chỉ được còn sản lượng — không được có tienDien/tongTien.
+        var fn = Regex.Match(js, @"function buildTenantChart\(rows\) \{[\s\S]*?\n\}").Value;
+        Assert.IsFalse(string.IsNullOrEmpty(fn), "không tìm thấy buildTenantChart trong khach_thue.js");
+        Assert.IsFalse(fn.Contains("tongTien"),
+            "buildTenantChart không được đọc tongTien — chart vẽ theo tiền là sai ruling");
+        Assert.IsTrue(fn.Contains("kWh điện"), "chart <title> phải nêu đơn vị sản lượng");
     }
 
     /// <summary>Ruling A: mỗi KPI Tiện ích phải có sub ghi phạm vi — 4 KPI, không số nào trần.</summary>

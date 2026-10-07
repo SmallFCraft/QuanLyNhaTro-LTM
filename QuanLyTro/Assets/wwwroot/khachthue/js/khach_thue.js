@@ -9,6 +9,9 @@ let tenantRoomId = null;
 let tenantRoomName = null;
 let tenantHopDong = null;
 let tenantChiSo = null;
+// Tab app đang chọn — showCheckinScreen strip .active khi hiện màn QR nên phải ghi lại
+// để màn ẩn đi còn dựng lại đúng pane, không mặc định 'overview'.
+let tenantActiveTab = 'overview';
 // Skeleton chỉ hiện khi CHƯA từng nạp được gì — auto-refresh 30s không được làm nhấp nháy bảng đang xem.
 let tenantLoaded = false;
 let camStream = null;
@@ -60,6 +63,9 @@ function showCheckinScreen(show) {
         p.style.display = 'none';
       } else {
         p.style.display = '';
+        // Dựng lại pane đang chọn: nhánh trên đã gỡ .active nên .tab-pane{display:none}
+        // vẫn ẩn mọi pane nếu chỉ trả lại display — màn hình sẽ trắng.
+        p.classList.toggle('active', p.id === `tab-${tenantActiveTab}`);
       }
     });
   }
@@ -438,8 +444,17 @@ function renderTenantEmpty() {
   if (info) info.textContent = '';
   tenantHistoryTotal = 0;
   renderTenantPagination();
-  // Không gọi renderTenantUtilities ở đây: currentTenantInvoices vẫn là số cũ của lần nạp
+  // Không vẽ lại KPI khi đã từng vẽ: currentTenantInvoices vẫn là số cũ của lần nạp
   // thành công trước — xóa KPI khi lỗi mạng chợt chớn sẽ nói "0 kỳ" oan.
+  // Nhưng lần nạp ĐẦU đã lỗi thì pane Tiện ích chưa từng được vẽ → trống trơn, phải báo lỗi.
+  const kpis = document.getElementById('util-kpis');
+  const charts = document.getElementById('util-charts');
+  if (kpis && !kpis.innerHTML.trim()) {
+    kpis.innerHTML = `<div class="empty-state">Không tải được dữ liệu cước
+        <div><button type="button" class="btn btn-outline btn-sm" onclick="loadTenantInvoices()">Thử lại</button></div>
+      </div>`;
+    if (charts) charts.innerHTML = '';
+  }
 }
 
 // Tóm tắt Tổng quan + chi tiết Kỳ này: khi đang ở trang 1, currentTenantInvoices[0] đã là
@@ -460,9 +475,15 @@ async function refreshTenantSummary() {
     // bị ghép với chỉ số của kỳ trang cũ → khách tự kiểm tra phép tính sẽ ra số sai.
     // Gán vô điều kiện khi dto non-null: null là giá trị hợp lệ (khách vừa trả phòng /
     // kỳ chưa chốt chỉ số) — giữ giá trị cũ mới là ghép sai.
-    if (dto) { tenantHopDong = dto.hopDong ?? null; tenantChiSo = dto.chiSoKyNay ?? null; }
+    // CHỈ số trang 1 được đưa vào local: ghi vào tenantChiSo sẽ đổi đơn giá mà
+    // buildTenantChart đọc, khiến biểu đồ trang khách đang xem lệch với KPI kế bên.
+    let chiSoTrang1 = tenantChiSo;
+    if (dto) {
+      tenantHopDong = dto.hopDong ?? null;
+      chiSoTrang1 = dto.chiSoKyNay ?? null;
+    }
     const latest = (dto && dto.items && dto.items[0]) || currentTenantInvoices[0];
-    if (latest) { renderTenantSummary(latest); return; }
+    if (latest) { renderTenantSummary(latest, chiSoTrang1); return; }
   } catch (err) {
     renderTenantSummaryError();
     return;
@@ -473,7 +494,11 @@ async function refreshTenantSummary() {
 // Không có dữ liệu vì lỗi tải (khác hẳn "khách chưa phát sinh kỳ cước nào").
 function renderTenantSummaryError() {
   setText('due-alert-text', 'Không tải được dữ liệu cước.');
-  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa nộp');
+  // Không khẳng định trạng thái thu khi không tải được — số cũ còn đó nhưng app không biết gì mới.
+  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa rõ');
+  setText('ov-trang_thai', 'Chưa rõ');
+  setTag('rc-trang_thai-tag', false, 'Đã thanh toán', 'Chưa rõ');
+  setTag('rc-due-tag', false, 'Đã thu', 'Chưa rõ');
 }
 
 // Khách chưa phát sinh kỳ cước nào: số 0 thật thay cho dấu — và due-alert-text không giữ câu placeholder.
@@ -488,12 +513,13 @@ function renderTenantNoInvoice() {
   ['rc-room', 'rc-elec', 'rc-water', 'rc-other'].forEach(id => setText(id, '0 đ'));
   setText('rc-total', '0');
   setTag('rc-trang_thai-tag', false, 'Đã thanh toán', 'Chưa thanh toán');
-  setTag('rc-due-tag', false, 'Chưa thu', 'Đã thu');
+  setTag('rc-due-tag', false, 'Đã thu', 'Chưa thu');
   setText('ov-month', '—');
   setText('ov-total', '0 đ');
   setText('ov-trang_thai', 'Chưa phát sinh kỳ cước');
   setText('ov-elec', '0');
   setText('ov-nuoc', '0');
+  setText('ov-nuoc-unit', 'khối');
   setText('ov-elec-sub', 'Chưa có chỉ số kỳ này');
   setText('ov-nuoc-sub', 'Chưa có chỉ số kỳ này');
   setText('rc-elec-sub', 'Chưa có chỉ số kỳ này');
@@ -503,7 +529,7 @@ function renderTenantNoInvoice() {
     : 'Chưa có hợp đồng hiệu lực');
 }
 
-function renderTenantSummary(unpaid) {
+function renderTenantSummary(unpaid, csOverride) {
   // Khối Kỳ này
   setText('rc-room', fmtMoney(unpaid.tienPhong) + ' đ');
   setText('rc-elec', fmtMoney(unpaid.tienDien) + ' đ');
@@ -517,7 +543,8 @@ function renderTenantSummary(unpaid) {
   setTag('rc-due-tag', !paid, 'Chưa thu', 'Đã thu');
 
   // Khối Tổng quan — tiêu thụ điện, nước, hạn hợp đồng, và chỉ số kỳ này
-  const cs = tenantChiSo;
+  // csOverride = chỉ số trang 1 lấy từ request riêng; mặc định = tenantChiSo (khi đang ở trang 1).
+  const cs = csOverride === undefined ? tenantChiSo : csOverride;
   setText('ov-elec', cs ? fmtMoney(cs.dienMoi - cs.dienCu) : '0');
   // Nước đổi đơn vị theo hình thức: theo khối (m³) hoặc theo đầu người.
   if (cs) {
@@ -581,6 +608,7 @@ function showInvoiceDetail(id) {
 }
 
 function switchTenantTab(name) {
+  tenantActiveTab = name;
   syncTabBar('tenantTabs', name);
   document.querySelectorAll('.tab-pane').forEach(p => {
     p.classList.toggle('active', p.id === `tab-${name}`);
@@ -723,9 +751,11 @@ async function copyTransfer() {
     return;
   }
   const room = String(tenantRoomName || target.soPhong || '').trim();
-  const line = `${room ? room + ' ' : ''}${target.kyCuoc || ''}: ${fmtMoney(target.tongTien)} đ`;
-  const text = BANK_INFO ? `${BANK_INFO}\n${line}` : line;
+  const period = fmtKyCuoc(target.kyCuoc);
+  const line = `${room ? room + ' ' : ''}${period}: ${fmtMoney(target.tongTien)} đ`;
   const hint = BANK_INFO ? '' : ' (thông tin nhận tiền chưa cấu hình)';
+  // hint phải vào clipboard: toast biến mất sau 4s, còn clipboard mới là thứ khách dán vào app ngân hàng.
+  const text = BANK_INFO ? `${BANK_INFO}\n${line}` : `${line}${hint}`;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
