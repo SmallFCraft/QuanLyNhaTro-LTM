@@ -175,6 +175,101 @@ public sealed class WebMessageBridgeTests
     }
 
     /// <summary>
+    /// UI_SERVER_STATUS phải trả lời được cả khi chưa có TCP client (test dùng null) và
+    /// trả đúng trạng thái socket thật khi đã nối — không gửi gói nào lên Server.
+    /// </summary>
+    [TestMethod]
+    public async Task DispatchAsync_UiServerStatus_ReportsConnectedFlagWithoutTcpRoundTrip()
+    {
+        string? responseJson = null;
+        await new WebMessageBridge(client: null!).DispatchAsync(
+            """{"requestId":"r_st_off","hanh_dong":"UI_SERVER_STATUS","data":{}}""",
+            msg => { responseJson = msg; return Task.CompletedTask; });
+
+        Assert.IsNotNull(responseJson);
+        using (var doc = JsonDocument.Parse(responseJson))
+        {
+            Assert.IsTrue(doc.RootElement.GetProperty("success").GetBoolean());
+            Assert.IsFalse(doc.RootElement.GetProperty("data").GetProperty("connected").GetBoolean(),
+                "Chưa nối TCP thì connected phải là false.");
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var tcpClient = new TcpClientService();
+        await tcpClient.ConnectAsync("127.0.0.1", port, cts.Token);
+
+        responseJson = null;
+        await new WebMessageBridge(tcpClient).DispatchAsync(
+            """{"requestId":"r_st_on","hanh_dong":"UI_SERVER_STATUS","data":{}}""",
+            msg => { responseJson = msg; return Task.CompletedTask; });
+
+        listener.Stop();
+        tcpClient.Disconnect();
+
+        Assert.IsNotNull(responseJson);
+        using (var doc = JsonDocument.Parse(responseJson))
+        {
+            Assert.IsTrue(doc.RootElement.GetProperty("data").GetProperty("connected").GetBoolean(),
+                "Đã ConnectAsync thì connected phải là true.");
+        }
+    }
+
+    /// <summary>
+    /// Kịch bản người dùng báo: mở App TRƯỚC, Server bật SAU.
+    /// Lần probe đầu (Server chưa chạy) trả false; sau đó Server bật lên,
+    /// lần probe kế tiếp của auth.js phải TỰ NỐI LẠI và trả true (indicator tự xanh, không cần bấm Đăng nhập).
+    /// </summary>
+    [TestMethod]
+    public async Task DispatchAsync_UiServerStatus_AutoReconnectsWhenServerStartsLater()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+
+        // 1. Dựng probe để lấy cổng rồi đóng = Server chưa chạy.
+        var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+
+        var client = new TcpClientService();
+        // Lần đầu nối fail (app mở trước Server) nhưng đã lưu endpoint vào client._host/_port.
+        await Assert.ThrowsExceptionAsync<SocketException>(() => client.ConnectAsync("127.0.0.1", port, cts.Token));
+
+        var bridge = new WebMessageBridge(client);
+
+        // Probe khi Server vẫn chết → connected = false.
+        string? res1 = null;
+        await bridge.DispatchAsync(
+            """{"requestId":"r_probe_1","hanh_dong":"UI_SERVER_STATUS","data":{}}""",
+            msg => { res1 = msg; return Task.CompletedTask; });
+        using (var d1 = JsonDocument.Parse(res1!))
+        {
+            Assert.IsFalse(d1.RootElement.GetProperty("data").GetProperty("connected").GetBoolean());
+        }
+
+        // 2. "Bật Server" trên đúng cổng đó.
+        var listener = new TcpListener(IPAddress.Loopback, port);
+        listener.Start();
+
+        // 3. auth.js poll lại (nhịp 5s) → bridge tự ConnectAsync lại, connected = true!
+        string? res2 = null;
+        await bridge.DispatchAsync(
+            """{"requestId":"r_probe_2","hanh_dong":"UI_SERVER_STATUS","data":{}}""",
+            msg => { res2 = msg; return Task.CompletedTask; });
+
+        listener.Stop();
+        client.Disconnect();
+
+        using (var d2 = JsonDocument.Parse(res2!))
+        {
+            Assert.IsTrue(d2.RootElement.GetProperty("data").GetProperty("connected").GetBoolean(),
+                "UI_SERVER_STATUS phải tự nối lại khi Server bật sau, indicator tự chuyển sang xanh.");
+        }
+    }
+
+    /// <summary>
     /// Mô phỏng đầy đủ luồng thực tế của người dùng:
     /// 1. Đăng nhập admin qua DANG_NHAP (bridge lưu token nội bộ)
     /// 2. Chuyển sang tab "Điện Nước": gọi PHONG_LAY_TAT_CA

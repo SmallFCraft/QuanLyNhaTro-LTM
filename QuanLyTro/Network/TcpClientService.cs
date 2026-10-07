@@ -24,6 +24,8 @@ public sealed class TcpClientService : IDisposable
     private NetworkStream? _stream;
     private StreamReader? _reader;
     private int _disconnectedFired;
+    private string? _host;
+    private int _port;
 
     /// <summary>Token phiên làm việc hiện tại, gửi kèm mỗi gói tin sau khi đăng nhập.</summary>
     public string? Token { get; set; }
@@ -36,6 +38,11 @@ public sealed class TcpClientService : IDisposable
     /// <summary>Mở kết nối tới Server. Đóng kết nối cũ nếu có.</summary>
     public async Task ConnectAsync(string host, int port, CancellationToken ct = default)
     {
+        // Nhớ đích TRƯỚC khi thử nối: lần nối đầu có thể thất bại (app mở trước Server)
+        // nhưng EnsureConnectedAsync vẫn phải biết nối lại vào đâu.
+        _host = host;
+        _port = port;
+
         Disconnect();
         _disconnectedFired = 0;
 
@@ -55,16 +62,47 @@ public sealed class TcpClientService : IDisposable
     }
 
     /// <summary>
+    /// Nối lại khi socket đã chết nhưng còn nhớ đích (app mở trước khi Server bật, hoặc Server restart).
+    /// Trả false nếu chưa từng biết đích / vẫn chưa nối được — caller giữ nguyên thông điệp lỗi cũ.
+    /// </summary>
+    private async Task<bool> EnsureConnectedAsync(CancellationToken ct)
+    {
+        if (_stream is not null && _client is { Connected: true }) return true;
+        if (_host is null) return false;  // chưa từng ConnectAsync → không có gì để nối lại
+
+        try
+        {
+            await ConnectAsync(_host, _port, ct);
+            return true;
+        }
+        catch (Exception ex) when (ex is SocketException or ArgumentException or ObjectDisposedException)
+        {
+            return false;  // Server vẫn chưa chạy — lần gọi sau thử lại
+        }
+    }
+
+    /// <summary>
+    /// Probe cho indicator trạng thái: thử nối lại nếu đang rớt, trả về trạng thái socket hiện tại.
+    /// Không gửi gói tin nào — chỉ mở socket. Không bao giờ ném (probe thất bại = trả false).
+    /// </summary>
+    public async Task<bool> ReconnectIfDownAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            return await EnsureConnectedAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Gửi một hanh_dong với payload, đợi phản hồi đúng hạn 10s.
     /// Thread-safe: Semaphore(1,1) bảo đảm không bao giờ xáo trộn cặp request/response.
     /// </summary>
     public async Task<TResp> SendAsync<TReq, TResp>(string hanh_dong, TReq data, CancellationToken ct = default)
     {
-        if (_stream is null || _reader is null || _client is null || !_client.Connected)
-        {
-            throw new InvalidOperationException("Chưa kết nối tới server.");
-        }
-
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         linkedCts.CancelAfter(RequestTimeout);
         var token = linkedCts.Token;
@@ -72,6 +110,11 @@ public sealed class TcpClientService : IDisposable
         await _gate.WaitAsync(token);
         try
         {
+            if (!await EnsureConnectedAsync(token))
+            {
+                throw new InvalidOperationException("Chưa kết nối tới server.");
+            }
+
             var packet = RequestPacket.Create(hanh_dong, Token, data);
             var json = JsonSerializer.Serialize(packet, JsonDefaults.Options);
             var payload = Encoding.UTF8.GetBytes(json + "\n");

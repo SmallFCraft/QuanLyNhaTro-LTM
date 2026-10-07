@@ -21,11 +21,11 @@ namespace QuanLyTro.Tests;
 [TestClass]
 public sealed class TcpClientServiceTests
 {
-    /// <summary>Mở listener trên cổng trống, chạy handler cho từng kết nối tới.</summary>
+    /// <summary>Mở listener trên cổng trống, chạy handler cho từng kết nối tới. port = 0 → chọn cổng tự do.</summary>
     private static async Task<TcpListener> StartStubAsync(
-        Func<string, Task<string>> onLine, CancellationToken ct)
+        Func<string, Task<string>> onLine, CancellationToken ct, int port = 0)
     {
-        var listener = new TcpListener(IPAddress.Loopback, 0);
+        var listener = new TcpListener(IPAddress.Loopback, port);
         listener.Start();
         _ = Task.Run(async () =>
         {
@@ -147,6 +147,39 @@ public sealed class TcpClientServiceTests
 
         listener.Stop();
         client.Disconnect();
+    }
+
+    /// <summary>
+    /// Sơ đồ lỗi của app: mở client TRƯỚC khi bật Server — ConnectAsync thất bại,
+    /// rồi Server mới chạy. Lần gửi đầu tiên phải tự nối lại, không ném "Chưa kết nối tới server."
+    /// </summary>
+    [TestMethod]
+    public async Task TcpClientService_AutoReconnects_WhenServerStartsAfterClient()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+        // 1. Dựng một listener chỉ để biết trước cổng, rồi tắt đi = Server chưa chạy.
+        var probe = await StartStubAsync(_ => Task.FromResult(string.Empty), cts.Token);
+        var port = PortOf(probe);
+        probe.Stop();
+
+        var client = new TcpClientService();
+        await Assert.ThrowsExceptionAsync<SocketException>(() => client.ConnectAsync("127.0.0.1", port, cts.Token));
+
+        // 2. "Bật Server" trên đúng cổng đó.
+        var listener = await StartStubAsync(_ => Task.FromResult(JsonSerializer.Serialize(
+            ResponsePacket.Ok(new KetQuaDangNhap("tok-sau-tao-lai", "Chủ trọ", VaiTroNguoiDung.ChuTro)),
+            JsonDefaults.Options)), cts.Token, port);
+
+        // 3. Không ConnectAsync thủ công lần 2 — SendAsync tự nối lại được.
+        var login = await client.SendAsync<YeuCauDangNhap, KetQuaDangNhap>(
+            ActionNames.DangNhap, new YeuCauDangNhap("admin", "123456"), cts.Token);
+
+        listener.Stop();
+        client.Disconnect();
+
+        Assert.AreEqual("tok-sau-tao-lai", login.Token,
+            "SendAsync phải tự ConnectAsync lại khi đích đã biết và Server vừa chạy lên.");
     }
 
     [TestMethod]

@@ -14,6 +14,12 @@ namespace QuanLyTro.Network;
 /// </summary>
 public sealed class WebMessageBridge
 {
+    /// <summary>
+    /// Trần chờ cho probe UI_SERVER_STATUS. Phải NGẮN HƠN nhịp poll 5s của auth.js:
+    /// probe chậm hơn nhịp sẽ xếp hàng và indicator đứng im khi Server treo cổng.
+    /// </summary>
+    private static readonly TimeSpan StatusProbeTimeout = TimeSpan.FromSeconds(2);
+
     private readonly TcpClientService _client;
 
     public WebMessageBridge(TcpClientService client)
@@ -52,6 +58,24 @@ public sealed class WebMessageBridge
                 _client.Token = null;
                 var ok = JsonSerializer.Serialize(new { requestId = reqId, success = true, data = (object?)null, error = (string?)null }, JsonDefaults.Options);
                 await postBack(ok);
+                return;
+            }
+
+            // Trạng thái kết nối cho shell auth: probe chỉ mở socket (không gửi gói lên TCP Server).
+            // Kiêm luôn nối lại — app mở trước, Server bật sau thì indicator tự xanh,
+            // không phải chờ người dùng bấm Đăng nhập mới phát hiện Server đã chạy.
+            if (action == "UI_SERVER_STATUS")
+            {
+                using var statusCts = new System.Threading.CancellationTokenSource(StatusProbeTimeout);
+                var connected = _client is not null && await _client.ReconnectIfDownAsync(statusCts.Token);
+                var statusPayload = JsonSerializer.Serialize(new
+                {
+                    requestId = reqId,
+                    success = true,
+                    data = new { connected },
+                    error = (string?)null
+                }, JsonDefaults.Options);
+                await postBack(statusPayload);
                 return;
             }
 

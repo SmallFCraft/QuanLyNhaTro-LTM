@@ -34,4 +34,16 @@ public sealed class AuthShellContractTests
         Assert.IsTrue(js.Contains("Cccd"), "auth.js phải gửi CCCD của người đại diện.");
         Assert.IsTrue(js.Contains("lu"), "auth.js phải tự điền CCCD vào ô đăng nhập sau khi đăng ký thành công.");
     }
+
+    /// <summary>Indicator kết nối Server: node có thật + auth.js probe định kỳ qua UI_SERVER_STATUS.</summary>
+    [TestMethod]
+    public void AuthShell_PollsServerConnectionIndicator()
+    {
+        var html = Html;
+        Assert.IsTrue(html.Contains("id=\"srv-status\""), "auth shell thiếu indicator #srv-status.");
+
+        var js = Js;
+        Assert.IsTrue(js.Contains("'UI_SERVER_STATUS'"), "auth.js phải probe UI_SERVER_STATUS.");
+        Assert.IsTrue(js.Contains("setInterval"), "auth.js phải poll trạng thái kết nối định kỳ.");
+    }
 }

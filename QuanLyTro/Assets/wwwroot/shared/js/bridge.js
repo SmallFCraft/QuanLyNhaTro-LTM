@@ -38,6 +38,8 @@ if (window.chrome && window.chrome.webview) {
     { id: 1, phongId: 102, hopDongId: 1, kyCuoc: '2026-07', tienPhong: 2000000, tienDien: 155000, tienNuoc: 20000, phiKhac: 50000, tongTien: 2225000, trang_thai: 'DaThu', ngayDong: '2026-08-04T15:22:00' }
   ];
   window.bridge.call = function (hanh_dong, data) {
+    // Preview không có host WebView2 → giả lập "đã kết nối" để xem được indicator ở trạng thái bật.
+    if (hanh_dong === 'UI_SERVER_STATUS') return Promise.resolve({ connected: true });
     if (hanh_dong === 'HOA_DON_CUA_TOI') {
       const page = Number((data && data.page) || 1);
       const size = Number((data && data.soLuongMoiTrang) || 10);

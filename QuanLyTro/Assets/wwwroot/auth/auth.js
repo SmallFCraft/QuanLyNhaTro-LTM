@@ -90,3 +90,28 @@ async function doLogin() {
     alertDialog(err.message, 'Đăng nhập không thành công', 'err');
   }
 }
+
+// Indicator kết nối Server: UI_SERVER_STATUS đọc socket ngay trong host WebView (không gửi gói TCP),
+// nên polling không tốn request và vẫn trả lời được khi Server đã chết.
+// Không dùng startAutoRefresh: hàm đó bỏ qua lúc activeElement là INPUT — trang đăng nhập gõ gần như luôn.
+async function pollServerStatus() {
+  if (document.hidden) return;
+  const el = document.getElementById('srv-status');
+  if (!el) return;
+  let connected = false;
+  try {
+    const st = await window.bridge.call('UI_SERVER_STATUS', {});
+    connected = !!(st && st.connected);
+  } catch (e) { /* probe hỏng = coi như mất kết nối, để lần poll sau thử lại */ }
+  el.dataset.state = connected ? 'on' : 'off';
+  el.querySelector('.txt').textContent = connected
+    ? 'Đã kết nối máy chủ'
+    : 'Mất kết nối máy chủ — hãy mở Server TCP';
+}
+
+function startServerStatusPolling(ms = 5000) {
+  pollServerStatus();
+  setInterval(pollServerStatus, ms);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pollServerStatus(); });
+}
+startServerStatusPolling();
