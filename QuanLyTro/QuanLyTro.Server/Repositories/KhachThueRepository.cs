@@ -18,7 +18,7 @@ public sealed class KhachThueRepository(Database database)
     private const int MySqlDuplicateKey = 1062;
 
     private const string TenantColumns =
-        "id, phong_id, ho_ten, ngay_sinh, cccd, so_dien_thoai, que_quan, noi_lam_viec, da_dang_ky_tam_tru";
+        "id, phong_id, ho_ten, ngay_sinh, cccd, so_dien_thoai, que_quan, noi_lam_viec, da_dang_ky_tam_tru, bi_khoa, ly_do_khoa";
 
     public async Task<List<KhachThueDto>> GetByRoomAsync(int phongId, CancellationToken ct = default)
     {
@@ -260,7 +260,9 @@ public sealed class KhachThueRepository(Database database)
     }
 
     /// <summary>
-    /// Phòng về Trong khi không còn người thuê và không còn hợp đồng HieuLuc.
+    /// Phòng về Trong khi không còn người thuê và không còn hợp đồng đang giữ phòng.
+    /// HĐ `ChoNhanPhong` cũng giữ phòng (đã cam kết, khách sắp vào) — bỏ sót nó sẽ khiến
+    /// phòng hiện "Trống" trong lúc vẫn còn hợp đồng chờ nhận.
     /// Một UPDATE dùng current read thay vì snapshot REPEATABLE READ của SELECT thường;
     /// NOT EXISTS chờ giao_dich đang thêm người thuê/hợp đồng nên không bỏ sót dữ liệu vừa commit.
     /// </summary>
@@ -273,7 +275,8 @@ public sealed class KhachThueRepository(Database database)
             WHERE id = @id
               AND trang_thai <> 'BaoTri'
               AND NOT EXISTS (SELECT 1 FROM khach_thue WHERE phong_id = @id)
-              AND NOT EXISTS (SELECT 1 FROM hop_dong WHERE phong_id = @id AND trang_thai = 'HieuLuc')
+              AND NOT EXISTS (SELECT 1 FROM hop_dong
+                              WHERE phong_id = @id AND trang_thai IN ('HieuLuc', 'ChoNhanPhong'))
             """;
 
         await using var command = new MySqlCommand(sql, connection, giao_dich);
@@ -345,5 +348,26 @@ public sealed class KhachThueRepository(Database database)
             reader.GetString("so_dien_thoai"),
             reader.GetString("que_quan"),
             reader.IsDBNull(reader.GetOrdinal("noi_lam_viec")) ? null : reader.GetString("noi_lam_viec"),
-            reader.GetBoolean("da_dang_ky_tam_tru"));
+            reader.GetBoolean("da_dang_ky_tam_tru"),
+            null,
+            reader.GetBoolean("bi_khoa"),
+            reader.IsDBNull(reader.GetOrdinal("ly_do_khoa")) ? null : reader.GetString("ly_do_khoa"));
+
+    /// <summary>Khóa/mở tài khoản đăng nhập. Không đụng hồ sơ, phòng hay hợp đồng.</summary>
+    public async Task<bool> SetLockAsync(int khachThueId, bool biKhoa, string? lyDoKhoa, CancellationToken ct = default)
+    {
+        const string sql = """
+            UPDATE khach_thue
+            SET bi_khoa = @biKhoa, ly_do_khoa = @lyDoKhoa
+            WHERE id = @id
+            """;
+
+        await using var connection = await database.OpenAsync(ct);
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@biKhoa", biKhoa);
+        command.Parameters.AddWithValue("@lyDoKhoa", biKhoa ? (object?)(lyDoKhoa ?? string.Empty) : DBNull.Value);
+        command.Parameters.AddWithValue("@id", khachThueId);
+
+        return await command.ExecuteNonQueryAsync(ct) > 0;
+    }
 }

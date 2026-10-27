@@ -9,7 +9,7 @@ public sealed class KhachThueAuthRepository(Database database) : IKhachThueRepos
     public async Task<KhachThueAuthRecord?> FindByCccdAsync(string cccd, CancellationToken ct = default)
     {
         const string sql = """
-            SELECT id, cccd, mat_khau_hash, ho_ten, phong_id
+            SELECT id, cccd, mat_khau_hash, ho_ten, phong_id, bi_khoa, ly_do_khoa
             FROM khach_thue
             WHERE cccd = @cccd
               AND mat_khau_hash IS NOT NULL
@@ -31,6 +31,8 @@ public sealed class KhachThueAuthRepository(Database database) : IKhachThueRepos
             reader.GetString("cccd"),
             reader.GetString("mat_khau_hash"),
             reader.GetString("ho_ten"),
-            reader.IsDBNull(reader.GetOrdinal("phong_id")) ? null : reader.GetInt32("phong_id"));
+            reader.IsDBNull(reader.GetOrdinal("phong_id")) ? null : reader.GetInt32("phong_id"),
+            reader.GetBoolean("bi_khoa"),
+            reader.IsDBNull(reader.GetOrdinal("ly_do_khoa")) ? null : reader.GetString("ly_do_khoa"));
     }
 }

@@ -39,10 +39,8 @@
     <div class="content">
       <!-- ====== MÀN HÌNH NHẬN PHÒNG (BR-19): chỉ hiện khi khách chưa có phòng ====== -->
       <section id="tab-nhan-phong" class="tab-pane">
+        <div class="checkin-wrap">
         <div class="card checkin-card">
-          <div class="hero">
-            <img class="hero-img" src="img/banner-nhan-phong.jpg" alt="" onerror="this.closest('.hero').classList.add('no-img');this.remove()">
-          </div>
           <div class="checkin-ico"><i class="fas fa-qrcode"></i></div>
           <h2 class="checkin-title">Nhận phòng trọ</h2>
           <p class="checkin-sub">
@@ -82,6 +80,13 @@
           <div class="rowbn center">
             <button class="btn btn-outline btn-sm" onclick="checkinQr()"><i class="fas fa-rotate"></i> Kiểm tra lại trạng thái</button>
           </div>
+        </div>
+
+        <!-- Sidebar ảnh minh hoạ quét QR — thiếu file thì bỏ hẳn khối, nội dung tự nở full width. -->
+        <aside class="checkin-side">
+          <img class="checkin-qr" src="img/qr.png" alt="Quét mã QR để nhận phòng"
+               onerror="this.closest('.checkin-side').remove()">
+        </aside>
         </div>
       </section>
 

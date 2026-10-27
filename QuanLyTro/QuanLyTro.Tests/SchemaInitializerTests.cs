@@ -27,6 +27,15 @@ public sealed class SchemaInitializerTests
     }
 
     [TestMethod]
+    public void Schema_CarriesTenantAccountLockColumns()
+    {
+        // Khóa tài khoản người thuê (KHACH_THUE_KHOA) — cột phải có ở cả schema mới lẫn migration.
+        var script = KhoiTaoSchema.ReadEmbeddedSchema();
+        StringAssert.Contains(script, "bi_khoa BOOLEAN NOT NULL DEFAULT FALSE");
+        StringAssert.Contains(script, "ly_do_khoa VARCHAR(255) NULL");
+    }
+
+    [TestMethod]
     public void SplitStatements_ReturnsOneCommandPerMarker()
     {
         const string script = """

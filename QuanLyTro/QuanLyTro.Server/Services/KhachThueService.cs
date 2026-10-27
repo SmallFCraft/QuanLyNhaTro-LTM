@@ -93,6 +93,22 @@ public sealed class KhachThueService(KhachThueRepository khach_thue)
         };
     }
 
+    /// <summary>Khóa/mở tài khoản đăng nhập (BR-20). Giữ hồ sơ + hợp đồng; chỉ chặn đăng nhập.</summary>
+    public async Task<bool> SetLockAsync(int khachThueId, bool biKhoa, string? lyDoKhoa, CancellationToken ct = default)
+    {
+        if (biKhoa && string.IsNullOrWhiteSpace(lyDoKhoa))
+        {
+            throw new LoiNghiepVu("Lý do khóa không được để trống.");
+        }
+
+        if (!await khach_thue.SetLockAsync(khachThueId, biKhoa, lyDoKhoa?.Trim(), ct))
+        {
+            throw new LoiNghiepVu("Người thuê không tồn tại.");
+        }
+
+        return true;
+    }
+
     /// <summary>Mật khẩu mặc định khi chủ trọ để trống: 6 số cuối CCCD.</summary>
     public static string DefaultPassword(string cccd)
     {

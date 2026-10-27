@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS khach_thue (
     que_quan VARCHAR(150) NOT NULL,
     noi_lam_viec VARCHAR(150) NULL,
     da_dang_ky_tam_tru BOOLEAN DEFAULT FALSE,
+    bi_khoa BOOLEAN NOT NULL DEFAULT FALSE,
+    ly_do_khoa VARCHAR(255) NULL,
     ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_khach_thue_phong FOREIGN KEY (phong_id) REFERENCES phong(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

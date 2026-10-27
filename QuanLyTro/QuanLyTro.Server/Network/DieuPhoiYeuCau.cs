@@ -81,6 +81,11 @@ public sealed class DieuPhoiYeuCau
             [ActionNames.KhachThueCapNhat] = (r, _, ct) => UpdateTenantAsync(r, ct),
             [ActionNames.KhachThueTraPhong] = (r, _, ct) => Ok(_tenants.CheckoutAsync(ReadId(r.Data, "khachThueId", "id"), ct)),
             [ActionNames.KhachThueXoa] = (r, _, ct) => Ok(_tenants.DeleteAsync(ReadId(r.Data, "khachThueId", "id"), ct)),
+            [ActionNames.KhachThueKhoa] = (r, _, ct) => Ok(_tenants.SetLockAsync(
+                ReadId(r.Data, "khachThueId", "id"),
+                ReadBool(r.Data, "biKhoa"),
+                ReadString(r.Data, "lyDoKhoa"),
+                ct)),
 
             [ActionNames.HopDongTao] = (r, _, ct) => Ok(_contracts.CreateAsync(r.GetData<HopDongDto>(), ct)),
             [ActionNames.HopDongChamDut] = (r, _, ct) => Ok(_contracts.TerminateAsync(
@@ -347,6 +352,23 @@ public sealed class DieuPhoiYeuCau
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Bắt buộc phải có: thiếu cờ khóa thì không được mặc định là "mở khóa" —
+    /// một yêu cầu khóa lỗi sẽ biến thành mở khóa.
+    /// </summary>
+    private static bool ReadBool(JsonElement data, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (TryGetProperty(data, name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                return value.GetBoolean();
+            }
+        }
+
+        throw new LoiNghiepVu("Thiếu trạng thái khóa trong yêu cầu.");
     }
 
     private static string? ReadString(JsonElement data, params string[] names)

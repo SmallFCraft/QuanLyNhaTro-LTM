@@ -54,6 +54,20 @@
           <div class="kpi"><div class="lbl"><i class="fas fa-user-friends"></i> Người đang ở</div><div class="val" id="kpi-khach_thue">41</div><div class="sub">Trên 24 phòng</div></div>
           <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Còn nợ 09/2026</div><div class="val" id="kpi-unpaid">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div><div class="sub">3 phòng chưa thu</div></div>
         </div>
+        <div class="card barchart">
+          <div class="hdr"><i class="fas fa-chart-column"></i> Đã thu 6 kỳ gần nhất</div>
+          <div class="chartbar" id="dash-rev-chart"></div>
+        </div>
+        <div class="duo">
+          <div class="card">
+            <div class="hdr"><i class="fas fa-chart-pie"></i> Tình trạng phòng</div>
+            <div class="pie-row" id="dash-room-pie"></div>
+          </div>
+          <div class="card">
+            <div class="hdr"><i class="fas fa-chart-pie"></i> Thu / còn nợ kỳ này</div>
+            <div class="pie-row" id="dash-money-pie"></div>
+          </div>
+        </div>
         <div class="duo">
           <div class="card">
             <div class="hdr"><i class="fas fa-clock"></i> Còn nợ: đôn đốc (US-17)</div>
@@ -121,15 +135,17 @@
         </div>
         <div class="tblwrap">
         <table class="tbl">
-          <thead><tr><th>Phòng</th><th>Trạng thái</th><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tạm trú</th><th></th></tr></thead>
+          <thead><tr><th>Phòng</th><th>Trạng thái</th><th>Họ tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Quê quán</th><th>Tài khoản</th><th>Tạm trú</th><th></th></tr></thead>
           <tbody id="khach_thue-body">
             <tr>
               <td><span class="tag rent">P101</span></td><td><span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span></td><td><b>Trần Văn B</b></td><td class="mono">0482 0301 2XXX</td><td class="mono">15/03/2004</td><td class="mono">0905 122 334</td><td>Quảng Nam</td>
+              <td><span class="tag done"><i class="fas fa-user-check"></i> Hoạt động</span></td>
               <td><span class="tag done">Đã nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(1)"><i class="fas fa-key"></i></button></td>
             </tr>
             <tr>
               <td><span class="tag rent">P102</span></td><td><span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span></td><td><b>Ngô Thị E</b></td><td class="mono">0482 0988 7XXX</td><td class="mono">02/11/2003</td><td class="mono">0356 887 010</td><td>Quảng Ngãi</td>
+              <td><span class="tag done"><i class="fas fa-user-check"></i> Hoạt động</span></td>
               <td><span class="tag warn">Chưa nộp</span></td>
               <td><button class="btn btn-outline btn-sm" onclick="resetTenantPassword(2)"><i class="fas fa-key"></i></button></td>
             </tr>

@@ -17,6 +17,8 @@ public static class ActionNames
     public const string KhachThueCapNhat = "KHACH_THUE_CAP_NHAT";
     public const string KhachThueTraPhong = "KHACH_THUE_TRA_PHONG";
     public const string KhachThueXoa = "KHACH_THUE_XOA";
+    // Khóa/mở tài khoản đăng nhập của người thuê (bi_khoa) — khác KHACH_THUE_XOA ở chỗ giữ hồ sơ.
+    public const string KhachThueKhoa = "KHACH_THUE_KHOA";
 
     public const string HopDongTao = "HOP_DONG_TAO";
     public const string HopDongGiaHan = "HOP_DONG_GIA_HAN";
@@ -52,7 +54,7 @@ public static class ActionNames
     [
         DangNhap,
         PhongLayTatCa, PhongThem, PhongCapNhat, PhongXoa,
-        KhachThueTheoPhong, KhachThueThem, KhachThueCapNhat, KhachThueTraPhong, KhachThueXoa,
+        KhachThueTheoPhong, KhachThueThem, KhachThueCapNhat, KhachThueTraPhong, KhachThueXoa, KhachThueKhoa,
         HopDongTao, HopDongGiaHan, HopDongChamDut, HopDongLayTatCa,
         DienNuocLayKyTruoc, DienNuocGhiSo,
         HoaDonTao, HoaDonLayTatCa, HoaDonThanhToan, HoaDonCuaToi,

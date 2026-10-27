@@ -24,6 +24,7 @@ public sealed class KhoiTaoSchema(Database database)
 
         await EnsureMigrationColumnsAsync(connection, ct);
         await EnsureHopDongQrColumnsAsync(connection, ct);
+        await EnsureKhoaTaiKhoanColumnsAsync(connection, ct);
         await EnsureRolePermissionsAsync(connection, ct);
     }
 
@@ -189,6 +190,33 @@ public sealed class KhoiTaoSchema(Database database)
             alterCmd.CommandText = alterSql;
             await alterCmd.ExecuteNonQueryAsync(ct);
         }
+    }
+
+    /// <summary>
+    /// Cột khóa đăng nhập của người thuê. DB cũ chưa có `bi_khoa` thì thêm — MySQL 8.0 không
+    /// hỗ trợ ADD COLUMN IF NOT EXISTS nên hỏi information_schema như các migration khác.
+    /// </summary>
+    private static async Task EnsureKhoaTaiKhoanColumnsAsync(MySqlConnection connection, CancellationToken ct)
+    {
+        const string checkSql = """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'khach_thue'
+              AND COLUMN_NAME = 'bi_khoa';
+            """;
+        await using var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = checkSql;
+        if (Convert.ToInt32(await checkCmd.ExecuteScalarAsync(ct)) > 0)
+        {
+            return;
+        }
+
+        await ExecAsync(connection, """
+            ALTER TABLE khach_thue
+              ADD COLUMN bi_khoa BOOLEAN NOT NULL DEFAULT FALSE,
+              ADD COLUMN ly_do_khoa VARCHAR(255) NULL;
+            """, ct);
     }
 
     public static string ReadEmbeddedSchema()

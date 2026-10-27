@@ -56,11 +56,17 @@
 .tab:focus-visible{outline:2px solid var(--terracotta);outline-offset:1px}
 .tabs.center{justify-content:center;margin:14px 0 0}
 
-.content{padding:14px}
+/* flex:1 — .app đã giãn hết khung; nếu .content không giãn theo thì nội dung ngắn
+   (màn nhận phòng) chỉ cao đúng card, còn trống nguyên mảng phía dưới trước statusstrip. */
+.content{display:flex;flex-direction:column;padding:14px;flex:1}
+.content > .tab-pane.active{flex:1 1 auto}
 
 /* Tab panes */
 .tab-pane{display:none}
 .tab-pane.active{display:block;animation:fadein .15s ease-in-out}
+/* Màn nhận phòng lấp full chiều cao content thay vì co một cục giữa nền trống. */
+#tab-nhan-phong.active{display:flex;flex-direction:column}
+#tab-nhan-phong.active > .checkin-wrap{flex:1 1 auto}
 @keyframes fadein{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
 
 /* ===== layout primitives (port từ chutro.css) ===== */
@@ -177,20 +183,33 @@
 .rowbn.center{justify-content:center}
 
 /* ===== màn nhận phòng ===== */
-.checkin-card{text-align:center;padding:0 0 18px;overflow:hidden}
-.checkin-card .hero{margin-bottom:0;border:0;border-radius:0;border-bottom:1px solid var(--hairline)}
+.checkin-wrap{display:grid;grid-template-columns:1fr 375px;gap:16px;align-items:stretch;min-height:100%}
+/* Sidebar ảnh QR: nền đen hợp ảnh nền đen, bo theo card, ảnh full khung, không cắt nội dung. */
+.checkin-side{border:1px solid var(--hairline);border-radius:8px;overflow:hidden;background:#0B0F12;
+  display:flex;align-items:center;justify-content:center;min-height:100%}
+.checkin-qr{display:block;width:100%;height:100%;object-fit:contain}
+/* Card giãn full chiều cao wrap; chỉ căn giữa theo dọc, ngang giữ nguyên block
+   để video/input không bị co theo fit-content. */
+.checkin-card{text-align:center;padding:18px;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center}
 .checkin-ico{width:64px;height:64px;border-radius:50%;background:#1C2126;border:1px solid var(--hairline);
-  color:var(--terracotta);font-size:26px;display:grid;place-items:center;margin:22px auto 12px}
+  color:var(--terracotta);font-size:26px;display:grid;place-items:center;margin:6px auto 12px}
 .checkin-title{font-size:20px;font-weight:600;color:var(--cream-light);letter-spacing:-.015em}
 .checkin-sub{font-size:13.5px;color:var(--muted);max-width:520px;margin:8px auto 0;line-height:1.65}
+/* Ba tab con cao khác nhau (video 278px, PIN ~97px, ảnh chỉ 1 nút ~49px) từng làm card
+   nhảy kích cỡ mỗi lần đổi tab. Cố định vùng pane bằng min-height = cao nhất, căn giữa
+   nội dung ngắn. align-self:center giữ nút không bị stretch full width trong flex. */
 .checkin-pane{display:none;text-align:center;padding-top:14px}
-.checkin-pane.active{display:block;animation:fadein .15s ease-in-out}
-.checkin-pane .btn{margin-top:10px}
+.checkin-pane.active{display:flex;flex-direction:column;justify-content:center;
+  min-height:300px;animation:fadein .15s ease-in-out}
+.checkin-pane .btn{margin-top:10px;align-self:center}
 .checkin-card .rowbn{margin-top:16px}
 .pin-inp{max-width:240px;margin:0 auto;letter-spacing:.4em;text-align:center;font-size:22px}
 .qr-canvas{display:block;margin:12px auto 0;max-width:100%;border:1px solid var(--hairline);border-radius:6px}
-.qr-video{display:block;width:100%;max-width:420px;margin:0 auto;border-radius:6px;background:#0B0F12;
-  border:1px solid var(--hairline);aspect-ratio:4/3;object-fit:cover}
+/* Chiều cao cố định thay aspect-ratio: 4/3 từng khiến tab camera cao hơn 2 tab kia,
+   làm khung "Nhận phòng trọ" nhảy cỡ mỗi lần đổi tab. */
+.qr-video{display:block;width:100%;max-width:420px;height:240px;margin:0 auto;border-radius:6px;background:#0B0F12;
+  border:1px solid var(--hairline);object-fit:cover}
 
 /* ===== trạng thái nạp: skeleton + lỗi ===== */
 .skel{background:#161B1F;border:1px solid var(--hair-subtle);border-radius:4px;height:13px;margin:9px 0}
@@ -219,6 +238,9 @@
   .tabs { margin: 8px 10px 0; -webkit-overflow-scrolling: touch; }
   .kpis { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .duo { grid-template-columns: 1fr; gap: 10px; }
+  /* Màn nhận phòng: ảnh QR xuống dưới nội dung. */
+  .checkin-wrap { grid-template-columns: 1fr; }
+  .checkin-qr { max-height: 260px; }
   .toolbar { gap: 6px; padding: 6px; }
   .toolbar .spacer { display: none; }
   .ftot { font-size: 20px; }

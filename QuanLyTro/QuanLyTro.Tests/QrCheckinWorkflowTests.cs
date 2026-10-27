@@ -72,11 +72,31 @@ public sealed class QrCheckinWorkflowTests
         Assert.IsNotNull(created.MaPin);
         Assert.AreEqual(8, created.MaPin.Length);
     }
+
+    /// <summary>
+    /// Đại diện ĐÃ ở trong phòng mà vẫn lập HĐ chờ nhận phòng → tab Hợp đồng báo "chờ nhận"
+    /// trong lúc tab Người thuê báo "đang thuê". Phải chặn ở nguồn.
+    /// </summary>
+    [TestMethod]
+    public async Task CreateAsync_ChoNhanPhong_WhenRepresentativeAlreadyInRoom_Rejected()
+    {
+        var repo = new FakeHopDongRepo { TenantAlreadyInRoom = true };
+        var service = new HopDongService(repo);
+
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(() => service.CreateAsync(new HopDongDto(
+            Id: 0, PhongId: 10, NguoiDaiDienId: 99, NgayBatDau: Start, NgayKetThuc: End,
+            GiaThue: 2_000_000m, TienCoc: 1_000_000m,
+            TrangThai: TrangThaiHopDong.ChoNhanPhong, GhiChu: null)));
+
+        StringAssert.Contains(ex.Message, "đã ở trong phòng này");
+        Assert.IsNull(repo.Added, "Không được ghi hợp đồng mâu thuẫn vào repo.");
+    }
 }
 
 file sealed class FakeHopDongRepo : IHopDongRepository
 {
     public HopDongDto? Added { get; private set; }
+    public bool TenantAlreadyInRoom { get; init; }
 
     public Task<HopDongDto?> GetByIdAsync(int hopDongId, CancellationToken ct = default) =>
         Task.FromResult<HopDongDto?>(Added?.Id == hopDongId ? Added : null);
@@ -85,7 +105,7 @@ file sealed class FakeHopDongRepo : IHopDongRepository
         Task.FromResult(false);
 
     public Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default) =>
-        Task.FromResult(false);
+        Task.FromResult(TenantAlreadyInRoom);
 
     public Task<HopDongDto> AddAsync(HopDongDto contract, CancellationToken ct = default)
     {

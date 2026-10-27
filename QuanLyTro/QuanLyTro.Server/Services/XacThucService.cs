@@ -15,6 +15,8 @@ public sealed class XacThucService(ITaiKhoanRepository tai_khoan, IKhachThueRepo
     public const int MaxFailedAttempts = 5;
     public static readonly TimeSpan LockoutWindow = TimeSpan.FromMinutes(1);
     public const string InvalidCredentialsMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
+    /// <summary>Chủ trọ khóa tài khoản — thông báo riêng, không lẫn với sai mật khẩu.</summary>
+    public const string LockedAccountMessage = "Tài khoản đã bị chủ trọ khóa. Liên hệ chủ trọ để mở khóa.";
 
     private readonly ConcurrentDictionary<string, (int Count, DateTimeOffset LockedUntil)> _failures = new();
     private readonly Func<DateTimeOffset> _clock = () => DateTimeOffset.UtcNow;
@@ -47,6 +49,15 @@ public sealed class XacThucService(ITaiKhoanRepository tai_khoan, IKhachThueRepo
         var tenant = await khach_thue.FindByCccdAsync(tenDangNhap, ct);
         if (tenant is not null && tenant.MatKhauHash is not null && PasswordHasher.Verify(request.MatKhau, tenant.MatKhauHash))
         {
+            // Khóa do chủ trọ đặt: CHỈ báo sau khi đã khớp mật khẩu, để không lộ trạng thái
+            // tài khoản cho người chưa chứng minh được mình là chủ tài khoản.
+            if (tenant.BiKhoa)
+            {
+                throw new UnauthorizedAccessException(string.IsNullOrWhiteSpace(tenant.LyDoKhoa)
+                    ? LockedAccountMessage
+                    : $"{LockedAccountMessage} ({tenant.LyDoKhoa})");
+            }
+
             _failures.TryRemove(lockKey, out _);
             var token = sessions.Create(tenant.Id, VaiTroNguoiDung.KhachThue);
             return new KetQuaDangNhap(token, tenant.HoTen, VaiTroNguoiDung.KhachThue);

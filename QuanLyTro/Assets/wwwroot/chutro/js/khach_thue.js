@@ -1,6 +1,8 @@
 // ChuTro "Người thuê" tab — full CRUD. Helpers esc/toast/openModal/confirmDialog from ui.js.
 
 let tenantCache = [];
+// Map phongId → trạng thái HĐ mạnh nhất của phòng đó. Dựng ở loadTenants(), đọc ở renderTenants().
+let _contractByPhong = new Map();
 
 function selectedTenantId() {
   const sel = document.querySelector('#khach_thue-body tr.sel');
@@ -13,10 +15,14 @@ async function loadTenants() {
   try {
     // BR-17/BR-19: khách tự đăng ký có phong_id IS NULL — phải hỏi riêng (phongId: 0),
     // nếu không họ vô hình trong tab này dù màn lập hợp đồng vẫn thấy.
-    const [phong, pending] = await Promise.all([
+    const [phong, pending, contracts] = await Promise.all([
       (async () => (await window.bridge.call('PHONG_LAY_TAT_CA', {})) || [])(),
-      (async () => (await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: 0 })) || [])()
+      (async () => (await window.bridge.call('KHACH_THUE_THEO_PHONG', { phongId: 0 })) || [])(),
+      (async () => (await window.bridge.call('HOP_DONG_LAY_TAT_CA', {}).catch(() => [])) || [])()
     ]);
+    // Trạng thái thuê suy từ hợp đồng, không từ phong_id: HĐ ChoNhanPhong = chưa nhận phòng,
+    // HĐ HieuLuc = đang thuê, có phòng mà không HĐ = treo.
+    _contractByPhong = contractStatusByRoom(contracts);
     // ponytail: KHACH_THUE_THEO_PHONG là hanh_dong đọc duy nhất (BR-16) nên phải hỏi từng phòng (N+1).
     // Thêm TENANT_GET_ALL vào ma trận quyền khi số phòng lớn.
     const lists = await Promise.all(phong.map(async r => {
@@ -63,9 +69,14 @@ async function loadTenants() {
       const roomTag = hasRoom
         ? `<span class="tag rent">${esc(t.soPhong || ('P.' + t.phongId))}</span>`
         : `<span class="tag warn">Chưa gán</span>`;
-      const statusTag = hasRoom
-        ? `<span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span>`
-        : `<span class="tag warn"><i class="fas fa-clock"></i> Chờ nhận phòng</span>`;
+      // Trạng thái suy từ HĐ của phòng (ui.js:tenantStatusTag), không từ phong_id:
+      // khách giữ phong_id sau khi HĐ chấm dứt từng hiện "Đang thuê" dù hợp đồng đã ChamDut.
+      const hd = hasRoom ? _contractByPhong.get(Number(t.phongId)) : null;
+      const statusTag = tenantStatusTag(hd, hasRoom);
+      // Tài khoản đăng nhập (bi_khoa) — độc lập với trạng thái thuê: khách bị khóa vẫn đang thuê.
+      const lockTag = t.biKhoa
+        ? `<span class="tag unpaid" title="${esc(t.lyDoKhoa || 'Không có lý do')}"><i class="fas fa-lock"></i> Đã khóa</span>`
+        : `<span class="tag done"><i class="fas fa-user-check"></i> Hoạt động</span>`;
 
       return `
         <tr data-id="${t.id}" onclick="this.parentNode.querySelectorAll('tr').forEach(r=>r.classList.remove('sel'));this.classList.add('sel')">
@@ -76,10 +87,14 @@ async function loadTenants() {
           <td class="mono">${fmtDateOnly(t.ngaySinh)}</td>
           <td class="mono">${esc(t.soDienThoai)}</td>
           <td>${esc(t.queQuan)}</td>
+          <td>${lockTag}</td>
           <td><span class="tag ${t.daDangKyTamTru ? 'done' : 'warn'}">${t.daDangKyTamTru ? 'Đã nộp' : 'Chưa nộp'}</span></td>
-          <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();resetTenantPassword(${t.id})" title="Đặt lại mật khẩu mặc định (6 số cuối CCCD)"><i class="fas fa-key"></i></button></td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();resetTenantPassword(${t.id})" title="Đặt lại mật khẩu mặc định (6 số cuối CCCD)"><i class="fas fa-key"></i></button>
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();toggleTenantLock(${t.id})" title="${t.biKhoa ? 'Mở khóa tài khoản' : 'Khóa tài khoản đăng nhập'}"><i class="fas fa-${t.biKhoa ? 'lock-open' : 'lock'}"></i></button>
+          </td>
         </tr>`;
-    }).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--dim)">Không có người dùng nào</td></tr>`;
+    }).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--dim)">Không có người dùng nào</td></tr>`;
     updateTenantFoot(rows);
   }
 }
@@ -222,6 +237,33 @@ async function deleteTenant(id) {
   try {
     await window.bridge.call('KHACH_THUE_XOA', { khachThueId: t.id });
     toast(`Đã xóa hồ sơ ${t.hoTen}.`, 'ok');
+    await loadTenants();
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+async function toggleTenantLock(id) {
+  const t = findTenant(id);
+  if (!t) { toast('Vui lòng chọn người thuê.', 'err'); return; }
+  const moKhoa = !!t.biKhoa;
+  if (moKhoa) {
+    if (!await confirmDialog(`Mở khóa tài khoản của ${t.hoTen}?`)) return;
+    await applyLock(t.id, false, null);
+    return;
+  }
+  // Khóa bắt buộc có lý do: hiện trong tooltip và trong thông báo đăng nhập của khách.
+  openModal({
+    title: `Khóa tài khoản — ${t.hoTen}`,
+    fields: [{ name: 'lyDoKhoa', label: 'Lý do khóa', value: '', required: true, placeholder: 'Ví dụ: chưa thanh toán tiền phòng' }],
+    onSubmit: async v => applyLock(t.id, true, v.lyDoKhoa)
+  });
+}
+
+async function applyLock(id, biKhoa, lyDoKhoa) {
+  try {
+    await window.bridge.call('KHACH_THUE_KHOA', { khachThueId: id, biKhoa, lyDoKhoa });
+    toast(biKhoa ? 'Đã khóa tài khoản.' : 'Đã mở khóa tài khoản.', 'ok');
     await loadTenants();
   } catch (err) {
     toast(err.message, 'err');

@@ -10,5 +10,8 @@ public sealed record KhachThueDto(
     string QueQuan,
     string? NoiLamViec,
     bool DaDangKyTamTru,
-    string? SoPhong = null
+    string? SoPhong = null,
+    // Khóa đăng nhập (XacThucService chặn) — không đụng tới hồ sơ hay hợp đồng của người thuê.
+    bool BiKhoa = false,
+    string? LyDoKhoa = null
 );

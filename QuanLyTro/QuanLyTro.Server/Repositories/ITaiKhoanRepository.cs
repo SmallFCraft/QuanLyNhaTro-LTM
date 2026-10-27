@@ -6,7 +6,9 @@ namespace QuanLyTro.Server.Repositories;
 public sealed record TaiKhoanRecord(int Id, string MatKhauHash, string HoTen, VaiTroNguoiDung VaiTro = VaiTroNguoiDung.ChuTro);
 
 /// <summary>Bản ghi người thuê đọc từ bảng `khach_thue` (đăng nhập bằng CCCD).</summary>
-public sealed record KhachThueAuthRecord(int Id, string Cccd, string MatKhauHash, string HoTen, int? PhongId);
+public sealed record KhachThueAuthRecord(
+    int Id, string Cccd, string MatKhauHash, string HoTen, int? PhongId,
+    bool BiKhoa = false, string? LyDoKhoa = null);
 
 /// <summary>Biên truy cập bảng `tai_khoan` — interface để XacThucService test được không cần DB.</summary>
 public interface ITaiKhoanRepository

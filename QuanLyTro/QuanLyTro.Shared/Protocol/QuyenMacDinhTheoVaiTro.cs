@@ -13,7 +13,7 @@ public static class QuyenMacDinhTheoVaiTro
     [
         ActionNames.PhongLayTatCa, ActionNames.PhongThem, ActionNames.PhongCapNhat, ActionNames.PhongXoa,
         ActionNames.KhachThueTheoPhong, ActionNames.KhachThueThem, ActionNames.KhachThueCapNhat,
-        ActionNames.KhachThueTraPhong, ActionNames.KhachThueXoa,
+        ActionNames.KhachThueTraPhong, ActionNames.KhachThueXoa, ActionNames.KhachThueKhoa,
         ActionNames.HopDongTao, ActionNames.HopDongChamDut, ActionNames.HopDongGiaHan,
         ActionNames.HopDongLayTatCa, ActionNames.HopDongSinhQr,
         ActionNames.DienNuocLayKyTruoc, ActionNames.DienNuocGhiSo,
@@ -61,6 +61,7 @@ public static class QuyenMacDinhTheoVaiTro
         new(ActionNames.KhachThueCapNhat, "Sửa thông tin khách thuê", "Khách thuê"),
         new(ActionNames.KhachThueTraPhong, "Trả phòng", "Khách thuê"),
         new(ActionNames.KhachThueXoa, "Xóa khách thuê", "Khách thuê"),
+        new(ActionNames.KhachThueKhoa, "Khóa / mở khóa tài khoản", "Khách thuê"),
 
         new(ActionNames.HopDongTao, "Tạo hợp đồng", "Hợp đồng"),
         new(ActionNames.HopDongGiaHan, "Gia hạn hợp đồng", "Hợp đồng"),
