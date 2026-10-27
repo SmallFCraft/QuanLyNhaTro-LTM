@@ -1,8 +1,10 @@
 /* landlord.css — khung màn hình Chủ trọ. Tokens: ../shared/css/tokens.css, reset/component: base.css */
 
 /* ===== window chrome ===== */
-.win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
-.app{background:var(--base);flex:1;display:flex;flex-direction:column}
+/* Shell cố định đúng 1 viewport, chỉ .content cuộn — userbar/headline/tabs/statusstrip luôn hiện. */
+body:has(> .win){height:100vh;overflow:hidden}
+.win{width:100%;height:100vh;min-height:0;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
+.app{background:var(--base);flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* ===== app shell ===== */
 .app{background:var(--base)}
@@ -55,7 +57,7 @@
 .tab .cnt{font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;font-weight:700;
   background:rgba(217,93,57,.20);color:var(--tint);border:1px solid rgba(217,93,57,.40);
   border-radius:4px;padding:0 4px}
-.content{padding:14px}
+.content{padding:14px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 
 .toolbar{
   display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;
@@ -126,20 +128,30 @@
 .statusstrip .l{font-family:inherit;font-size:11px}
 
 .chartbar{display:flex;align-items:flex-end;gap:6px;height:104px;padding:6px 2px 0}
-.chartbar .b{flex:1;background:#262A2E;border:1px solid #2E3338;border-radius:3px 3px 0 0;position:relative}
+.chartbar .b{flex:1;background:#262A2E;border:1px solid #2E3338;border-radius:3px 3px 0 0;position:relative;
+  transition:background .15s,border-color .15s}
+.chartbar .b:hover{background:#333A40;border-color:var(--terracotta)}
+.chartbar .b:hover i{color:var(--cream-light)}
 .chartbar .b.on{background:rgba(217,93,57,.35);border-color:rgba(217,93,57,.6)}
+.chartbar .b.on:hover{background:rgba(217,93,57,.55)}
 .chartbar .b b{position:absolute;bottom:-19px;left:0;right:0;text-align:center;font-size:10.5px;
   color:var(--dim);font-family:'JetBrains Mono',Consolas,monospace;font-weight:400}
-.chartbar .b i{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:11px;
-  color:var(--muted);font-family:'JetBrains Mono',Consolas,monospace;font-style:normal}
+/* 6 cột trong card hẹp: nhãn tiền luôn hiện sẽ đè nhau → chỉ hiện ở cột đang chọn và khi hover. */
+.chartbar .b i{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10px;
+  color:var(--muted);font-family:'JetBrains Mono',Consolas,monospace;font-style:normal;
+  white-space:nowrap;opacity:0;transition:opacity .15s,color .15s}
+.chartbar .b:hover i,.chartbar .b.on i{opacity:1}
 .barchart{margin-bottom:26px}
 
-/* Biểu đồ tròn: conic-gradient dựng ở JS, đây chỉ là khung + legend. */
+/* Biểu đồ tròn: donut SVG dựng ở JS, đây chỉ là khung + legend. */
 .pie-row{display:flex;align-items:center;gap:14px;min-height:110px}
-.pie{width:96px;height:96px;border-radius:50%;flex:0 0 auto;position:relative}
-.pie-hole{position:absolute;inset:26px;background:var(--card);border-radius:50%}
+.pie{width:96px;height:96px;flex:0 0 auto;transform:rotate(-90deg);overflow:visible}
+.pie-seg{transition:filter .15s;cursor:pointer}
+.pie-seg:hover{stroke-width:9;filter:brightness(1.25)}
 .pie-legend{display:grid;gap:5px;font-size:12px;min-width:0}
-.pie-legend .it{display:flex;align-items:center;gap:6px;color:var(--muted);min-width:0}
+.pie-legend .it{display:flex;align-items:center;gap:6px;color:var(--muted);min-width:0;
+  border-radius:3px;padding:1px 3px;transition:background .15s,color .15s}
+.pie-legend .it:hover{background:var(--overlay);color:var(--cream-light)}
 .pie-legend .sw{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
 .pie-legend .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pie-legend .vl{margin-left:auto;font-family:'JetBrains Mono',Consolas,monospace;color:var(--cream-light)}

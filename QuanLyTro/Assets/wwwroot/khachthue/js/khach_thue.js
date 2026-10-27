@@ -719,15 +719,19 @@ function buildTenantChart(rows) {
     const x = pad + i * gw;
 
     const e = document.createElementNS(NS, 'rect');
+    e.setAttribute('class', 'seg');
     e.setAttribute('x', x + 1); e.setAttribute('y', H - pad - eH);
     e.setAttribute('width', Math.max(1, gw / 2 - 2)); e.setAttribute('height', eH);
     e.setAttribute('fill', '#E0AF68');
+    e.appendChild(segTitle(NS, `${fmtKyCuoc(s.kyCuoc)} — điện ${fmtMoney(s.elecQty)} kWh`));
     svg.appendChild(e);
 
     const w = document.createElementNS(NS, 'rect');
+    w.setAttribute('class', 'seg');
     w.setAttribute('x', x + gw / 2); w.setAttribute('y', H - pad - wH);
     w.setAttribute('width', Math.max(1, gw / 2 - 2)); w.setAttribute('height', wH);
     w.setAttribute('fill', '#8BD7A3');
+    w.appendChild(segTitle(NS, `${fmtKyCuoc(s.kyCuoc)} — nước ${fmtMoney(s.waterQty)} ${donViNuoc}`));
     svg.appendChild(w);
 
     const t = document.createElementNS(NS, 'text');
@@ -737,6 +741,12 @@ function buildTenantChart(rows) {
     svg.appendChild(t);
   });
   return svg;
+}
+
+function segTitle(NS, text) {
+  const t = document.createElementNS(NS, 'title');
+  t.textContent = text;
+  return t;
 }
 
 /**

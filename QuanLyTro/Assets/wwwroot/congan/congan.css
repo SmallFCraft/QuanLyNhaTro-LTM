@@ -1,8 +1,10 @@
 /* police.css — khung màn hình Công an phường. Tokens: ../shared/css/tokens.css, reset/component: base.css */
 
 /* ===== window chrome ===== */
-.win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
-.app{background:var(--base);flex:1;display:flex;flex-direction:column}
+/* Shell cố định đúng 1 viewport, chỉ .content cuộn — userbar/headline/tabs/statusstrip luôn hiện. */
+body:has(> .win){height:100vh;overflow:hidden}
+.win{width:100%;height:100vh;min-height:0;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
+.app{background:var(--base);flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* ===== app shell ===== */
 .app{background:var(--base)}
@@ -56,7 +58,7 @@
 .tab .cnt{font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;font-weight:700;
   background:rgba(112,169,255,.20);color:#70A9FF;border:1px solid rgba(112,169,255,.40);
   border-radius:4px;padding:0 4px}
-.content{padding:14px}
+.content{padding:14px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 
 .toolbar{
   display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;

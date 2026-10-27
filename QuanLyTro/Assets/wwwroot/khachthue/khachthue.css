@@ -3,8 +3,10 @@
    Màu sage chỉ giữ ở vai trò (userbar, statusstrip) — không phải accent. */
 
 /* ===== window chrome ===== */
-.win{width:100%;min-height:100vh;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
-.app{background:var(--base);flex:1;display:flex;flex-direction:column}
+/* Shell cố định đúng 1 viewport, chỉ .content cuộn — userbar/headline/tabs/statusstrip luôn hiện. */
+body:has(> .win){height:100vh;overflow:hidden}
+.win{width:100%;height:100vh;min-height:0;margin:0;border-radius:0;border:none;overflow-x:hidden;display:flex;flex-direction:column}
+.app{background:var(--base);flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* ===== userbar (vai trò: sage) ===== */
 .userbar{
@@ -58,7 +60,7 @@
 
 /* flex:1 — .app đã giãn hết khung; nếu .content không giãn theo thì nội dung ngắn
    (màn nhận phòng) chỉ cao đúng card, còn trống nguyên mảng phía dưới trước statusstrip. */
-.content{display:flex;flex-direction:column;padding:14px;flex:1}
+.content{display:flex;flex-direction:column;padding:14px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .content > .tab-pane.active{flex:1 1 auto}
 
 /* Tab panes */
@@ -218,6 +220,8 @@
 
 /* ===== chart SVG sinh trong JS (Task 4) — không phụ thuộc thư viện ===== */
 .bar-chart{display:block;width:100%;height:120px}
+.bar-chart .seg{transition:filter .15s,opacity .15s;cursor:pointer}
+.bar-chart .seg:hover{filter:brightness(1.35)}
 .chart-empty{color:var(--dim);font-size:12.5px;text-align:center;padding:22px 6px}
 
 .statusstrip{

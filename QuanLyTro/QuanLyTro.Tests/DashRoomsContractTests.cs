@@ -42,6 +42,21 @@ public sealed class DashRoomsContractTests
         Assert.IsTrue(js.Contains("renderDashCharts"), "dash.js chưa vẽ biểu đồ tổng quan");
         Assert.IsTrue(js.Contains("renderPie('dash-room-pie'"), "dash.js chưa nạp biểu đồ tròn phòng");
         Assert.IsTrue(js.Contains("renderPie('dash-money-pie'"), "dash.js chưa nạp biểu đồ tròn thu/nợ");
+        // Múi phải là phần tử riêng để hover/<title> được từng phần (conic-gradient không làm được).
+        Assert.IsTrue(js.Contains("class=\"pie-seg\""), "múi biểu đồ tròn phải là <circle> riêng để hover");
+    }
+
+    [TestMethod]
+    public void Shells_LockViewportAndScrollOnlyContent()
+    {
+        // Header + tabs + statusstrip không được trôi khi cuộn — .content là vùng cuộn duy nhất.
+        foreach (var cssFile in new[] { "chutro/chutro.css", "congan/congan.css", "khachthue/khachthue.css" })
+        {
+            var css = File.ReadAllText(Path.Combine(Wwwroot, cssFile));
+            Assert.IsTrue(css.Contains("overflow-y:auto"), $"{cssFile} thiếu vùng cuộn cho .content");
+            Assert.IsTrue(css.Contains("body:has(> .win){height:100vh;overflow:hidden}"),
+                $"{cssFile} chưa khóa body để giữ header/footer cố định");
+        }
     }
 
     [TestMethod]

@@ -28,7 +28,7 @@ async function loadDash() {
       if (cntTenants && currentTenants !== undefined && currentTenants !== null) cntTenants.textContent = currentTenants;
     }
 
-    const overdue = (hoaDon || []).filter(i => (i.trangThai ?? i.trang_thai) !== 'DaThu');
+    const overdue = (Array.isArray(hoaDon) ? hoaDon : []).filter(i => (i.trangThai ?? i.trang_thai) !== 'DaThu');
     const ob = document.getElementById('dash-overdue-rows');
     if (ob) ob.innerHTML = overdue.map(i => {
       const room = i.soPhong ?? ('P' + i.phongId);
@@ -41,7 +41,7 @@ async function loadDash() {
         <td>${esc(rep)}</td></tr>`;
     }).join('') || '<tr><td colspan="4" style="color:var(--dim)">Không có phòng nào còn nợ.</td></tr>';
 
-    const soon = (hopDong || []).map(item => {
+    const soon = (Array.isArray(hopDong) ? hopDong : []).map(item => {
       const inner = item.contract || item.hopDong || item.HopDong || item;
       return {
         ...inner,
@@ -96,7 +96,8 @@ async function renderDashCharts(summary, month) {
       const max = Math.max(...paids, 1);
       // Cột 0% biến mất khỏi trục; và cột 100% đẩy nhãn giá vượt khỏi card.
       rev.innerHTML = months.map((m, i) => `
-        <div class="b ${i === months.length - 1 ? 'on' : ''}" style="height:${Math.max(3, Math.round(paids[i] / max * 78))}%">
+        <div class="b ${i === months.length - 1 ? 'on' : ''}" style="height:${Math.max(3, Math.round(paids[i] / max * 78))}%"
+             title="Kỳ ${esc(m)} — đã thu ${fmtMoney(paids[i])} đ">
           <i>${fmtMoney(paids[i])}</i><b>${esc(m.slice(5))}</b>
         </div>`).join('');
     }
@@ -122,7 +123,8 @@ async function renderDashCharts(summary, month) {
   }
 }
 
-// Vẽ bằng conic-gradient (CSS) — không thư viện chart. Mảng rỗng → text, không vẽ vòng 100% màu.
+// Donut bằng SVG <circle> (không thư viện): chu vi 100 → dasharray = phần trăm, mỗi múi là
+// một phần tử nên hover/<title> được từng phần. Mảng rỗng → text, không vẽ vòng đầy màu.
 function renderPie(id, items, emptyText) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -130,17 +132,19 @@ function renderPie(id, items, emptyText) {
   if (total <= 0) { el.innerHTML = `<div class="pie-empty">${esc(emptyText)}</div>`; return; }
 
   let acc = 0;
-  const stops = items.filter(i => i.value > 0).map(i => {
-    const from = acc / total * 100;
-    acc += i.value;
-    return `${i.color} ${from.toFixed(2)}% ${(acc / total * 100).toFixed(2)}%`;
-  }).join(', ');
+  const segs = items.filter(i => i.value > 0).map((i, k) => {
+    const pct = i.value / total * 100;
+    const from = acc;
+    acc += pct;
+    const label = `${i.label}: ${i.display ?? i.value} (${pct.toFixed(0)}%)`;
+    return `<circle class="pie-seg" cx="21" cy="21" r="15.9155" fill="none"
+              stroke="${i.color}" stroke-width="6" stroke-dasharray="${pct.toFixed(2)} ${(100 - pct).toFixed(2)}"
+              stroke-dashoffset="${(-from).toFixed(2)}" style="--i:${k}"><title>${esc(label)}</title></circle>`;
+  }).join('');
   const label = items.map(i => `${i.label} ${i.display ?? i.value}`).join(', ');
 
   el.innerHTML = `
-    <div class="pie" role="img" aria-label="${esc(label)}" style="background:conic-gradient(${stops})">
-      <div class="pie-hole"></div>
-    </div>
+    <svg class="pie" viewBox="0 0 42 42" role="img" aria-label="${esc(label)}">${segs}</svg>
     <div class="pie-legend">${items.map(i => `
       <div class="it"><span class="sw" style="background:${i.color}"></span>
       <span class="nm">${esc(i.label)}</span><span class="vl">${esc(i.display ?? i.value)}</span></div>`).join('')}
