@@ -105,7 +105,7 @@ public sealed class PhongRepository(Database database)
         const string occupancySql = """
             SELECT
                 (SELECT COUNT(*) FROM khach_thue WHERE phong_id = @id) AS tenant_count,
-                (SELECT COUNT(*) FROM hop_dong WHERE phong_id = @id AND trang_thai = 'HieuLuc') AS hop_dong_hieu_luc
+                (SELECT COUNT(*) FROM hop_dong WHERE phong_id = @id AND trang_thai IN ('HieuLuc', 'ChoNhanPhong')) AS hop_dong_hieu_luc
             """;
         const string deleteSql = "DELETE FROM phong WHERE id = @id";
 
@@ -146,13 +146,13 @@ public sealed class PhongRepository(Database database)
         }
     }
 
-    /// <summary>BR-12: chỉ xóa phòng khi không còn người thuê và không có hợp đồng HieuLuc.</summary>
+    /// <summary>BR-12: chỉ xóa phòng khi không còn người thuê và không có hợp đồng đang giữ phòng.</summary>
     public async Task<bool> CanDeleteAsync(int phongId, CancellationToken ct = default)
     {
         const string sql = """
             SELECT
                 (SELECT COUNT(*) FROM khach_thue t WHERE t.phong_id = @id) AS tenant_count,
-                (SELECT COUNT(*) FROM hop_dong c WHERE c.phong_id = @id AND c.trang_thai = 'HieuLuc') AS hop_dong_hieu_luc
+                (SELECT COUNT(*) FROM hop_dong c WHERE c.phong_id = @id AND c.trang_thai IN ('HieuLuc', 'ChoNhanPhong')) AS hop_dong_hieu_luc
             """;
 
         await using var connection = await database.OpenAsync(ct);

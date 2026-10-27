@@ -61,6 +61,14 @@ public sealed class HopDongService(IHopDongRepository hop_dong)
             throw new LoiNghiepVu("Người đại diện phải là người đang ở trong phòng này.");
         }
 
+        // Ngược lại: đại diện ĐÃ ở trong phòng thì không được lập HĐ chờ nhận phòng — khách đã
+        // nhận phòng rồi, sinh QR/PIN cho họ sẽ tạo phòng mang trạng thái vừa "có người" vừa
+        // "chờ nhận phòng", và mọi tab hiển thị hai kiểu khác nhau cho cùng một phòng.
+        if (choNhanPhong && await hop_dong.IsTenantInRoomAsync(contract.NguoiDaiDienId, contract.PhongId, ct))
+        {
+            throw new LoiNghiepVu("Người đại diện đã ở trong phòng này — lập hợp đồng hiệu lực trực tiếp, không cần chờ nhận phòng.");
+        }
+
         var toSave = contract with
         {
             TrangThai = choNhanPhong ? TrangThaiHopDong.ChoNhanPhong : TrangThaiHopDong.HieuLuc,

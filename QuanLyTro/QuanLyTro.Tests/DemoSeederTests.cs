@@ -84,6 +84,22 @@ public sealed class DemoSeederTests
         }
     }
 
+    /// <summary>
+    /// Seed lại KHÔNG được lật trạng thái phòng đang có người về 'Trong'. Trước đây cột trang_thai
+    /// nằm trong ON DUPLICATE KEY UPDATE nên mỗi lần chạy test/--seed-demo là phòng có người + hợp đồng
+    /// hiệu lực bị ghi thành "Phòng trống", khiến chủ trọ tưởng phòng trống rồi quét lại mã QR cũ.
+    /// </summary>
+    [TestMethod]
+    public async Task Seed_DoesNotResetOccupiedRoomStatus()
+    {
+        await ExecuteAsync("UPDATE phong SET trang_thai = 'DaThue' WHERE id = 7002");
+
+        await DuLieuMau.SeedAsync(Db);
+
+        Assert.AreEqual("DaThue", await ScalarAsync("SELECT trang_thai FROM phong WHERE id = 7002"),
+            "Seed lại không được đổi trạng thái phòng đang cho thuê về 'Trong'.");
+    }
+
     [TestMethod]
     public async Task Seed_InvoiceMatchesRoomContractAndCurrentMonth()
     {
@@ -97,6 +113,13 @@ public sealed class DemoSeederTests
 
         var expected = $"{DateTime.UtcNow:yyyy-MM}|2245000.00|ChuaThu|P201|HieuLuc";
         Assert.AreEqual(expected, columns, "Hóa đơn mẫu phải khớp phòng P201, hợp đồng HieuLuc, kỳ hiện tại.");
+    }
+
+    private async Task ExecuteAsync(string sql)
+    {
+        await using var connection = await Db.OpenAsync();
+        await using var command = new MySqlConnector.MySqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
     }
 
     private async Task<string> ScalarAsync(string sql)

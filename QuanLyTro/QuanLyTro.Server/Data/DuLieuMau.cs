@@ -50,7 +50,7 @@ public static class DuLieuMau
                 (7003, 'P203', 1800000, 2, 'Trong',  'Phòng mẫu còn trống')
             ON DUPLICATE KEY UPDATE
                 so_phong = VALUES(so_phong), gia_thue = VALUES(gia_thue),
-                so_nguoi_toi_da = VALUES(so_nguoi_toi_da), trang_thai = VALUES(trang_thai),
+                so_nguoi_toi_da = VALUES(so_nguoi_toi_da),
                 mo_ta = VALUES(mo_ta)
             """, ct);
 

@@ -1,6 +1,7 @@
 // Tab Phòng: danh sách + thêm/sửa/xóa. BR-12: chỉ xóa phòng trống.
 let _roomsCache = [];
 let _activeContractsByRoom = new Set();
+let _contractStateByRoom = new Map();
 
 async function loadRooms() {
   try {
@@ -8,13 +9,25 @@ async function loadRooms() {
       window.bridge.call('PHONG_LAY_TAT_CA', {}) || [],
       window.bridge.call('HOP_DONG_LAY_TAT_CA', {}).catch(() => []) || []
     ]);
-    _roomsCache = rooms || [];
+    // Một sự thật dùng chung với tab Người thuê (ui.js:contractStatusByRoom):
+    // HĐ HieuLuc/ChoNhanPhong đều giữ phòng nên phòng không bao giờ hiện "Trống".
+    _contractStateByRoom = contractStatusByRoom(contracts);
     _activeContractsByRoom = new Set(
       (contracts || [])
         .map(x => x.contract || x.hopDong || x)
         .filter(c => (c.trangThai ?? c.trang_thai) === 'HieuLuc')
         .map(c => Number(c.phongId ?? c.phong_id))
     );
+    // Cột trang_thai có thể lệch thực tế (dữ liệu cũ / seed ghi đè): phòng đang có người
+    // hoặc đang có hợp đồng không bao giờ là "Trống". Chuẩn hoá tại một chỗ để bộ lọc,
+    // tag trạng thái và modal sửa cùng đọc một sự thật.
+    _roomsCache = (rooms || []).map(r => {
+      const st = r.trangThai ?? r.trang_thai;
+      const held = ['HieuLuc', 'ChoNhanPhong'].includes(_contractStateByRoom.get(Number(r.id)));
+      return st === 'Trong' && ((r.soNguoiHienTai ?? 0) > 0 || held)
+        ? { ...r, trangThai: 'DaThue' }
+        : r;
+    });
     renderRooms(_roomsCache);
     // Tab "Phòng" đếm động từ danh sách vừa tải — thay số tĩnh "24" trong index.html.
     const badge = document.getElementById('cnt-phong');
@@ -60,16 +73,21 @@ function renderRooms(rows) {
     const count = r.soNguoiHienTai ?? 0;
     const full = count > 0;
     const hasActiveContract = _activeContractsByRoom.has(Number(r.id));
+    const hd = _contractStateByRoom.get(Number(r.id));
+    // ChoNhanPhong = QR chưa quét, khách chưa vào ở: tag riêng, không gộp vào "Đang thuê".
+    const choNhanPhong = hd === 'ChoNhanPhong';
     // Cảnh báo: phòng có người ở nhưng không còn hợp đồng hiệu lực (vừa bị chấm dứt hoặc chưa ký)
     const treoPhapLy = full && !hasActiveContract;
 
     const st = r.trangThai ?? r.trang_thai;
     const gia = r.giaThue ?? r.gia_thue;
     const moTa = r.moTa ?? r.mo_ta ?? '';
-    const stTag = treoPhapLy
-      ? `<span class="tag warn" title="Phòng có người nhưng không có hợp đồng hiệu lực — cần làm thủ tục trả phòng hoặc ký lại hợp đồng."><i class="fas fa-exclamation-triangle"></i> Treo HĐ (${count} người)</span>`
-      : `<span class="tag ${st === 'DaThue' ? 'rent' : st === 'BaoTri' ? 'warn' : 'avail'}">
-        ${st === 'DaThue' ? 'Đang thuê' : st === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span>`;
+    const stTag = choNhanPhong
+      ? `<span class="tag warn" title="Hợp đồng đang chờ khách quét QR nhận phòng — chưa bàn giao."><i class="fas fa-clock"></i> Chờ nhận phòng${full ? ` (${count} người)` : ''}</span>`
+      : treoPhapLy
+        ? `<span class="tag warn" title="Phòng có người nhưng không có hợp đồng hiệu lực — cần làm thủ tục trả phòng hoặc ký lại hợp đồng."><i class="fas fa-exclamation-triangle"></i> Treo HĐ (${count} người)</span>`
+        : `<span class="tag ${st === 'DaThue' ? 'rent' : st === 'BaoTri' ? 'warn' : 'avail'}">
+          ${st === 'DaThue' ? 'Đang thuê' : st === 'BaoTri' ? 'Bảo trì' : 'Phòng trống'}</span>`;
 
     return `<tr data-id="${r.id}"${r.id === keep ? ' class="sel"' : ''} onclick="this.parentNode.querySelectorAll('tr').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');refreshRoomToolbar()">
       <td><b>${esc(r.soPhong)}</b></td>

@@ -180,6 +180,36 @@ function confirmDialog(msg, title, kind) {
   });
 }
 
+/**
+ * Trạng thái hợp đồng của từng phòng — một sự thật dùng chung cho các tab
+ * Phòng / Người thuê (BR-18/BR-19): HieuLuc > ChoNhanPhong > ChamDut.
+ * Input: items thô từ HOP_DONG_LAY_TAT_CA (MucHopDongItem hoặc HopDongDto).
+ * Trả về Map(phongId → trạng thái mạnh nhất).
+ */
+function contractStatusByRoom(items) {
+  const rank = s => (s === 'HieuLuc' ? 3 : s === 'ChoNhanPhong' ? 2 : s === 'ChamDut' ? 1 : 0);
+  const byRoom = new Map();
+  for (const item of items || []) {
+    const c = item.contract || item.hopDong || item;
+    const st = c.trangThai ?? c.trang_thai;
+    const pid = Number(c.phongId ?? c.phong_id);
+    if (!Number.isFinite(pid)) continue;
+    if (rank(st) > rank(byRoom.get(pid))) byRoom.set(pid, st);
+  }
+  return byRoom;
+}
+
+// Suy trạng thái hiển thị từ trạng thái HĐ của phòng:
+// 'HieuLuc' → Đang thuê, 'ChoNhanPhong' (kể cả ham muốn) → Chờ nhận phòng,
+// còn lại (HetHan/ChamDut/mất HĐ) → Treo HĐ, null (chưa gán phòng) → Chờ nhận phòng.
+function tenantStatusTag(contractState, hasRoom) {
+  if (!hasRoom || contractState === 'ChoNhanPhong')
+    return `<span class="tag warn"><i class="fas fa-clock"></i> Chờ nhận phòng</span>`;
+  if (contractState === 'HieuLuc')
+    return `<span class="tag done"><i class="fas fa-check-circle"></i> Đang thuê</span>`;
+  return `<span class="tag warn" title="Còn gán phòng nhưng không có hợp đồng hiệu lực — cần trả phòng hoặc ký lại."><i class="fas fa-exclamation-triangle"></i> Treo HĐ</span>`;
+}
+
 window.alert = msg => toast(msg, 'err');
 
 async function logout() {
