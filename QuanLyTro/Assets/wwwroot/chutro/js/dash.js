@@ -1,4 +1,4 @@
-// Tab Tổng quan: 4 thẻ KPI + bảng còn nợ + bảng HĐ sắp hết hạn.
+// Tab Tổng quan: 4 thẻ KPI + 3 biểu đồ + bảng còn nợ + bảng HĐ sắp hết hạn.
 async function loadDash() {
   const month = new Date().toISOString().slice(0, 7); // yyyy-MM
   try {
@@ -68,9 +68,83 @@ async function loadDash() {
         <td class="mono">${fmtDateOnly(end)}</td>
         <td class="num due-red">${days} ngày</td></tr>`;
     }).join('') || '<tr><td colspan="4" style="color:var(--dim)">Không có hợp đồng nào sắp hết hạn.</td></tr>';
+
+    await renderDashCharts(summary, month);
   } catch (err) {
     toast(err.message, 'err');
   }
+}
+
+/**
+ * 3 biểu đồ Tổng quan: doanh thu 6 kỳ, tình trạng phòng, thu/còn nợ kỳ này.
+ * Tách try/catch riêng: lỗi vẽ biểu đồ không được làm hỏng 2 bảng số liệu phía trên.
+ * ponytail: server chỉ trả 1 kỳ → phải hỏi 5 kỳ trước đó (N+1 theo kỳ, đều là truy vấn tổng hợp).
+ * Thêm mảng lưu theo kỳ ở server nếu số lượng kỳ phình to.
+ */
+async function renderDashCharts(summary, month) {
+  if (!summary) return;
+  try {
+    const rev = document.getElementById('dash-rev-chart');
+    if (rev) {
+      const months = lastMonths(month, 6);
+      const past = await Promise.all(months.slice(0, -1).map(m =>
+        window.bridge.call('BAO_CAO_TONG_QUAN', { kyCuoc: m }).catch(() => null)));
+      const paids = [
+        ...past.map(s => Number(s?.soTienDaThu ?? s?.paidAmount) || 0),
+        Number(summary.soTienDaThu ?? summary.paidAmount) || 0
+      ];
+      const max = Math.max(...paids, 1);
+      // Cột 0% biến mất khỏi trục; và cột 100% đẩy nhãn giá vượt khỏi card.
+      rev.innerHTML = months.map((m, i) => `
+        <div class="b ${i === months.length - 1 ? 'on' : ''}" style="height:${Math.max(3, Math.round(paids[i] / max * 78))}%">
+          <i>${fmtMoney(paids[i])}</i><b>${esc(m.slice(5))}</b>
+        </div>`).join('');
+    }
+
+    const tong = Number(summary.tongSoPhong ?? summary.totalRooms) || 0;
+    const daThue = Number(summary.phongDaThue ?? summary.rentedRooms) || 0;
+    const trong = Number(summary.phongTrong ?? summary.availableRooms) || 0;
+    const daThu = Number(summary.soTienDaThu ?? summary.paidAmount) || 0;
+    const chuaThu = Number(summary.soTienChuaThu ?? summary.unpaidAmount) || 0;
+
+    renderPie('dash-room-pie', [
+      { label: 'Đang thuê', value: daThue, color: 'var(--sage)' },
+      { label: 'Trống', value: trong, color: 'var(--amber)' },
+      { label: 'Bảo trì / khác', value: Math.max(0, tong - daThue - trong), color: 'var(--dim)' }
+    ], 'Chưa có phòng nào.');
+
+    renderPie('dash-money-pie', [
+      { label: 'Đã thu', value: daThu, display: `${fmtMoney(daThu)} đ`, color: 'var(--sage)' },
+      { label: 'Còn nợ', value: chuaThu, display: `${fmtMoney(chuaThu)} đ`, color: 'var(--terracotta)' }
+    ], 'Chưa phát sinh kỳ cước nào.');
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+// Vẽ bằng conic-gradient (CSS) — không thư viện chart. Mảng rỗng → text, không vẽ vòng 100% màu.
+function renderPie(id, items, emptyText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const total = items.reduce((a, s) => a + Math.max(0, s.value), 0);
+  if (total <= 0) { el.innerHTML = `<div class="pie-empty">${esc(emptyText)}</div>`; return; }
+
+  let acc = 0;
+  const stops = items.filter(i => i.value > 0).map(i => {
+    const from = acc / total * 100;
+    acc += i.value;
+    return `${i.color} ${from.toFixed(2)}% ${(acc / total * 100).toFixed(2)}%`;
+  }).join(', ');
+  const label = items.map(i => `${i.label} ${i.display ?? i.value}`).join(', ');
+
+  el.innerHTML = `
+    <div class="pie" role="img" aria-label="${esc(label)}" style="background:conic-gradient(${stops})">
+      <div class="pie-hole"></div>
+    </div>
+    <div class="pie-legend">${items.map(i => `
+      <div class="it"><span class="sw" style="background:${i.color}"></span>
+      <span class="nm">${esc(i.label)}</span><span class="vl">${esc(i.display ?? i.value)}</span></div>`).join('')}
+    </div>`;
 }
 
 function setKpi(id, value) {

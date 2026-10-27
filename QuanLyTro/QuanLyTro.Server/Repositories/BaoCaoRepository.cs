@@ -17,11 +17,23 @@ public sealed class BaoCaoRepository(Database database) : IBaoCaoRepository
     /// <summary>Đếm phòng/người và cộng tiền đã thu / còn nợ của tháng hóa đơn.</summary>
     public async Task<BaoCaoTongQuanDto> GetSummaryAsync(string kyCuoc, CancellationToken ct = default)
     {
+        // Đếm theo THỰC TẾ (người ở + hợp đồng hiệu lực), không tin cột trang_thai — cột này
+        // có thể lệch do dữ liệu cũ/seed, khiến dashboard báo "còn trống" cho phòng đang có người.
+        // 'BaoTri' vẫn tính là không trống (phòng bảo trì không cho thuê được).
         const string sql = """
             SELECT
                 (SELECT COUNT(*) FROM phong) AS tong_so_phong,
-                (SELECT COUNT(*) FROM phong WHERE trang_thai = 'Trong') AS phong_trong,
-                (SELECT COUNT(*) FROM phong WHERE trang_thai = 'DaThue') AS phong_da_thue,
+                (SELECT COUNT(*) FROM phong r
+                 WHERE NOT EXISTS (SELECT 1 FROM khach_thue t WHERE t.phong_id = r.id)
+                   AND NOT EXISTS (SELECT 1 FROM hop_dong c
+                                   WHERE c.phong_id = r.id AND c.trang_thai IN ('HieuLuc', 'ChoNhanPhong'))
+                   AND r.trang_thai <> 'BaoTri') AS phong_trong,
+                -- Loại trừ nhau với phong_trong: KHÔNG cộng thêm `trang_thai = 'DaThue'`,
+                -- nếu không phòng trống nhưng còn dính cột cũ sẽ bị đếm cả hai bên.
+                (SELECT COUNT(*) FROM phong r
+                 WHERE EXISTS (SELECT 1 FROM khach_thue t WHERE t.phong_id = r.id)
+                    OR EXISTS (SELECT 1 FROM hop_dong c
+                               WHERE c.phong_id = r.id AND c.trang_thai IN ('HieuLuc', 'ChoNhanPhong'))) AS phong_da_thue,
                 (SELECT COUNT(*) FROM khach_thue WHERE phong_id IS NOT NULL) AS khach_hien_tai,
                 (SELECT COALESCE(SUM(tong_tien), 0) FROM hoa_don
                  WHERE ky_cuoc = @kyCuoc AND trang_thai = 'DaThu') AS so_tien_da_thu,

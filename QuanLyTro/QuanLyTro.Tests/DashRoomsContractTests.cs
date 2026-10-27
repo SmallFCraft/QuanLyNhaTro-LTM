@@ -31,6 +31,20 @@ public sealed class DashRoomsContractTests
     }
 
     [TestMethod]
+    public void DashCharts_HaveContainersAndRenderHooks()
+    {
+        var html = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "index.html"));
+        Assert.IsTrue(html.Contains("id=\"dash-rev-chart\""), "tổng quan thiếu khung biểu đồ doanh thu");
+        Assert.IsTrue(html.Contains("id=\"dash-room-pie\""), "tổng quan thiếu biểu đồ tròn tình trạng phòng");
+        Assert.IsTrue(html.Contains("id=\"dash-money-pie\""), "tổng quan thiếu biểu đồ tròn thu/còn nợ");
+
+        var js = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "js", "dash.js"));
+        Assert.IsTrue(js.Contains("renderDashCharts"), "dash.js chưa vẽ biểu đồ tổng quan");
+        Assert.IsTrue(js.Contains("renderPie('dash-room-pie'"), "dash.js chưa nạp biểu đồ tròn phòng");
+        Assert.IsTrue(js.Contains("renderPie('dash-money-pie'"), "dash.js chưa nạp biểu đồ tròn thu/nợ");
+    }
+
+    [TestMethod]
     public void IndexHtml_LoadsLandlordSubScripts()
     {
         var html = File.ReadAllText(Path.Combine(Wwwroot, "chutro", "index.html"));
