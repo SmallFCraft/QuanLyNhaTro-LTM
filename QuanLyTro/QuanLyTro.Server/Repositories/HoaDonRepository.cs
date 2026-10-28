@@ -13,7 +13,41 @@ public interface IHoaDonRepository
     Task<HoaDonDto?> GetByIdAsync(int hoaDonId, CancellationToken ct = default);
     Task<bool> MarkPaidAsync(int hoaDonId, CancellationToken ct = default);
     Task<List<HoaDonDto>> GetAllAsync(string kyCuoc, int? phongId, CancellationToken ct = default);
+
+    /// <summary>Hóa đơn chưa thu của một kỳ, kèm số phòng — dùng cho đối soát chuyển khoản.</summary>
+    Task<List<(int Id, string SoPhong, decimal TongTien)>> GetUnpaidWithRoomAsync(
+        string kyCuoc, CancellationToken ct = default);
     Task<TrangHoaDonCuaToiDto> GetByTenantAsync(int khachThueId, int page, int soLuongMoiTrang, CancellationToken ct = default);
+}
+
+/// <summary>Dùng khi router được dựng trong test không có DB — mọi thao tác là no-op.</summary>
+public sealed class NullHoaDonRepository : IHoaDonRepository
+{
+    public Task<HopDongDto?> GetActiveContractAsync(int phongId, CancellationToken ct = default) =>
+        Task.FromResult<HopDongDto?>(null);
+
+    public Task<ChiSoDienNuocDto?> GetUtilityReadingAsync(string kyCuoc, int phongId, CancellationToken ct = default) =>
+        Task.FromResult<ChiSoDienNuocDto?>(null);
+
+    public Task<HoaDonDto> AddAsync(HoaDonDto invoice, CancellationToken ct = default) =>
+        Task.FromResult(invoice);
+
+    public Task<HoaDonDto?> GetByIdAsync(int hoaDonId, CancellationToken ct = default) =>
+        Task.FromResult<HoaDonDto?>(null);
+
+    public Task<bool> MarkPaidAsync(int hoaDonId, CancellationToken ct = default) =>
+        Task.FromResult(false);
+
+    public Task<List<HoaDonDto>> GetAllAsync(string kyCuoc, int? phongId, CancellationToken ct = default) =>
+        Task.FromResult(new List<HoaDonDto>());
+
+    public Task<List<(int Id, string SoPhong, decimal TongTien)>> GetUnpaidWithRoomAsync(
+        string kyCuoc, CancellationToken ct = default) =>
+        Task.FromResult(new List<(int, string, decimal)>());
+
+    public Task<TrangHoaDonCuaToiDto> GetByTenantAsync(
+        int khachThueId, int page, int soLuongMoiTrang, CancellationToken ct = default) =>
+        Task.FromResult(new TrangHoaDonCuaToiDto([], 0, page, soLuongMoiTrang));
 }
 
 /// <summary>
@@ -196,6 +230,29 @@ public sealed class HoaDonRepository(Database database) : IHoaDonRepository
         }
 
         return hoa_don;
+    }
+
+    public async Task<List<(int Id, string SoPhong, decimal TongTien)>> GetUnpaidWithRoomAsync(
+        string kyCuoc, CancellationToken ct = default)
+    {
+        const string sql = """
+            SELECT h.id, p.so_phong, h.tong_tien
+            FROM hoa_don h
+            JOIN phong p ON p.id = h.phong_id
+            WHERE h.ky_cuoc = @kyCuoc AND h.trang_thai = 'ChuaThu'
+            """;
+
+        await using var connection = await database.OpenAsync(ct);
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@kyCuoc", kyCuoc);
+
+        var ket_qua = new List<(int, string, decimal)>();
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            ket_qua.Add((reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2)));
+        }
+        return ket_qua;
     }
 
     /// <summary>BR-14: suy phòng từ chính khachThueId, không nhận phongId từ client. Phân trang server-side.</summary>

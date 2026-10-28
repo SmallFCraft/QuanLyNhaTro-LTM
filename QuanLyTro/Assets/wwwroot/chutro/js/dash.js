@@ -26,6 +26,8 @@ async function loadDash() {
       if (cntBadge && totalRooms !== undefined && totalRooms !== null) cntBadge.textContent = totalRooms;
       const cntTenants = document.getElementById('cnt-khach_thue');
       if (cntTenants && currentTenants !== undefined && currentTenants !== null) cntTenants.textContent = currentTenants;
+
+      renderThieuHoaDon(summary);
     }
 
     const overdue = (Array.isArray(hoaDon) ? hoaDon : []).filter(i => (i.trangThai ?? i.trang_thai) !== 'DaThu');
@@ -149,6 +151,24 @@ function renderPie(id, items, emptyText) {
       <div class="it"><span class="sw" style="background:${i.color}"></span>
       <span class="nm">${esc(i.label)}</span><span class="vl">${esc(i.display ?? i.value)}</span></div>`).join('')}
     </div>`;
+}
+
+// Phòng có HĐ hiệu lực nhưng kỳ này chưa lập hóa đơn: nếu chỉ nhìn KPI "Còn nợ" thì
+// chúng vô hình (chưa có hóa đơn để đếm), chủ trọ tưởng đã xong tháng.
+function renderThieuHoaDon(summary) {
+  const card = document.getElementById('dash-thieu-hd');
+  if (!card) return;
+
+  const so = Number(summary?.soPhongThieuHoaDon ?? 0) || 0;
+  const danhSach = Array.isArray(summary?.phongThieuHoaDon) ? summary.phongThieuHoaDon : [];
+  card.hidden = so === 0;
+
+  const text = document.getElementById('dash-thieu-hd-text');
+  if (text && so > 0) {
+    const phong = danhSach.length ? danhSach.join(', ') : `${so} phòng`;
+    text.innerHTML = `<b>${phong}</b> đã có hợp đồng hiệu lực nhưng chưa có hóa đơn kỳ này.
+      Chốt chỉ số điện nước rồi lập hóa đơn để khách thanh toán được.`;
+  }
 }
 
 function setKpi(id, value) {

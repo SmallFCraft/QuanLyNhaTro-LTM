@@ -7,7 +7,8 @@ const LANDLORD_TITLES = {
   utils: 'Chốt chỉ số điện nước',
   hoa_don: 'Hóa đơn & thu tiền',
   reports: 'Thống kê doanh thu',
-  perms: 'Quản lý phân quyền'
+  perms: 'Quản lý phân quyền',
+  cai_dat: 'Cài đặt nhận tiền & QR thanh toán'
 };
 
 const LANDLORD_LOADERS = {
@@ -18,7 +19,8 @@ const LANDLORD_LOADERS = {
   utils: () => loadUtils(),
   hoa_don: () => loadInvoices(),
   reports: () => loadReports(),
-  perms: () => loadPerms()
+  perms: () => loadPerms(),
+  cai_dat: () => loadCaiDat()
 };
 
 let _currentTab = 'dash';
@@ -35,7 +37,7 @@ async function loadLandlordTab(tabKey) {
   });
   try {
     const loader = LANDLORD_LOADERS[_currentTab];
-    if (loader) await loader();
+    await loader?.();
   } catch (err) {
     toast(err.message, 'err');
   }
@@ -72,5 +74,8 @@ function applyLandlordRoleView(vai_tro) {
   }
   if (statusRole) statusRole.textContent = isManager ? 'Quản lý cơ sở' : 'Chủ trọ (ChuTro)';
   if (permsBtn) permsBtn.style.display = isManager ? 'none' : '';
+  // Cài đặt nhận tiền cũng chỉ Chủ trọ: đổi STK là đổi nơi khách chuyển tiền.
+  const caiDatBtn = document.getElementById('tabbtn-cai_dat');
+  if (caiDatBtn) caiDatBtn.style.display = isManager ? 'none' : '';
   document.title = isManager ? 'Quản Lý Khu Trọ — Quản lý cơ sở' : 'Quản Lý Khu Trọ — Chủ trọ';
 }

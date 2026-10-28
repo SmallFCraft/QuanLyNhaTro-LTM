@@ -317,6 +317,11 @@ file sealed class StubInvoiceRepo : IHoaDonRepository
         LastPageSize = soLuongMoiTrang;
         return Task.FromResult(new TrangHoaDonCuaToiDto(DanhSach, DanhSach.Count, page, soLuongMoiTrang));
     }
+
+    /// <summary>Đối soát SePay dùng — test hóa đơn không chạm tới nên trả rỗng.</summary>
+    public Task<List<(int Id, string SoPhong, decimal TongTien)>> GetUnpaidWithRoomAsync(
+        string kyCuoc, CancellationToken ct = default) =>
+        Task.FromResult(new List<(int, string, decimal)>());
 }
 
 file sealed class StubReportRepo : IBaoCaoRepository

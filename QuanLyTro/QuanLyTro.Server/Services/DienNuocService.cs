@@ -8,7 +8,7 @@ namespace QuanLyTro.Server.Services;
 /// Nghiệp vụ điện nước: BR-07 (chỉ số mới &gt;= chỉ số cũ), BR-08 (1 bản ghi / phòng / tháng,
 /// chặn bởi DB UNIQUE uq_room_month — xem DienNuocRepository).
 /// </summary>
-public sealed class DienNuocService(IDienNuocRepository banGhi)
+public sealed class DienNuocService(IDienNuocRepository banGhi, IHopDongRepository? hop_dong = null)
 {
     /// <summary>
     /// Chỉ số cũ kỳ này: bản ghi gần nhất TRƯỚC `kyCuoc` (null nếu chưa từng chốt).
@@ -34,6 +34,8 @@ public sealed class DienNuocService(IDienNuocRepository banGhi)
     {
         Validate(reading);
         var kyCuoc = reading.KyCuoc.Trim();
+        await ChanKyTruocHopDongAsync(reading.PhongId, kyCuoc, ct);
+
         var previous = await banGhi.GetLatestBeforeAsync(reading.PhongId, kyCuoc, ct);
         if (previous is not null && reading.DienCu != previous.DienMoi)
         {
@@ -46,6 +48,34 @@ public sealed class DienNuocService(IDienNuocRepository banGhi)
         }
 
         return await banGhi.AddAsync(reading with { KyCuoc = kyCuoc }, ct);
+    }
+
+    /// <summary>
+    /// Không cho chốt chỉ số cho kỳ TRƯỚC tháng bắt đầu hợp đồng: phòng chưa có người ở thì
+    /// không tiêu thụ gì, và một bản ghi rác ở kỳ đó sẽ thành "chỉ số cũ" của kỳ thật → tính sai tiền.
+    /// Chỉ áp khi phòng đang có HĐ hiệu lực / chờ nhận phòng; phòng chưa có HĐ thì bỏ qua.
+    /// </summary>
+    private async Task ChanKyTruocHopDongAsync(int phongId, string kyCuoc, CancellationToken ct)
+    {
+        if (hop_dong is null) return;
+
+        var tat_ca = await hop_dong.GetAllAsync(ct);
+        var hop_dong_cua_phong = tat_ca
+            .Where(c => c.Contract.PhongId == phongId
+                && c.Contract.TrangThai is TrangThaiHopDong.HieuLuc or TrangThaiHopDong.ChoNhanPhong)
+            .Select(c => c.Contract)
+            .OrderByDescending(c => c.NgayBatDau)
+            .FirstOrDefault();
+
+        if (hop_dong_cua_phong is null) return;
+
+        var thang_bat_dau = hop_dong_cua_phong.NgayBatDau.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+        // kyCuoc là chuỗi cố định yyyy-MM nên so sánh chuỗi trùng thứ tự thời gian.
+        if (string.CompareOrdinal(kyCuoc, thang_bat_dau) < 0)
+        {
+            throw new LoiNghiepVu(
+                $"Kỳ {kyCuoc} trước ngày bắt đầu hợp đồng ({hop_dong_cua_phong.NgayBatDau:dd/MM/yyyy}).");
+        }
     }
 
     public static void Validate(ChiSoDienNuocDto reading)

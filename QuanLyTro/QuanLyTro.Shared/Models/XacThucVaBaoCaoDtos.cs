@@ -26,7 +26,11 @@ public sealed record BaoCaoTongQuanDto(
     int PhongDaThue,
     int KhachHienTai,
     decimal SoTienDaThu,
-    decimal SoTienChuaThu
+    decimal SoTienChuaThu,
+    // Phòng đã có hợp đồng hiệu lực nhưng kỳ này chưa lập hóa đơn — chủ trọ cần chốt chỉ số
+    // rồi lập hóa đơn. Không nằm trong SoTienChuaThu vì hóa đơn chưa tồn tại.
+    int SoPhongThieuHoaDon = 0,
+    List<string>? PhongThieuHoaDon = null
 );
 
 /// <summary>Dòng xuất danh sách tạm trú (US-08): họ tên, ngày sinh, CCCD, quê quán, phòng.</summary>

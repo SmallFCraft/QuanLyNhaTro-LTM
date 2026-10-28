@@ -41,23 +41,54 @@ public sealed class BaoCaoRepository(Database database) : IBaoCaoRepository
                  WHERE ky_cuoc = @kyCuoc AND trang_thai = 'ChuaThu') AS so_tien_chua_thu
             """;
 
-        await using var connection = await database.OpenAsync(ct);
-        await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@kyCuoc", kyCuoc);
+        // Phòng có HĐ hiệu lực (đã tới ngày bắt đầu) mà kỳ này chưa có hóa đơn: chủ trọ còn
+        // thiếu bước chốt chỉ số + lập hóa đơn, nên khoản đó KHÔNG nằm trong so_tien_chua_thu.
+        const string thieuHoaDonSql = """
+            SELECT p.so_phong
+            FROM hop_dong c
+            JOIN phong p ON p.id = c.phong_id
+            WHERE c.trang_thai IN ('HieuLuc', 'ChoNhanPhong')
+              AND DATE_FORMAT(c.ngay_bat_dau, '%Y-%m') <= @kyCuoc
+              AND NOT EXISTS (SELECT 1 FROM hoa_don h
+                              WHERE h.phong_id = c.phong_id AND h.ky_cuoc = @kyCuoc)
+            ORDER BY p.so_phong
+            """;
 
-        await using var reader = await command.ExecuteReaderAsync(ct);
-        if (!await reader.ReadAsync(ct))
+        await using var connection = await database.OpenAsync(ct);
+
+        int tong, trong, da_thue, khach;
+        decimal da_thu, chua_thu;
+        await using (var command = new MySqlCommand(sql, connection))
         {
-            return new BaoCaoTongQuanDto(0, 0, 0, 0, 0m, 0m);
+            command.Parameters.AddWithValue("@kyCuoc", kyCuoc);
+            await using var reader = await command.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+            {
+                return new BaoCaoTongQuanDto(0, 0, 0, 0, 0m, 0m);
+            }
+
+            tong = Convert.ToInt32(reader.GetInt64("tong_so_phong"));
+            trong = Convert.ToInt32(reader.GetInt64("phong_trong"));
+            da_thue = Convert.ToInt32(reader.GetInt64("phong_da_thue"));
+            khach = Convert.ToInt32(reader.GetInt64("khach_hien_tai"));
+            da_thu = reader.GetDecimal("so_tien_da_thu");
+            chua_thu = reader.GetDecimal("so_tien_chua_thu");
+        }
+
+        var phong_thieu = new List<string>();
+        await using (var thieuCmd = new MySqlCommand(thieuHoaDonSql, connection))
+        {
+            thieuCmd.Parameters.AddWithValue("@kyCuoc", kyCuoc);
+            await using var reader = await thieuCmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                phong_thieu.Add(reader.GetString(0));
+            }
         }
 
         return new BaoCaoTongQuanDto(
-            Convert.ToInt32(reader.GetInt64("tong_so_phong")),
-            Convert.ToInt32(reader.GetInt64("phong_trong")),
-            Convert.ToInt32(reader.GetInt64("phong_da_thue")),
-            Convert.ToInt32(reader.GetInt64("khach_hien_tai")),
-            reader.GetDecimal("so_tien_da_thu"),
-            reader.GetDecimal("so_tien_chua_thu"));
+            tong, trong, da_thue, khach, da_thu, chua_thu,
+            phong_thieu.Count, phong_thieu);
     }
 
     /// <summary>US-08: người đang ở (có phòng), xếp theo số phòng rồi họ tên.</summary>
