@@ -59,14 +59,8 @@ public sealed class DienNuocService(IDienNuocRepository banGhi, IHopDongReposito
     {
         if (hop_dong is null) return;
 
-        var tat_ca = await hop_dong.GetAllAsync(ct);
-        var hop_dong_cua_phong = tat_ca
-            .Where(c => c.Contract.PhongId == phongId
-                && c.Contract.TrangThai is TrangThaiHopDong.HieuLuc or TrangThaiHopDong.ChoNhanPhong)
-            .Select(c => c.Contract)
-            .OrderByDescending(c => c.NgayBatDau)
-            .FirstOrDefault();
-
+        // Dò theo phòng, ưu tiên HieuLuc: O(1) query thay vì GetAllAsync() tải cả bảng hợp đồng.
+        var hop_dong_cua_phong = await hop_dong.GetActiveByRoomAsync(phongId, ct);
         if (hop_dong_cua_phong is null) return;
 
         var thang_bat_dau = hop_dong_cua_phong.NgayBatDau.ToString("yyyy-MM", CultureInfo.InvariantCulture);

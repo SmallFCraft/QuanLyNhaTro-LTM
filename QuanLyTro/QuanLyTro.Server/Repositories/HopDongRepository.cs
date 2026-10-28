@@ -12,6 +12,9 @@ public interface IHopDongRepository
 {
     Task<HopDongDto?> GetByIdAsync(int hopDongId, CancellationToken ct = default);
     Task<bool> HasActiveContractAsync(int phongId, CancellationToken ct = default);
+
+    /// <summary>Hợp đồng HieuLuc / ChoNhanPhong MỚI NHẤT của phòng (theo ngay_bat_dau) — null nếu không có.</summary>
+    Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default);
     Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default);
     Task<HopDongDto> AddAsync(HopDongDto contract, CancellationToken ct = default);
     Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default);
@@ -62,6 +65,32 @@ public sealed class HopDongRepository(Database database) : IHopDongRepository
         command.Parameters.AddWithValue("@phongId", phongId);
 
         return Convert.ToInt64(await command.ExecuteScalarAsync(ct)) > 0;
+    }
+
+    public async Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default)
+    {
+        // Ưu tiên HieuLuc trước, nếu không có mới lấy ChoNhanPhong.
+        // Tránh lấy nhầm HĐ tương lai (ChoNhanPhong) thay vì HĐ đang hiệu lực của khách hiện tại.
+        const string sql = """
+            SELECT id, phong_id, nguoi_dai_dien_id, ngay_bat_dau, ngay_ket_thuc,
+                   gia_thue, tien_coc, trang_thai, ghi_chu, ma_qr_token, ma_pin
+            FROM hop_dong
+            WHERE phong_id = @phongId AND trang_thai IN ('HieuLuc', 'ChoNhanPhong')
+            ORDER BY CASE trang_thai WHEN 'HieuLuc' THEN 1 ELSE 2 END, ngay_bat_dau DESC
+            LIMIT 1
+            """;
+
+        await using var connection = await database.OpenAsync(ct);
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@phongId", phongId);
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        if (!await reader.ReadAsync(ct))
+        {
+            return null;
+        }
+
+        return Map(reader);
     }
 
     /// <summary>BR-05: đại diện ký HĐ phải đang ở chính phòng đó.</summary>

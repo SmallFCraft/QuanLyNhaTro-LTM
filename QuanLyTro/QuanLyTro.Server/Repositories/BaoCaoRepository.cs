@@ -43,11 +43,13 @@ public sealed class BaoCaoRepository(Database database) : IBaoCaoRepository
 
         // Phòng có HĐ hiệu lực (đã tới ngày bắt đầu) mà kỳ này chưa có hóa đơn: chủ trọ còn
         // thiếu bước chốt chỉ số + lập hóa đơn, nên khoản đó KHÔNG nằm trong so_tien_chua_thu.
+        // CHỈ 'HieuLuc': HoaDonService.CreateAsync tra hợp đồng qua GetActiveContractAsync cũng chỉ
+        // nhận 'HieuLuc', nên cảnh báo cho 'ChoNhanPhong' là cảnh báo không thể xử lý.
         const string thieuHoaDonSql = """
             SELECT p.so_phong
             FROM hop_dong c
             JOIN phong p ON p.id = c.phong_id
-            WHERE c.trang_thai IN ('HieuLuc', 'ChoNhanPhong')
+            WHERE c.trang_thai = 'HieuLuc'
               AND DATE_FORMAT(c.ngay_bat_dau, '%Y-%m') <= @kyCuoc
               AND NOT EXISTS (SELECT 1 FROM hoa_don h
                               WHERE h.phong_id = c.phong_id AND h.ky_cuoc = @kyCuoc)
