@@ -104,6 +104,9 @@ file sealed class FakeHopDongRepo : IHopDongRepository
     public Task<bool> HasActiveContractAsync(int phongId, CancellationToken ct = default) =>
         Task.FromResult(false);
 
+    public Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default) =>
+        Task.FromResult(Added?.PhongId == phongId ? Added : null);
+
     public Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default) =>
         Task.FromResult(TenantAlreadyInRoom);
 

@@ -166,8 +166,12 @@ public sealed class DemoSeederTests
             "Hợp đồng chờ nhận phòng phải có QR/PIN cố định để demo lặp lại được");
     }
 
+    /// <summary>
+    /// Seeder CHỈ gieo cấu hình khi bảng trống — đã có dòng thì giữ nguyên, kể cả token.
+    /// Chạy --seed-demo trên máy thật không được đụng tới tài khoản ngân hàng của chủ trọ.
+    /// </summary>
     [TestMethod]
-    public async Task Seed_GhiDeCauHinhNhungKhongDungApiToken()
+    public async Task Seed_GiuNguyenCauHinhDaTonTai()
     {
         await ExecuteAsync("""
             INSERT INTO cau_hinh (id, ngan_hang, so_tai_khoan, chu_tai_khoan, template_qr, api_token)
@@ -182,10 +186,25 @@ public sealed class DemoSeederTests
             SELECT CONCAT_WS('|', ngan_hang, so_tai_khoan, chu_tai_khoan, template_qr, api_token)
             FROM cau_hinh WHERE id = 1
             """);
+        Assert.AreEqual("SaiNganHang|0000|SAI|qronly|TOKEN_KHONG_DUOC_XOA", cau_hinh,
+            "Seeder không được đụng cấu hình đã tồn tại (cả ngân hàng lẫn API token)");
+    }
+
+    [TestMethod]
+    public async Task Seed_GieoCauHinhKhiBangTrong()
+    {
+        await ExecuteAsync("DELETE FROM cau_hinh WHERE id = 1");
+
+        await DuLieuMau.SeedAsync(Db);
+
+        var cau_hinh = await ScalarAsync("""
+            SELECT CONCAT_WS('|', ngan_hang, so_tai_khoan, chu_tai_khoan, template_qr)
+            FROM cau_hinh WHERE id = 1
+            """);
         Assert.AreEqual(
-            $"{DuLieuMau.NganHangDemo}|{DuLieuMau.SoTaiKhoanDemo}|{DuLieuMau.ChuTaiKhoanDemo}|compact|TOKEN_KHONG_DUOC_XOA",
+            $"{DuLieuMau.NganHangDemo}|{DuLieuMau.SoTaiKhoanDemo}|{DuLieuMau.ChuTaiKhoanDemo}|compact",
             cau_hinh,
-            "Seeder ghi đè cấu hình ngân hàng nhưng phải giữ nguyên API token");
+            "Bảng trống thì seeder phải gieo cấu hình demo để QR dựng được ngay");
     }
 
     [TestMethod]

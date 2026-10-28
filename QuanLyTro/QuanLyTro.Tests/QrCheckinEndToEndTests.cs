@@ -187,12 +187,13 @@ public sealed class QrCheckinEndToEndTests
             new KhachThueAuthRepository(Db),
             sessions);
 
+        var hopDongRepo = new HopDongRepository(Db);
         return new DieuPhoiYeuCau(
             auth,
             new PhongService(new PhongRepository(Db)),
             new KhachThueService(new KhachThueRepository(Db)),
-            new HopDongService(new HopDongRepository(Db)),
-            new DienNuocService(new DienNuocRepository(Db)),
+            new HopDongService(hopDongRepo),
+            new DienNuocService(new DienNuocRepository(Db), hopDongRepo),
             new HoaDonService(new HoaDonRepository(Db)),
             new BaoCaoService(new BaoCaoRepository(Db)),
             new CuTruService(new CuTruRepository(Db)),

@@ -263,6 +263,9 @@ file sealed class StubContractRepo : IHopDongRepository
     public Task<bool> HasActiveContractAsync(int phongId, CancellationToken ct = default) =>
         Task.FromResult(HasActive);
 
+    public Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default) =>
+        Task.FromResult(Existing is not null && Existing.PhongId == phongId ? Existing : null);
+
     public Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default) =>
         Task.FromResult(TenantInRoom);
 

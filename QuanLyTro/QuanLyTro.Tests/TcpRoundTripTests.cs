@@ -226,12 +226,13 @@ public sealed class TcpRoundTripTests
         var sessions = new SessionStore();
         var auth = new XacThucService(new StubUserRepository(), new StubTenantRepository(), sessions);
 
+        var hopDongRepo = new HopDongRepository(database);
         return new DieuPhoiYeuCau(
             auth,
             new PhongService(new PhongRepository(database)),
             new KhachThueService(new KhachThueRepository(database)),
-            new HopDongService(new HopDongRepository(database)),
-            new DienNuocService(new DienNuocRepository(database)),
+            new HopDongService(hopDongRepo),
+            new DienNuocService(new DienNuocRepository(database), hopDongRepo),
             new HoaDonService(new HoaDonRepository(database)),
             new BaoCaoService(new StubReportRepository()),
             new CuTruService(new CuTruRepository(database)),

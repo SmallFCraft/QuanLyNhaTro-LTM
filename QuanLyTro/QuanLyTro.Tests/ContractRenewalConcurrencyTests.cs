@@ -186,6 +186,8 @@ public sealed class HopDongRenewalConcurrencyTests
             Task.FromResult<HopDongDto?>(Existing);
 
         public Task<bool> HasActiveContractAsync(int phongId, CancellationToken ct = default) => Task.FromResult(false);
+        public Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default) =>
+            Task.FromResult<HopDongDto?>(Existing.PhongId == phongId ? Existing : null);
         public Task<bool> IsTenantInRoomAsync(int khachThueId, int phongId, CancellationToken ct = default) => Task.FromResult(true);
         public Task<HopDongDto> AddAsync(HopDongDto contract, CancellationToken ct = default) => Task.FromResult(contract);
         public Task<bool> TerminateAsync(int hopDongId, string? ghi_chu, DateOnly ngayThongBao, CancellationToken ct = default) => Task.FromResult(true);

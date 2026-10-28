@@ -125,14 +125,23 @@ public sealed class WorkflowDongBoTests
 
     private sealed class StubHopDong(DateOnly? ngayBatDau) : IHopDongRepository
     {
-        public Task<List<MucHopDongItem>> GetAllAsync(CancellationToken ct = default)
+        private HopDongDto? HopDong()
         {
-            if (ngayBatDau is null) return Task.FromResult(new List<MucHopDongItem>());
-            var contract = new HopDongDto(
+            if (ngayBatDau is null) return null;
+            return new HopDongDto(
                 1, 990177, 5, ngayBatDau.Value, ngayBatDau.Value.AddYears(1),
                 50_000m, 0m, TrangThaiHopDong.HieuLuc, null);
+        }
+
+        public Task<List<MucHopDongItem>> GetAllAsync(CancellationToken ct = default)
+        {
+            var contract = HopDong();
+            if (contract is null) return Task.FromResult(new List<MucHopDongItem>());
             return Task.FromResult(new List<MucHopDongItem> { new(contract, "P105", "Test") });
         }
+
+        public Task<HopDongDto?> GetActiveByRoomAsync(int phongId, CancellationToken ct = default) =>
+            Task.FromResult(HopDong());
 
         public Task<HopDongDto?> GetByIdAsync(int hopDongId, CancellationToken ct = default) =>
             Task.FromResult<HopDongDto?>(null);

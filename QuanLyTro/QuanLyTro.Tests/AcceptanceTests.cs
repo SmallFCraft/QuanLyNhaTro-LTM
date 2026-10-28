@@ -424,16 +424,20 @@ public sealed class AcceptanceTests
         return MakeRouter(auth, sessions);
     }
 
-    private static DieuPhoiYeuCau MakeRouter(XacThucService auth, SessionStore sessions) => new(
-        auth,
-        new PhongService(new PhongRepository(Db)),
-        new KhachThueService(new KhachThueRepository(Db)),
-        new HopDongService(new HopDongRepository(Db)),
-        new DienNuocService(new DienNuocRepository(Db)),
-        new HoaDonService(new HoaDonRepository(Db)),
-        new BaoCaoService(new BaoCaoRepository(Db)),
-        new CuTruService(new CuTruRepository(Db)),
-        sessions);
+    private static DieuPhoiYeuCau MakeRouter(XacThucService auth, SessionStore sessions)
+    {
+        var hopDongRepo = new HopDongRepository(Db);
+        return new(
+            auth,
+            new PhongService(new PhongRepository(Db)),
+            new KhachThueService(new KhachThueRepository(Db)),
+            new HopDongService(hopDongRepo),
+            new DienNuocService(new DienNuocRepository(Db), hopDongRepo),
+            new HoaDonService(new HoaDonRepository(Db)),
+            new BaoCaoService(new BaoCaoRepository(Db)),
+            new CuTruService(new CuTruRepository(Db)),
+            sessions);
+    }
 
     private static KhachThueDto KhachThueDto(string cccd, string hoTen, int phongId) =>
         new(0, phongId, hoTen, new DateOnly(1999, 5, 10), cccd, "09000000" + cccd[^4..], "Đà Nẵng", null, false);

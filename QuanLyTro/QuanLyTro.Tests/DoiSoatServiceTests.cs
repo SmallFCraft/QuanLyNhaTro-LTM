@@ -80,28 +80,62 @@ public sealed class DoiSoatServiceTests
     }
 
     [TestMethod]
-    public async Task Chay_GiaoDichDaXuLy_KhongXuLyLai()
+    public async Task Chay_GiaoDichDaKhop_KhongThuLai()
     {
         var (service, hoaDon, giaoDich) = Dung(giaoDichs: [Gd("1", "P102 09-2026", 2_500_000m)]);
         hoaDon.HoaDons.Add((7, "P102", 2_500_000m));
-        giaoDich.DaTonTai.Add("1"); // đã xử lý ở lượt poll trước
+        giaoDich.DaTonTai.Add("1"); // đã thấy ở lượt poll trước
+        giaoDich.DaKhop["1"] = true; // và đã khớp hóa đơn — chỉ trường hợp này mới bỏ qua
 
         var ket_qua = await service.ChayAsync();
 
-        Assert.AreEqual(0, ket_qua.SoGiaoDichMoi, "Giao dịch trùng không được tính là mới");
+        Assert.AreEqual(0, ket_qua.SoGiaoDichMoi, "Giao dịch đã khớp không được tính là mới");
         Assert.IsNull(hoaDon.MarkedPaidId, "Không được thu lại lần hai");
     }
 
     [TestMethod]
-    public async Task Chay_ChuaCoToken_KhongGoiSePay()
+    public async Task Chay_ChuaCoToken_BaoLoiNghiepVu()
     {
         var (service, hoaDon, _) = Dung(giaoDichs: [Gd("1", "P102 09-2026", 2_500_000m)], token: "");
         hoaDon.HoaDons.Add((7, "P102", 2_500_000m));
 
+        var ex = await Assert.ThrowsExceptionAsync<LoiNghiepVu>(() => service.ChayAsync());
+
+        StringAssert.Contains(ex.Message, "API token");
+        Assert.IsNull(hoaDon.MarkedPaidId);
+    }
+
+    /// <summary>Giao dịch ghi nhận trước khi hóa đơn tồn tại phải được khớp lại ở lượt sau.</summary>
+    [TestMethod]
+    public async Task Chay_GiaoDichChuaKhopDuocThuLai()
+    {
+        var (service, hoaDon, giaoDich) = Dung(giaoDichs: [Gd("1", "P102 09-2026", 2_500_000m)]);
+
+        // Lượt 1: chưa có hóa đơn → bỏ qua, ghi lý do.
+        var luot1 = await service.ChayAsync();
+        Assert.AreEqual(0, luot1.SoKhop);
+        Assert.IsNotNull(giaoDich.LyDo["1"]);
+
+        // Lượt 2: hóa đơn xuất hiện → giao dịch cũ phải được thử lại và thu.
+        hoaDon.HoaDons.Add((7, "P102", 2_500_000m));
+        var luot2 = await service.ChayAsync();
+
+        Assert.AreEqual(1, luot2.SoKhop, "Giao dịch chưa khớp phải được thử lại khi hóa đơn xuất hiện");
+        Assert.AreEqual(7, hoaDon.MarkedPaidId);
+    }
+
+    /// <summary>Nội dung chỉ ghi số phòng, thiếu kỳ cước → vẫn dò trúng hóa đơn nợ cũ nhất.</summary>
+    [TestMethod]
+    public async Task Chay_NoiDungKhongCoKy_DungHoaDonCuNhat()
+    {
+        var (service, hoaDon, _) = Dung(giaoDichs: [Gd("1", "Tien phong P102", 2_500_000m)]);
+        hoaDon.HoaDons.Add((11, "P102", 2_500_000m));
+        hoaDon.HoaDons.Add((12, "P102", 2_500_000m));
+
         var ket_qua = await service.ChayAsync();
 
-        Assert.AreEqual(0, ket_qua.SoGiaoDichMoi);
-        Assert.IsNull(hoaDon.MarkedPaidId);
+        Assert.AreEqual(1, ket_qua.SoKhop, "Thiếu kỳ cước vẫn phải khớp được phòng và thu hóa đơn cũ nhất");
+        Assert.AreEqual(11, hoaDon.MarkedPaidId);
     }
 
     [TestMethod]
@@ -150,6 +184,9 @@ public sealed class DoiSoatServiceTests
 
         public Task<bool> ThemNeuChuaCoAsync(GiaoDichSepay giao_dich, CancellationToken ct = default) =>
             Task.FromResult(DaTonTai.Add(giao_dich.Id));
+
+        public Task<bool> DaKhopChuaAsync(string sepayId, CancellationToken ct = default) =>
+            Task.FromResult(DaKhop.TryGetValue(sepayId, out var da_khop) && da_khop);
 
         public Task DanhDauAsync(string sepayId, int? hoaDonId, string? lyDoLoai, CancellationToken ct = default)
         {
