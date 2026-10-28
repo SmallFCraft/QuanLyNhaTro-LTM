@@ -15,8 +15,7 @@ namespace QuanLyTro.Tests;
 [TestClass]
 public sealed class UtilityPreviousReadingTests
 {
-    private const string ConnectionString =
-        "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User Id=root;Password=;";
+    private static readonly string ConnectionString = TestDatabase.ConnectionString;
 
     private static readonly Database Db = new(ConnectionString);
     private static readonly DienNuocService Service = new(new DienNuocRepository(Db));

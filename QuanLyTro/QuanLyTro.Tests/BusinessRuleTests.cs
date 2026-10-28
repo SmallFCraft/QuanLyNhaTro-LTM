@@ -89,8 +89,7 @@ public sealed class BusinessRuleTests
     // ------------------------------------------------ BR-02/BR-03 trên MySQL thật
     // Dải riêng: phòng id 9400, CCCD 99999999940x — không trùng wave khác (9188-9215, 990001+).
 
-    private const string ConnectionString =
-        "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User Id=root;Password=;SslMode=None;";
+    private static readonly string ConnectionString = TestDatabase.ConnectionString;
     private const int CapacityRoomId = 9400;
     private const string CapacityCccd = "999999999400";
     private const string ExtraCccd = "999999999401";

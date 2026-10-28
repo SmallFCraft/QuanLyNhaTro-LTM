@@ -10,8 +10,7 @@ namespace QuanLyTro.Tests;
 [TestClass]
 public sealed class HopDongConcurrencyTests
 {
-    private const string ConnectionString =
-        "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User ID=root;Password=;SslMode=None;";
+    private static readonly string ConnectionString = TestDatabase.ConnectionString;
 
     private const int TestRoomId = 9188;
     private const int TestTenantId = 9188;
