@@ -12,7 +12,7 @@ public sealed class TenantShellContractTests
     // Shell khách thuê chỉ được gọi đúng 2 action: 1 đọc hóa đơn, 1 check-in QR (BR-17/18/19).
     private static readonly HashSet<string> AllowedActions = new(StringComparer.Ordinal)
     {
-        "HOA_DON_CUA_TOI", "KHACH_THUE_NHAN_PHONG_QR",
+        "HOA_DON_CUA_TOI", "KHACH_THUE_NHAN_PHONG_QR", "CAU_HINH_LAY",
     };
 
     /// <summary>Mọi literal tên action (CHU_HOA_CO_GACH) truyền vào bridge.call(...) trong file JS.</summary>
@@ -92,7 +92,7 @@ public sealed class TenantShellContractTests
         // Allowlist: action thứ 13 hay tên gõ sai cũng bắt đỏ — chặn theo danh sách known-bad thì kẽ hở.
         var used = GetBridgeCallActions(TenantJs);
         Assert.IsTrue(used.IsSubsetOf(AllowedActions),
-            "khach_thue.js gọi action ngoài allowlist {HOA_DON_CUA_TOI, KHACH_THUE_NHAN_PHONG_QR}; nhận: {"
+            "khach_thue.js gọi action ngoài allowlist {HOA_DON_CUA_TOI, KHACH_THUE_NHAN_PHONG_QR, CAU_HINH_LAY}; nhận: {"
             + string.Join(", ", used) + "}");
         Assert.IsTrue(used.Contains("KHACH_THUE_NHAN_PHONG_QR"),
             "khach_thue.js phải có action check-in QR KHACH_THUE_NHAN_PHONG_QR");
@@ -176,17 +176,17 @@ public sealed class TenantShellContractTests
             "các KPI tính trên 1 trang phải ghi rõ 'trang này' trong sub");
     }
 
-    /// <summary>Ruling B: không ship STK bịa — BANK_INFO rỗng thì copyTransfer không dựng nội dung có số tài khoản.</summary>
+    /// <summary>Ruling B: không ship STK bịa — nạp cấu hình từ CAU_HINH_LAY, không hardcode STK giả.</summary>
     [TestMethod]
     public void TenantJs_NoInventedBankAccount()
     {
         var js = TenantJs;
-        Assert.IsTrue(js.Contains("const BANK_INFO = '';"),
-            "BANK_INFO phải là hằng rỗng cho tới khi server có hồ sơ nhận tiền");
+        Assert.IsTrue(js.Contains("CAU_HINH_LAY"),
+            "phải đọc hồ sơ nhận tiền từ server bằng CAU_HINH_LAY");
         Assert.IsFalse(Regex.IsMatch(js, @"\d{9,}\s*·"),
             "không được nhúng số tài khoản giả vào khach_thue.js");
         Assert.IsTrue(js.Contains("thông tin nhận tiền chưa cấu hình"),
-            "copyTransfer phải nói rõ chưa cấu hình thông tin nhận tiền khi BANK_INFO rỗng");
+            "copyTransfer phải nói rõ chưa cấu hình thông tin nhận tiền khi cơ sở chưa đặt STK");
     }
 
     /// <summary>Ruling C: canvas QR phải bỏ `hidden` trước khi vẽ; pane dùng class, không ghi style.display.</summary>

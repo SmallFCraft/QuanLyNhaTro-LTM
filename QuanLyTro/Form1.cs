@@ -71,6 +71,12 @@ public partial class Form1 : Form
             assetsFolder,
             CoreWebView2HostResourceAccessKind.Allow);
 
+        // JS/CSS của shell được sửa liên tục, nhưng WebView2 giữ disk cache theo URL nên bản cũ
+        // vẫn chạy sau khi build lại (hàm mới "không tồn tại" dù file trên đĩa đã có).
+        // Xoá cache một lần mỗi lần khởi động — file trong Assets đã là thứ duy nhất cần đọc.
+        await webView.CoreWebView2.Profile.ClearBrowsingDataAsync(
+            CoreWebView2BrowsingDataKinds.DiskCache);
+
         // BR-19: khách quét QR bằng webcam. WebView2 mặc định TỪ CHỐI mọi permission
         // (kể cả camera) nếu host không trả lời — phải tự cấp Allow cho app nội bộ.
         webView.CoreWebView2.PermissionRequested += (_, args) =>

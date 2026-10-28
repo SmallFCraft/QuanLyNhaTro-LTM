@@ -12,8 +12,7 @@ namespace QuanLyTro.Tests;
 [DoNotParallelize]
 public sealed class PermissionRevokeSurvivesMigrationTests
 {
-    private const string ConnectionString =
-        "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User Id=root;Password=;SslMode=None;";
+    private static readonly string ConnectionString = TestDatabase.ConnectionString;
 
     private static readonly Database Db = new(ConnectionString);
 

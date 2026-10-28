@@ -1,6 +1,4 @@
 // ponytail: shell khách thuê — server tự suy ra phòng từ token. Phân trang phía server (page/soLuongMoiTrang).
-// ponytail: chưa có hồ sơ nhận tiền trên server → hằng tĩnh rỗng. Chuyển sang bảng cấu hình server khi có.
-const BANK_INFO = '';
 let currentTenantInvoices = [];
 let tenantHistoryPage = 1;
 let tenantHistoryPageSize = 10;
@@ -44,6 +42,7 @@ async function loadTenantInvoices() {
     tenantLoadError = true;
   }
   await refreshTenantSummary();
+  await loadPaymentConfig();
 }
 
 function showCheckinScreen(show) {
@@ -501,13 +500,24 @@ function renderTenantSummaryError() {
   setTag('rc-due-tag', false, 'Đã thu', 'Chưa rõ');
 }
 
-// Khách chưa phát sinh kỳ cước nào: số 0 thật thay cho dấu — và due-alert-text không giữ câu placeholder.
+// Khách chưa có hóa đơn: phân biệt "chủ trọ chưa lập" với "chưa tới kỳ cước".
+// Gộp hai trường hợp thành một câu là khẳng định sai: khách đọc "0 đ" thành "tháng này không
+// phải trả gì", trong khi thật ra chủ trọ còn thiếu bước lập hóa đơn.
 function renderTenantNoInvoice() {
-  const recv = tenantHopDong && tenantHopDong.ngayBatDau
-    ? ` · Nhận phòng từ ${fmtDateOnly(tenantHopDong.ngayBatDau)}`
-    : '';
-  setText('due-alert-text', 'Chưa phát sinh kỳ cước nào' + recv + '.');
-  setTag('due-alert-tag', false, 'Đã nộp', 'Chưa nộp');
+  const batDau = tenantHopDong?.ngayBatDau ? new Date(tenantHopDong.ngayBatDau) : null;
+  const daVaoO = batDau && !Number.isNaN(batDau.getTime()) && batDau <= new Date();
+  const recv = batDau ? ` · Nhận phòng từ ${fmtDateOnly(tenantHopDong.ngayBatDau)}` : '';
+
+  if (daVaoO) {
+    setText('due-alert-text',
+      'Chủ trọ chưa lập hóa đơn kỳ này' + recv + '. Vui lòng liên hệ chủ trọ.');
+    setText('ov-trang_thai', 'Chờ chủ trọ lập hóa đơn');
+  } else {
+    setText('due-alert-text', 'Chưa phát sinh kỳ cước nào' + recv + '.');
+    setText('ov-trang_thai', 'Chưa phát sinh kỳ cước');
+  }
+
+  setTag('due-alert-tag', false, 'Đã nộp', daVaoO ? 'Chưa lập HĐ' : 'Chưa nộp');
   setText('rc-title', 'Chi tiết quyết toán cước');
   setText('rc-code', 'MÃ SỐ BẢNG KÊ: —');
   ['rc-room', 'rc-elec', 'rc-water', 'rc-other'].forEach(id => setText(id, '0 đ'));
@@ -516,7 +526,6 @@ function renderTenantNoInvoice() {
   setTag('rc-due-tag', false, 'Đã thu', 'Chưa thu');
   setText('ov-month', '—');
   setText('ov-total', '0 đ');
-  setText('ov-trang_thai', 'Chưa phát sinh kỳ cước');
   setText('ov-elec', '0');
   setText('ov-nuoc', '0');
   setText('ov-nuoc-unit', 'khối');
@@ -749,32 +758,119 @@ function segTitle(NS, text) {
   return t;
 }
 
+// Cấu hình nhận tiền của cơ sở (chủ trọ đặt ở tab Cài đặt). Nạp 1 lần khi mở shell.
+let tenantCauHinh = null;
+
+/**
+ * Nạp cấu hình nhận tiền rồi vẽ khối QR chuyển khoản ở tab "Kỳ này".
+ * Chưa cấu hình → ẩn khối QR, chỉ còn nút sao chép nội dung kỳ cước.
+ */
+async function loadPaymentConfig() {
+  try {
+    tenantCauHinh = (await window.bridge.call('CAU_HINH_LAY', {})) || null;
+  } catch {
+    tenantCauHinh = null; // khách vẫn xem được hóa đơn dù cấu hình lỗi
+  }
+  renderPaymentBlock();
+}
+
+function hoaDonDangNo() {
+  return (currentTenantInvoices || []).find(i => !isPaidInvoice(i)) || null;
+}
+
+function renderPaymentBlock() {
+  const box = document.getElementById('pay-qr');
+  if (!box) return;
+  const cfg = tenantCauHinh;
+  const hoaDon = hoaDonDangNo();
+  if (!cfg || !cfg.daCauHinh) {
+    box.innerHTML = '<div class="pay-empty"><i class="fas fa-circle-info"></i> Cơ sở chưa cấu hình tài khoản nhận tiền. Vui lòng liên hệ chủ trọ.</div>';
+    return;
+  }
+  if (!hoaDon) {
+    box.innerHTML = '<div class="pay-empty"><i class="fas fa-circle-check"></i> Không còn khoản nào cần thanh toán.</div>';
+    return;
+  }
+
+  const url = sepayQrUrl(cfg, Number(hoaDon.tongTien) || 0, noiDungChuyenKhoan(hoaDon));
+  box.innerHTML = `
+    <img class="pay-qr-img" src="${esc(url)}" alt="Mã QR chuyển khoản ${esc(cfg.nganHang)}"
+         onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'pay-empty',textContent:'Không tải được ảnh QR.'}))">
+    <div class="pay-info">
+      <div class="pay-row"><span>Ngân hàng</span><b>${esc(cfg.nganHang)}</b></div>
+      <div class="pay-row"><span>Số tài khoản</span><b class="mono">${esc(cfg.soTaiKhoan)}</b></div>
+      <div class="pay-row"><span>Chủ tài khoản</span><b>${esc(cfg.chuTaiKhoan || '—')}</b></div>
+      <div class="pay-row"><span>Số tiền</span><b class="amount">${fmtMoney(hoaDon.tongTien)} đ</b></div>
+      <div class="pay-row"><span>Nội dung</span><b class="mono">${esc(noiDungChuyenKhoan(hoaDon))}</b></div>
+      <p class="pay-hint"><i class="fas fa-mobile-screen"></i> Quét mã bằng app ngân hàng, hoặc chuyển khoản đúng nội dung để chủ trọ đối chiếu.</p>
+    </div>`;
+}
+
+// Nội dung chuyển khoản: "<SoPhong> <KyCuoc>" bỏ dấu — SePay không nhận dấu và dấu '/'.
+function noiDungChuyenKhoan(hoaDon) {
+  const phong = String(tenantRoomName || hoaDon.soPhong || '').trim();
+  const ky = String(hoaDon.kyCuoc || '').replace('/', '-');
+  return [phong, ky].filter(Boolean).join(' ');
+}
+
 /**
  * Ruling B — copy thông tin chuyển khoản: <soPhong> <kyCuoc>: <tongTien> đ.
- * BANK_INFO còn '' (chưa có hồ sơ nhận tiền trên server) → copy dòng kỳ cước hôm nay
- * kèm ghi chú chưa cấu hình STK; KHÔNG render placeholder STK nào lên màn hình.
+ * Có cấu hình nhận tiền thì chép kèm STK; chưa có thì chép dòng kỳ cước + ghi chú,
+ * KHÔNG render placeholder STK nào lên màn hình.
  */
+/**
+ * Khách tự kiểm tra thanh toán. KHÔNG gọi DOI_SOAT_CHAY (action của Chủ trọ — mỗi lần gọi là
+ * một request SePay, và khách không có quyền). Chỉ nạp lại hóa đơn của chính mình: nếu server
+ * đã đối soát xong thì trạng thái Đã thu hiện ra ngay.
+ */
+async function kiemTraThanhToan() {
+  const btn = document.getElementById('btn-kiem-tra');
+  const note = document.getElementById('pay-check-note');
+  const truoc = hoaDonDangNo()?.id ?? null;
+
+  if (btn) btn.disabled = true;
+  if (note) note.textContent = 'Đang kiểm tra...';
+  try {
+    await loadTenantInvoices();
+    const conNo = hoaDonDangNo();
+    if (note) {
+      note.textContent = !conNo
+        ? 'Đã ghi nhận thanh toán. Cảm ơn bạn!'
+        : (truoc !== null && conNo.id === truoc)
+          ? 'Chưa thấy chuyển khoản. Hệ thống tự kiểm tra lại mỗi phút.'
+          : 'Đã cập nhật dữ liệu cước.';
+    }
+    if (!conNo) toast('Đã ghi nhận thanh toán.', 'ok');
+  } catch (err) {
+    if (note) note.textContent = 'Không kiểm tra được, thử lại sau.';
+    toast(err.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function copyTransfer() {
-  const target = (currentTenantInvoices || []).find(i => !isPaidInvoice(i)) || (currentTenantInvoices || [])[0];
+  const target = hoaDonDangNo() || (currentTenantInvoices || [])[0];
   if (!target) {
     if (typeof toast === 'function') toast('Không có hóa đơn để sao chép', 'warn');
     return;
   }
-  const room = String(tenantRoomName || target.soPhong || '').trim();
-  const period = fmtKyCuoc(target.kyCuoc);
-  const line = `${room ? room + ' ' : ''}${period}: ${fmtMoney(target.tongTien)} đ`;
-  const hint = BANK_INFO ? '' : ' (thông tin nhận tiền chưa cấu hình)';
+  const line = `${noiDungChuyenKhoan(target)}: ${fmtMoney(target.tongTien)} đ`;
+  const cfg = tenantCauHinh;
+  const coCauHinh = !!cfg?.daCauHinh;
+  const stk = coCauHinh ? `${cfg.nganHang} ${cfg.soTaiKhoan}${cfg.chuTaiKhoan ? ' — ' + cfg.chuTaiKhoan : ''}\n` : '';
+  const hint = coCauHinh ? '' : ' (thông tin nhận tiền chưa cấu hình)';
   // hint phải vào clipboard: toast biến mất sau 4s, còn clipboard mới là thứ khách dán vào app ngân hàng.
-  const text = BANK_INFO ? `${BANK_INFO}\n${line}` : `${line}${hint}`;
+  const text = `${stk}${line}${hint}`;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
       if (typeof toast === 'function') toast(`Đã sao chép: ${line}${hint}`, 'ok');
     } else {
-      if (typeof toast === 'function') toast(`Nội dung chuyển khoản: ${text}${hint}`, 'info');
+      if (typeof toast === 'function') toast(`Nội dung chuyển khoản: ${text}`, 'info');
     }
-  } catch (err) {
-    if (typeof toast === 'function') toast(`Nội dung: ${text}${hint}`, 'info');
+  } catch {
+    if (typeof toast === 'function') toast(`Nội dung: ${text}`, 'info');
   }
 }
 

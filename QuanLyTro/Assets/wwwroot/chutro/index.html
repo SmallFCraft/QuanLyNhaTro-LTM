@@ -43,6 +43,7 @@
       <div class="tab" data-tab="hoa_don" onclick="loadLandlordTab('hoa_don')"><i class="fas fa-receipt"></i> Hóa đơn</div>
       <div class="tab" data-tab="reports" onclick="loadLandlordTab('reports')"><i class="fas fa-chart-bar"></i> Thống kê</div>
       <div class="tab" id="tabbtn-perms" data-tab="perms" onclick="loadLandlordTab('perms')"><i class="fas fa-user-shield"></i> Phân quyền</div>
+      <div class="tab" id="tabbtn-cai_dat" data-tab="cai_dat" onclick="loadLandlordTab('cai_dat')"><i class="fas fa-gear"></i> Cài đặt</div>
     </div>
     <div class="content">
 
@@ -54,6 +55,17 @@
           <div class="kpi"><div class="lbl"><i class="fas fa-user-friends"></i> Người đang ở</div><div class="val" id="kpi-khach_thue">41</div><div class="sub">Trên 24 phòng</div></div>
           <div class="kpi warn"><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Còn nợ 09/2026</div><div class="val" id="kpi-unpaid">4.800.000 <span style="font-size:11px;font-weight:400;color:var(--muted)">đ</span></div><div class="sub">3 phòng chưa thu</div></div>
         </div>
+        <!-- Phòng có HĐ hiệu lực nhưng kỳ này chưa lập hóa đơn — ẩn khi không có -->
+        <div class="card dash-warn" id="dash-thieu-hd" hidden>
+          <div class="hdr"><i class="fas fa-triangle-exclamation"></i> Chưa lập hóa đơn kỳ này</div>
+          <div class="dash-warn-body">
+            <p id="dash-thieu-hd-text"></p>
+            <button class="btn btn-outline btn-sm" onclick="loadLandlordTab('hoa_don')">
+              <i class="fas fa-receipt"></i> Sang tab Hóa đơn
+            </button>
+          </div>
+        </div>
+
         <div class="card barchart">
           <div class="hdr"><i class="fas fa-chart-column"></i> Đã thu 6 kỳ gần nhất</div>
           <div class="chartbar" id="dash-rev-chart"></div>
@@ -325,6 +337,71 @@
         </p>
         <div id="permsGroups"></div>
       </div>
+
+      <!-- CÀI ĐẶT: tài khoản nhận tiền + QR SePay -->
+      <div id="tab-cai_dat" hidden>
+        <p class="perms-hint">
+          <i class="fas fa-circle-info"></i> Thông tin này dùng để sinh mã QR chuyển khoản cho người thuê (SePay). Số tài khoản và ngân hàng phải khớp với tài khoản thật đã đăng ký nhận tiền.
+        </p>
+        <div class="duo">
+          <div class="card">
+            <div class="hdr"><i class="fas fa-building-columns"></i> Tài khoản nhận tiền</div>
+            <div class="calc cfg-form">
+              <div class="row">
+                <span>Ngân hàng</span>
+                <select class="inp" id="cfg-ngan_hang"></select>
+              </div>
+              <div class="row">
+                <span>Số tài khoản</span>
+                <input class="inp" id="cfg-so_tai_khoan" maxlength="19" placeholder="Ví dụ: 0387368890" autocomplete="off">
+              </div>
+              <div class="row">
+                <span>Chủ tài khoản</span>
+                <input class="inp" id="cfg-chu_tai_khoan" maxlength="80" placeholder="NGUYEN VAN A" autocomplete="off">
+              </div>
+              <div class="row">
+                <span>Mẫu QR</span>
+                <select class="inp" id="cfg-template_qr">
+                  <option value="compact">Compact — có logo ngân hàng</option>
+                  <option value="qronly">Chỉ mã QR</option>
+                  <option value="standee">Standee — bảng để bàn</option>
+                  <option value="">Mặc định (VietQR)</option>
+                </select>
+              </div>
+              <div class="row">
+                <span>API token</span>
+                <input class="inp mono" id="cfg-api_token" maxlength="255" type="password"
+                       placeholder="Dán token từ my.sepay.vn → API" autocomplete="new-password">
+                <button class="btn btn-outline btn-sm" type="button" onclick="toggleTokenVisibility()"
+                        title="Hiện / ẩn token"><i class="fas fa-eye" id="cfg-token-eye"></i></button>
+              </div>
+              <div class="row">
+                <span></span>
+                <span class="sub" id="cfg-token-state" style="color:var(--dim);font-size:11.5px"></span>
+              </div>
+              <div class="row">
+                <button class="btn btn-primary" onclick="saveCauHinh()"><i class="fas fa-floppy-disk"></i> Lưu cài đặt</button>
+                <button class="btn btn-outline" type="button" onclick="xoaApiToken()" id="cfg-token-clear" disabled>
+                  <i class="fas fa-trash"></i> Xoá token</button>
+                <span class="sub" id="cfg-note" style="margin-left:auto;color:var(--dim);font-size:11.5px"></span>
+              </div>
+              <div class="row">
+                <span>Đối soát</span>
+                <button class="btn btn-outline" type="button" onclick="chayDoiSoat()">
+                  <i class="fas fa-rotate"></i> Đối soát ngay</button>
+                <span class="sub" id="cfg-doi-soat-note" style="margin-left:auto;color:var(--dim);font-size:11.5px">
+                  Tự chạy mỗi 60 giây khi có token.</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="hdr"><i class="fas fa-qrcode"></i> Xem trước mã QR</div>
+            <div class="qr-preview" id="cfg-qr-preview">
+              <div class="pie-empty">Nhập ngân hàng và số tài khoản để xem trước.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="statusstrip">
@@ -347,5 +424,6 @@
 <script src="js/hoa_don.js"></script>
 <script src="js/reports.js"></script>
 <script src="js/perms.js"></script>
+<script src="js/cai_dat.js"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ public sealed class KhoiTaoSchema(Database database)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
-        var script = ReadEmbeddedSchema();
+        var script = RetargetDatabase(ReadEmbeddedSchema(), database.ConnectionString);
 
         await using var connection = await database.OpenServerLevelAsync(ct);
         foreach (var statement in SplitStatements(script))
@@ -25,6 +25,8 @@ public sealed class KhoiTaoSchema(Database database)
         await EnsureMigrationColumnsAsync(connection, ct);
         await EnsureHopDongQrColumnsAsync(connection, ct);
         await EnsureKhoaTaiKhoanColumnsAsync(connection, ct);
+        await EnsureCauHinhTokenColumnAsync(connection, ct);
+        await EnsureGiaoDichSepayTableAsync(connection, ct);
         await EnsureRolePermissionsAsync(connection, ct);
     }
 
@@ -218,6 +220,74 @@ public sealed class KhoiTaoSchema(Database database)
               ADD COLUMN ly_do_khoa VARCHAR(255) NULL;
             """, ct);
     }
+
+    /// <summary>
+    /// Cột `api_token` của bảng `cau_hinh`. DB đã có bảng từ trước khi thêm token thì
+    /// CREATE TABLE IF NOT EXISTS không đụng tới → cột thiếu → INSERT ném lỗi MySQL 1054.
+    /// </summary>
+    private static async Task EnsureCauHinhTokenColumnAsync(MySqlConnection connection, CancellationToken ct)
+    {
+        const string checkSql = """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'cau_hinh'
+              AND COLUMN_NAME = 'api_token';
+            """;
+        await using var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = checkSql;
+        if (Convert.ToInt32(await checkCmd.ExecuteScalarAsync(ct)) > 0)
+        {
+            return;
+        }
+
+        await ExecAsync(connection, """
+            ALTER TABLE cau_hinh
+              ADD COLUMN api_token VARCHAR(255) NOT NULL DEFAULT '';
+            """, ct);
+    }
+
+    /// <summary>Bảng giao dịch SePay — DB cũ chưa có thì tạo (schema.sql chỉ chạy CREATE IF NOT EXISTS).</summary>
+    private static async Task EnsureGiaoDichSepayTableAsync(MySqlConnection connection, CancellationToken ct) =>
+        await ExecAsync(connection, """
+            CREATE TABLE IF NOT EXISTS giao_dich_sepay (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                sepay_id VARCHAR(64) NOT NULL,
+                noi_dung VARCHAR(500) NOT NULL DEFAULT '',
+                so_tien DECIMAL(14, 2) NOT NULL,
+                thoi_diem DATETIME NOT NULL,
+                ma_tham_chieu VARCHAR(100) NULL,
+                hoa_don_id INT NULL,
+                da_khop BOOLEAN NOT NULL DEFAULT FALSE,
+                ly_do_loai VARCHAR(255) NULL,
+                ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_giao_dich_sepay_id (sepay_id),
+                CONSTRAINT fk_giao_dich_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """, ct);
+
+    /// <summary>
+    /// schema.sql ghi cứng tên DB thật trong `CREATE DATABASE` và `USE`. Test trỏ connection string
+    /// sang DB riêng (quanly_phongtro_nhs_test) nên phải đổi tên đó, nếu không test sẽ tạo và ghi
+    /// vào chính DB người dùng — đúng lỗi đã làm mất API token thật.
+    /// </summary>
+    internal static string RetargetDatabase(string script, string connectionString)
+    {
+        var ten_db = new MySqlConnectionStringBuilder(connectionString).Database;
+        if (string.IsNullOrWhiteSpace(ten_db) || ten_db == TenDbMacDinh)
+        {
+            return script;
+        }
+
+        // Chỉ thay tên trong 2 câu lệnh định danh DB, không đụng tên bảng/cột.
+        return script
+            .Replace($"CREATE DATABASE IF NOT EXISTS {TenDbMacDinh}", $"CREATE DATABASE IF NOT EXISTS `{ten_db}`",
+                StringComparison.Ordinal)
+            .Replace($"USE {TenDbMacDinh};", $"USE `{ten_db}`;", StringComparison.Ordinal);
+    }
+
+    /// <summary>Tên DB ghi trong schema.sql — nguồn duy nhất, test cần biết để tránh dùng lại.</summary>
+    public const string TenDbMacDinh = "quanly_phongtro_nhs";
 
     public static string ReadEmbeddedSchema()
     {

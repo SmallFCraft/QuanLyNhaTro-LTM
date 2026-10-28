@@ -28,6 +28,8 @@ public sealed class DieuPhoiYeuCau
     private readonly HoaDonService _invoices;
     private readonly BaoCaoService _reports;
     private readonly CuTruService _residence;
+    private readonly CauHinhService _cau_hinh;
+    private readonly DoiSoatService _doi_soat;
     private readonly SessionStore _sessions;
     private readonly IPhanQuyenRepository? _permissions;
     private readonly Dictionary<string, Handler> _handlers;
@@ -42,7 +44,9 @@ public sealed class DieuPhoiYeuCau
         BaoCaoService reports,
         CuTruService residence,
         SessionStore sessions,
-        IPhanQuyenRepository? permissions = null)
+        IPhanQuyenRepository? permissions = null,
+        CauHinhService? cau_hinh = null,
+        DoiSoatService? doi_soat = null)
     {
         _auth = auth;
         _rooms = phong;
@@ -52,6 +56,11 @@ public sealed class DieuPhoiYeuCau
         _invoices = hoa_don;
         _reports = reports;
         _residence = residence;
+        _cau_hinh = cau_hinh ?? new CauHinhService(new NullCauHinhRepository());
+        // Router dựng trong test không có DB/HTTP: đối soát là no-op thay vì ném NullReference.
+        _doi_soat = doi_soat ?? new DoiSoatService(
+            new NullCauHinhRepository(), new NullGiaoDichSepayRepository(),
+            new NullHoaDonRepository(), new NullSePayClient());
         _sessions = sessions;
         _permissions = permissions;
 
@@ -149,6 +158,14 @@ public sealed class DieuPhoiYeuCau
 
             [ActionNames.PhanQuyenLayMaTran] = (_, s, ct) => GetPermissionMatrixAsync(s, ct),
             [ActionNames.PhanQuyenCapNhatVaiTro] = (r, s, ct) => UpdateRolePermissionsAsync(r, s, ct),
+
+            [ActionNames.CauHinhLay] = (_, _, ct) => Ok(_cau_hinh.GetAsync(ct)),
+            // apiToken null (không gửi) = giữ token cũ; "" = xoá; chuỗi khác = đặt mới.
+            [ActionNames.CauHinhCapNhat] = (r, _, ct) => Ok(_cau_hinh.UpdateAsync(
+                r.GetData<CauHinhThanhToanDto>(), ReadString(r.Data, "apiToken"), ct)),
+            // Chỉ Chủ trọ (bypass trong MaTranPhanQuyen) — trả kèm api_token cho form cài đặt.
+            [ActionNames.CauHinhDayDu] = (_, _, ct) => Ok(_cau_hinh.GetFullAsync(ct)),
+            [ActionNames.DoiSoatChay] = (_, _, ct) => Ok(_doi_soat.ChayAsync(ct)),
         };
     }
 

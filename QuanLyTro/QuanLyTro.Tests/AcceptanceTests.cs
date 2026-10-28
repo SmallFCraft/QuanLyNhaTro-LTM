@@ -20,8 +20,7 @@ namespace QuanLyTro.Tests;
 [DoNotParallelize]
 public sealed class AcceptanceTests
 {
-    private const string ConnectionString =
-        "Server=127.0.0.1;Port=3306;Database=quanly_phongtro_nhs;User Id=root;Password=;SslMode=None;";
+    private static readonly string ConnectionString = TestDatabase.ConnectionString;
 
     // Task 12 reserve id 9204..9215, CCCD 9999999992xx, phòng T12-xx — không trùng wave khác.
     private const int MainRoomId = 9204;
@@ -177,8 +176,10 @@ public sealed class AcceptanceTests
         {
             // DangNhap/DangKy: công khai, không cần phiên (BR-17).
             // HoaDonCuaToi, KhachThueNhanPhongQr: hành động RIÊNG của KhachThue (US-24, BR-19) — không phải hành động chủ trọ.
+            // CauHinhLay: khách cần STK/ngân hàng để dựng ảnh QR chuyển khoản của chính mình.
             if (hanh_dong is ActionNames.DangNhap or ActionNames.DangKy
-                or ActionNames.HoaDonCuaToi or ActionNames.KhachThueNhanPhongQr)
+                or ActionNames.HoaDonCuaToi or ActionNames.KhachThueNhanPhongQr
+                or ActionNames.CauHinhLay)
             {
                 continue;
             }

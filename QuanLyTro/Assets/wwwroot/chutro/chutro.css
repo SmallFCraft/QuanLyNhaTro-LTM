@@ -114,6 +114,10 @@ body:has(> .win){height:100vh;overflow:hidden}
 .calc .row .tot{margin-left:auto;font-weight:600;color:var(--tint);
   font-family:'JetBrains Mono',Consolas,monospace;font-variant-numeric:tabular-nums}
 .calc .row input{width:74px}
+/* Form Cài đặt: ô nhập phải giãn hết phần còn lại, không dùng width:74px của bảng tính điện nước. */
+.calc.cfg-form .row>span:first-child{width:110px;flex:0 0 auto;color:var(--muted)}
+.calc.cfg-form .row>input,
+.calc.cfg-form .row>select{width:auto;flex:1;min-width:0}
 .calc .row input:disabled{background:#12161A;color:var(--dim);border-color:var(--hair-subtle)}
 .calc .row>i{width:14px;text-align:center}
 .meter{height:6px;background:#12161A;border:1px solid #2A3239;border-radius:4px;overflow:hidden;margin-top:5px}
@@ -143,6 +147,13 @@ body:has(> .win){height:100vh;overflow:hidden}
 .chartbar .b:hover i,.chartbar .b.on i{opacity:1}
 .barchart{margin-bottom:26px}
 
+/* Cảnh báo phòng chưa lập hóa đơn kỳ này */
+.dash-warn{background:#1D1715;border-color:#432C25;margin-bottom:12px}
+.dash-warn .hdr{color:var(--terracotta);border-bottom-color:rgba(217,93,57,.25)}
+.dash-warn-body{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--cream)}
+.dash-warn-body p{flex:1;min-width:200px;line-height:1.55}
+.dash-warn-body b{color:var(--tint)}
+
 /* Biểu đồ tròn: donut SVG dựng ở JS, đây chỉ là khung + legend. */
 .pie-row{display:flex;align-items:center;gap:14px;min-height:110px}
 .pie{width:96px;height:96px;flex:0 0 auto;transform:rotate(-90deg);overflow:visible}
@@ -156,6 +167,11 @@ body:has(> .win){height:100vh;overflow:hidden}
 .pie-legend .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pie-legend .vl{margin-left:auto;font-family:'JetBrains Mono',Consolas,monospace;color:var(--cream-light)}
 .pie-empty{color:var(--dim);font-size:12px}
+
+/* Xem trước mã QR nhận tiền (tab Cài đặt) */
+.qr-preview{min-height:220px;display:flex;align-items:center;justify-content:center;
+  background:var(--base);border:1px dashed var(--hairline);border-radius:6px;padding:12px}
+.qr-preview .qr-img{max-width:240px;width:100%;height:auto;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
 
 /* ===== responsive: điện thoại dọc ===== */
 @media (max-width: 640px) {

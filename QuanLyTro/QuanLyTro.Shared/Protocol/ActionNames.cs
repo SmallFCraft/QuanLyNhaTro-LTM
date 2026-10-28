@@ -33,6 +33,15 @@ public static class ActionNames
     public const string HoaDonThanhToan = "HOA_DON_THANH_TOAN";
     public const string HoaDonCuaToi = "HOA_DON_CUA_TOI";
 
+    // Cấu hình nhận tiền (QR SePay). LAY mọi vai trò đã đăng nhập — khách cần để thấy QR;
+    // CAP_NHAT chỉ Chủ trọ.
+    public const string CauHinhLay = "CAU_HINH_LAY";
+    public const string CauHinhCapNhat = "CAU_HINH_CAP_NHAT";
+    // Bản đầy đủ kèm API token — CHỈ Chủ trọ. Khách thuê chỉ thấy CAU_HINH_LAY (không có token).
+    public const string CauHinhDayDu = "CAU_HINH_DAY_DU";
+    // Chủ trọ bấm đối soát ngay, không chờ vòng poll 60s.
+    public const string DoiSoatChay = "DOI_SOAT_CHAY";
+
     public const string BaoCaoTongQuan = "BAO_CAO_TONG_QUAN";
     public const string XuatHoSoTamTru = "XUAT_HO_SO_TAM_TRU";
 
@@ -61,6 +70,7 @@ public static class ActionNames
         BaoCaoTongQuan, XuatHoSoTamTru,
         LichSuCuTruLay, XuatLichSuCuTru,
         PhanQuyenLayMaTran, PhanQuyenCapNhatVaiTro,
+        CauHinhLay, CauHinhCapNhat, CauHinhDayDu, DoiSoatChay,
         DangKy, HopDongSinhQr, KhachThueNhanPhongQr,
     ];
 }

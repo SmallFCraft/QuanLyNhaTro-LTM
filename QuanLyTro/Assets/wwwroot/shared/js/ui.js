@@ -210,6 +210,36 @@ function tenantStatusTag(contractState, hasRoom) {
   return `<span class="tag warn" title="Còn gán phòng nhưng không có hợp đồng hiệu lực — cần trả phòng hoặc ký lại."><i class="fas fa-exclamation-triangle"></i> Treo HĐ</span>`;
 }
 
+// Dựng URL ảnh QR SePay (https://qr.sepay.vn/img — public, không cần token).
+// Dùng chung cho tab Cài đặt của Chủ trọ và tab Kỳ này của Khách thuê.
+function sepayQrUrl(cfg, amount, des) {
+  const s = cfg || {};
+  const bank = s.nganHang || s.bank;
+  const acc = s.soTaiKhoan || s.acc;
+  if (!bank || !acc) return '';
+  const p = new URLSearchParams({
+    bank,
+    acc,
+    template: s.templateQr || s.template || 'compact'
+  });
+  if (Number.isFinite(amount) && amount >= 1000 && amount <= 499000000) {
+    p.set('amount', String(Math.round(amount)));
+  }
+  const memo = boDauMemo(des);
+  if (memo) p.set('des', memo);
+  return `https://qr.sepay.vn/img?${p.toString()}`;
+}
+
+// `des` của SePay chỉ nhận chữ/số không dấu — bỏ dấu rồi mới đưa vào URL.
+function boDauMemo(text) {
+  return String(text || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^A-Za-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 window.alert = msg => toast(msg, 'err');
 
 async function logout() {

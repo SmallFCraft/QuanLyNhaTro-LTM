@@ -65,17 +65,28 @@ internal class Program
             Console.Error.WriteLine($"Không nạp được phân quyền từ CSDL, dùng quyền mặc định: {ex.Message}");
         }
 
+        var cau_hinh_repo = new CauHinhRepository(database);
+        var hoa_don_repo = new HoaDonRepository(database);
+        var hop_dong_repo = new HopDongRepository(database);
+        var doi_soat = new DoiSoatService(
+            cau_hinh_repo,
+            new GiaoDichSepayRepository(database),
+            hoa_don_repo,
+            new SePayClient(new HttpClient { Timeout = TimeSpan.FromSeconds(30) }));
+
         var router = new DieuPhoiYeuCau(
             new XacThucService(new TaiKhoanRepository(database), new KhachThueAuthRepository(database), sessions),
             new PhongService(new PhongRepository(database)),
             new KhachThueService(new KhachThueRepository(database)),
-            new HopDongService(new HopDongRepository(database)),
-            new DienNuocService(new DienNuocRepository(database)),
-            new HoaDonService(new HoaDonRepository(database)),
+            new HopDongService(hop_dong_repo),
+            new DienNuocService(new DienNuocRepository(database), hop_dong_repo),
+            new HoaDonService(hoa_don_repo),
             new BaoCaoService(new BaoCaoRepository(database)),
             new CuTruService(new CuTruRepository(database)),
             sessions,
-            permissions);
+            permissions,
+            new CauHinhService(cau_hinh_repo),
+            doi_soat);
 
         // Bật log console cho Server thật (test để mặc định TẮT cho output gọn).
         ServerLog.Enabled = true;
@@ -88,6 +99,9 @@ internal class Program
             cts.Cancel();
         };
 
+        // Đối soát SePay chạy nền, tách khỏi luồng TCP: chậm mạng không được làm nghẽn client.
+        var poller = Task.Run(() => new DoiSoatPoller(doi_soat).RunAsync(cts.Token));
+
         try
         {
             await new TcpListenerServer(router).StartAsync(options.Port, cts.Token);
@@ -97,6 +111,9 @@ internal class Program
             Console.Error.WriteLine($"Server dừng do lỗi: {ex.Message}");
             return 1;
         }
+
+        // Poller dừng theo cts; chờ ngắn để nó thoát gọn trước khi tiến trình kết thúc.
+        try { await poller; } catch (OperationCanceledException) { }
 
         Console.WriteLine("Server đã dừng.");
         return 0;

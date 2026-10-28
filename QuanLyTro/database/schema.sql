@@ -30,6 +30,21 @@ CREATE TABLE IF NOT EXISTS quyen_vai_tro (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement
 
+-- Cấu hình nhận tiền của cơ sở (SePay QR tĩnh). Một dòng duy nhất, id luôn = 1.
+-- Cột giữ nguyên chuỗi thô người dùng nhập; server chuẩn hoá khi trả DTO.
+CREATE TABLE IF NOT EXISTS cau_hinh (
+    id TINYINT NOT NULL PRIMARY KEY DEFAULT 1,
+    ngan_hang VARCHAR(50) NOT NULL DEFAULT '',
+    so_tai_khoan VARCHAR(19) NOT NULL DEFAULT '',
+    chu_tai_khoan VARCHAR(80) NOT NULL DEFAULT '',
+    template_qr VARCHAR(20) NOT NULL DEFAULT 'compact',
+    -- API token SePay (Authorization: Bearer ...). CHỈ Chủ trọ đọc được; không bao giờ trả cho khách thuê.
+    api_token VARCHAR(255) NOT NULL DEFAULT '',
+    ngay_cap_nhat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT ck_cau_hinh_single_row CHECK (id = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- statement
+
 CREATE TABLE IF NOT EXISTS phong (
     id INT AUTO_INCREMENT PRIMARY KEY,
     so_phong VARCHAR(20) NOT NULL UNIQUE,
@@ -118,5 +133,23 @@ CREATE TABLE IF NOT EXISTS hoa_don (
     CONSTRAINT fk_hoa_don_hop_dong FOREIGN KEY (hop_dong_id) REFERENCES hop_dong(id),
     UNIQUE KEY uq_hoa_don_phong_ky (phong_id, ky_cuoc),
     INDEX idx_hoa_don_trang_thai_ky (trang_thai, ky_cuoc)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- statement
+
+-- Giao dịch tiền vào đọc từ SePay API. `sepay_id` UNIQUE là chốt chống thu trùng:
+-- poll chạy lại bao nhiêu lần cũng chỉ có 1 dòng cho mỗi giao dịch bên SePay.
+CREATE TABLE IF NOT EXISTS giao_dich_sepay (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sepay_id VARCHAR(64) NOT NULL,
+    noi_dung VARCHAR(500) NOT NULL DEFAULT '',
+    so_tien DECIMAL(14, 2) NOT NULL,
+    thoi_diem DATETIME NOT NULL,
+    ma_tham_chieu VARCHAR(100) NULL,
+    hoa_don_id INT NULL,
+    da_khop BOOLEAN NOT NULL DEFAULT FALSE,
+    ly_do_loai VARCHAR(255) NULL,
+    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_giao_dich_sepay_id (sepay_id),
+    CONSTRAINT fk_giao_dich_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- statement

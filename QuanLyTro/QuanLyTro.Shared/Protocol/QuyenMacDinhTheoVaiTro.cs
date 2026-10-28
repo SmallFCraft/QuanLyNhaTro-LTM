@@ -20,6 +20,8 @@ public static class QuyenMacDinhTheoVaiTro
         ActionNames.HoaDonTao, ActionNames.HoaDonLayTatCa, ActionNames.HoaDonThanhToan,
         ActionNames.BaoCaoTongQuan,
         ActionNames.XuatHoSoTamTru, ActionNames.LichSuCuTruLay, ActionNames.XuatLichSuCuTru,
+        // Quản lý xem được cấu hình nhận tiền nhưng không sửa (CauHinhCapNhat chỉ Chủ trọ).
+        ActionNames.CauHinhLay,
     ];
 
     /// <summary>Công an phường: chỉ đọc phòng / người thuê / hồ sơ tạm trú (BR-16).</summary>
@@ -37,6 +39,8 @@ public static class QuyenMacDinhTheoVaiTro
     [
         ActionNames.HoaDonCuaToi,
         ActionNames.KhachThueNhanPhongQr,
+        // Cần STK/ngân hàng để dựng ảnh QR chuyển khoản cho chính mình.
+        ActionNames.CauHinhLay,
     ];
 
     /// <summary>Role (đúng chính tả ENUM) → danh sách action mặc định.</summary>
@@ -77,6 +81,11 @@ public static class QuyenMacDinhTheoVaiTro
         new(ActionNames.HoaDonThanhToan, "Thu tiền / thanh toán hóa đơn", "Hóa đơn"),
         new(ActionNames.HoaDonCuaToi, "Xem hóa đơn của chính mình", "Hóa đơn"),
         new(ActionNames.KhachThueNhanPhongQr, "Quét QR / PIN nhận phòng", "Hợp đồng"),
+
+        new(ActionNames.CauHinhLay, "Xem thông tin tài khoản nhận tiền", "Cấu hình"),
+        new(ActionNames.CauHinhCapNhat, "Cài đặt tài khoản ngân hàng / QR", "Cấu hình"),
+        new(ActionNames.CauHinhDayDu, "Xem / lưu API token SePay (chỉ Chủ trọ)", "Cấu hình"),
+        new(ActionNames.DoiSoatChay, "Đối soát chuyển khoản SePay ngay", "Cấu hình"),
 
         new(ActionNames.BaoCaoTongQuan, "Xem thống kê doanh thu", "Báo cáo & cư trú"),
         new(ActionNames.XuatHoSoTamTru, "Xuất hồ sơ tạm trú", "Báo cáo & cư trú"),

@@ -211,10 +211,22 @@
             <span class="tag unpaid" id="rc-due-tag">Chưa thu</span>
           </div>
         </div>
+        <!-- Thanh toán: QR SePay dựng từ cấu hình chủ trọ + hóa đơn chưa thu của chính khách -->
+        <div class="card pay-card mb10">
+          <div class="hdr"><i class="fas fa-qrcode"></i> Chuyển khoản &amp; quét QR</div>
+          <div class="pay-body" id="pay-qr">
+            <div class="pay-empty">Đang tải thông tin nhận tiền...</div>
+          </div>
+        </div>
         <div class="rowbn">
           <button class="btn btn-primary btn-sm" onclick="copyTransfer()"><i class="fas fa-copy"></i> Sao chép nội dung chuyển khoản</button>
+          <button class="btn btn-outline btn-sm" onclick="kiemTraThanhToan()" id="btn-kiem-tra">
+            <i class="fas fa-rotate"></i> Đã chuyển, kiểm tra lại</button>
           <button class="btn btn-outline btn-sm" onclick="switchTenantTab('history')"><i class="fas fa-list"></i> Xem toàn bộ lịch sử</button>
         </div>
+        <p class="pay-check-note" id="pay-check-note">
+          Hệ thống tự đối soát mỗi phút. Chuyển khoản xong, bấm nút trên nếu muốn kiểm tra ngay.
+        </p>
       </section>
 
       <!-- ====== TAB 3: LỊCH SỬ CƯỚC ====== -->

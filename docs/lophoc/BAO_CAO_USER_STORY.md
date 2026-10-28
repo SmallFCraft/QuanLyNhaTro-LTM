@@ -41,7 +41,9 @@ Hệ thống quản lý trọn vẹn vòng đời vận hành một cơ sở ph�
 
 ### 4.2. Ngoài phạm vi
 
-Đề tài không bao gồm: thanh toán trực tuyến qua cổng ngân hàng/VNPAY/Momo; ứng dụng di động native trên điện thoại; gửi thông báo tự động qua email/SMS; và quản lý phân tán nhiều cơ sở trọ (hệ thống phục vụ tập trung một cơ sở phòng trọ, số phòng là duy nhất toàn hệ thống).
+Đề tài không bao gồm: cổng thanh toán trực tuyến có đối soát tự động (VNPay/Momo/cổng thẻ), tức là hệ thống **không** tự xác nhận đã thu tiền khi khách chuyển khoản — chủ trọ vẫn bấm xác nhận thủ công; ứng dụng di động native trên điện thoại; gửi thông báo tự động qua email/SMS; và quản lý phân tán nhiều cơ sở trọ (hệ thống phục vụ tập trung một cơ sở phòng trọ, số phòng là duy nhất toàn hệ thống).
+
+Riêng phần **QR chuyển khoản tĩnh** thì có trong phạm vi: chủ trọ cấu hình tài khoản nhận tiền (ngân hàng, số tài khoản, chủ tài khoản, mẫu QR) ở tab Cài đặt; khách thuê thấy mã QR kèm số tiền và nội dung của kỳ cước đang nợ, dựng qua dịch vụ công khai của SePay (`https://qr.sepay.vn/img`) — không cần API token, không có webhook đối soát.
 
 ## 5. ĐỐI TƯỢNG SỬ DỤNG VÀ KỊCH BẢN VẬN HÀNH
 
