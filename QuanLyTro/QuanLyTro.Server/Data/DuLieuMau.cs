@@ -153,16 +153,13 @@ public static class DuLieuMau
                 ngay_dong = VALUES(ngay_dong)
             """, ct, ("@month", month), ("@prevMonth", prevMonth));
 
-        // Cấu hình nhận tiền: GHI ĐÈ 4 cột để QR dựng được ngay sau khi seed.
-        // api_token KHÔNG nằm trong câu lệnh — token là bí mật, giữ nguyên giá trị đang có.
+        // Cấu hình nhận tiền: chỉ gieo khi CHƯA có dòng nào (bảng trống). Nếu đã có cấu hình
+        // (demo hay thật) thì giữ nguyên — chạy --seed-demo trên máy thật không được đụng tới
+        // tài khoản ngân hàng của chủ trọ. api_token luôn nằm ngoài câu lệnh (bí mật).
         await ExecuteAsync(connection, """
             INSERT INTO cau_hinh (id, ngan_hang, so_tai_khoan, chu_tai_khoan, template_qr)
-            VALUES (1, @nganHang, @soTaiKhoan, @chuTaiKhoan, 'compact')
-            ON DUPLICATE KEY UPDATE
-                ngan_hang = VALUES(ngan_hang),
-                so_tai_khoan = VALUES(so_tai_khoan),
-                chu_tai_khoan = VALUES(chu_tai_khoan),
-                template_qr = VALUES(template_qr)
+            SELECT 1, @nganHang, @soTaiKhoan, @chuTaiKhoan, 'compact'
+            WHERE NOT EXISTS (SELECT 1 FROM cau_hinh WHERE id = 1)
             """, ct,
             ("@nganHang", NganHangDemo),
             ("@soTaiKhoan", SoTaiKhoanDemo),

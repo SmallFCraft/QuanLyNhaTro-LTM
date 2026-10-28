@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuanLyTro.Server.Repositories;
 using QuanLyTro.Shared.Models;
 
@@ -21,28 +22,49 @@ public sealed class DoiSoatService(
     IHoaDonRepository hoa_don,
     ISePayClient sepay)
 {
-    /// <summary>Lần poll đầu tiên lùi bao lâu — tránh quét toàn bộ lịch sử tài khoản.</summary>
-    public static readonly TimeSpan KhoangMacDinh = TimeSpan.FromDays(7);
+    /// <summary>Lần poll đầu tiên lùi bao lâu — 30 ngày đủ bao trọn chu kỳ tháng trước.</summary>
+    public static readonly TimeSpan KhoangMacDinh = TimeSpan.FromDays(30);
+
+    /// <summary>Một semaphore cho cả server: poller nền và nút "Đối soát ngay" chia sẻ instance,
+    /// nên phải chặn hai lượt ChayAsync chạy song song (SePay giới hạn 3 request/giây).</summary>
+    private readonly SemaphoreSlim _khoa = new(1, 1);
 
     public async Task<KetQuaDoiSoat> ChayAsync(CancellationToken ct = default)
     {
         var cfg = await cau_hinh.GetFullAsync(ct);
         if (string.IsNullOrWhiteSpace(cfg.ApiToken))
         {
-            // Chưa có token = chủ trọ chưa bật đối soát. Không phải lỗi.
-            return new KetQuaDoiSoat(0, 0, 0);
+            throw new LoiNghiepVu("Chưa cấu hình API token SePay. Vui lòng nhập token trong tab Cài đặt.");
         }
 
+        await _khoa.WaitAsync(ct);
+        try
+        {
+            return await ChayNoiBoAsync(cfg.ApiToken, ct);
+        }
+        finally
+        {
+            _khoa.Release();
+        }
+    }
+
+    private async Task<KetQuaDoiSoat> ChayNoiBoAsync(string apiToken, CancellationToken ct)
+    {
         var den = DateTime.Now;
         var tu = await giao_dich.LayMocThoiDiemAsync(ct) ?? den - KhoangMacDinh;
-        var danh_sach = await sepay.LayGiaoDichVaoAsync(cfg.ApiToken, tu, den, ct);
+        var danh_sach = await sepay.LayGiaoDichVaoAsync(apiToken, tu, den, ct);
 
         int moi = 0, khop = 0, bo_qua = 0;
         foreach (var gd in danh_sach)
         {
-            if (!await giao_dich.ThemNeuChuaCoAsync(gd, ct))
+            await giao_dich.ThemNeuChuaCoAsync(gd, ct);
+
+            // Giao dịch đã nằm trong bảng vẫn phải thử khớp lại: lần trước có thể CHƯA có hóa đơn
+            // (khách trả trước khi chủ trọ lập hóa đơn) hoặc server sập giữa chừng. Chỉ các giao
+            // dịch đã da_khop = TRUE mới được bỏ qua — da_khop là "đã xử lý xong", không phải "đã thấy".
+            if (await giao_dich.DaKhopChuaAsync(gd.Id, ct))
             {
-                continue; // đã xử lý ở lượt trước
+                continue;
             }
             moi++;
 
@@ -98,7 +120,7 @@ public sealed class DoiSoatService(
     private async Task<(int Id, string SoPhong, decimal TongTien)> TimHoaDonAsync(
         string noiDung, string? ky, CancellationToken ct)
     {
-        // Gộp hóa đơn chưa thu của kỳ đọc được (hoặc của hôm nay khi không đọc được kỳ).
+        // Gộp hóa đơn chưa thu của kỳ đọc được (hoặc của 6 tháng gần đây khi không đọc được kỳ).
         var ung_vien = new List<(int Id, string SoPhong, decimal TongTien)>();
         if (ky is not null)
         {
@@ -110,21 +132,23 @@ public sealed class DoiSoatService(
             var moc = DateTime.Now;
             for (var i = 0; i < 6; i++)
             {
-                var thang = moc.AddMonths(-i).ToString("yyyy-MM");
+                var thang = moc.AddMonths(-i).ToString("yyyy-MM", CultureInfo.InvariantCulture);
                 ung_vien.AddRange(await hoa_don.GetUnpaidWithRoomAsync(thang, ct));
             }
         }
 
         if (ung_vien.Count == 0) return default;
 
-        var doc = NoiDungThanhToanParser.Doc(noiDung, ung_vien.Select(h => h.SoPhong).Distinct());
-        if (doc is null) return default;
+        // Chỉ dò PHÒNG, không dùng Doc(): Doc bắt buộc phải có kỳ nên sẽ luôn trả null ở nhánh
+        // không-kỳ, làm hỏng toàn bộ fallback 6 tháng.
+        var phong = NoiDungThanhToanParser.TimPhong(noiDung, ung_vien.Select(h => h.SoPhong));
+        if (phong is null) return default;
 
         // Trùng số phòng ở nhiều kỳ: chọn hóa đơn cũ nhất còn nợ — khách thường trả kỳ trước trước.
         return ung_vien
             .Where(h => string.Equals(
                 NoiDungThanhToanParser.ChuanHoa(h.SoPhong).Replace(" ", string.Empty),
-                NoiDungThanhToanParser.ChuanHoa(doc.SoPhong).Replace(" ", string.Empty),
+                NoiDungThanhToanParser.ChuanHoa(phong).Replace(" ", string.Empty),
                 StringComparison.OrdinalIgnoreCase))
             .OrderBy(h => h.Id)
             .FirstOrDefault();

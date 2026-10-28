@@ -30,21 +30,50 @@ public static class NoiDungThanhToanParser
         if (string.IsNullOrWhiteSpace(noiDung)) return null;
 
         var sach = ChuanHoa(noiDung);
-        var khong_khoang_trang = sach.Replace(" ", string.Empty);
+        var phong = TimPhong(sach, soPhongHopLe);
+        if (phong is null) return null;
 
-        // Phòng dài nhất khớp trước: "P102" phải thắng "P10" nếu cả hai đều tồn tại.
-        var phong = soPhongHopLe
+        var ky = TimKy(sach);
+        return ky is null ? null : new NoiDungThanhToan(phong.ToUpperInvariant(), ky);
+    }
+
+    /// <summary>
+    /// Tìm số phòng khớp nội dung trong danh sách phòng hợp lệ (đang có hóa đơn chưa thu).
+    /// Biên từ: ký tự ngay trước và sau mã phòng không được là chữ/số (tránh P1 khớp trong P102).
+    /// </summary>
+    public static string? TimPhong(string? noiDungChuanHoa, IEnumerable<string> soPhongHopLe)
+    {
+        if (string.IsNullOrWhiteSpace(noiDungChuanHoa)) return null;
+
+        var sach = ChuanHoa(noiDungChuanHoa);
+
+        // Thử theo biên từ trước: " P102 " không nhầm " P1 ". Phòng dài nhất thử trước.
+        var danhSach = soPhongHopLe
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .OrderByDescending(p => p.Length)
+            .ToList();
+
+        foreach (var p in danhSach)
+        {
+            var gon = ChuanHoa(p);
+            // (?<![A-Za-z0-9])gon(?![A-Za-z0-9])
+            var pattern = $@"(?<![A-Za-z0-9]){Regex.Escape(gon)}(?![A-Za-z0-9])";
+            if (Regex.IsMatch(sach, pattern, RegexOptions.IgnoreCase))
+            {
+                return p;
+            }
+        }
+
+        // Fallback: khách gõ dính ("chuyentienP102") — không có khoảng trắng quanh phòng.
+        var khong_khoang_trang = sach.Replace(" ", string.Empty);
+        return danhSach
             .Select(p => (Goc: p, Gon: ChuanHoa(p).Replace(" ", string.Empty)))
             .Where(p => p.Gon.Length > 0
                 && khong_khoang_trang.Contains(p.Gon, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(p => p.Gon.Length)
             .Select(p => p.Goc)
             .FirstOrDefault();
-
-        if (phong is null) return null;
-
-        var ky = TimKy(sach);
-        return ky is null ? null : new NoiDungThanhToan(phong.ToUpperInvariant(), ky);
     }
 
     /// <summary>Chỉ đọc kỳ cước, không cần biết phòng — dùng khi đã có danh sách hóa đơn cần dò.</summary>
