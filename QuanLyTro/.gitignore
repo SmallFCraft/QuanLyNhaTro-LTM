@@ -6,7 +6,7 @@ obj/
 .vs/
 .superpowers/
 TestResults/
-
+.playwright-mcp/
 # AGENTS
 .claude/
 
