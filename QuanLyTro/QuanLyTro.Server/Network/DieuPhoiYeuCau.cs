@@ -163,8 +163,11 @@ public sealed class DieuPhoiYeuCau
             // apiToken null (không gửi) = giữ token cũ; "" = xoá; chuỗi khác = đặt mới.
             [ActionNames.CauHinhCapNhat] = (r, _, ct) => Ok(_cau_hinh.UpdateAsync(
                 r.GetData<CauHinhThanhToanDto>(), ReadString(r.Data, "apiToken"), ct)),
-            // Chỉ Chủ trọ (bypass trong MaTranPhanQuyen) — trả kèm api_token cho form cài đặt.
-            [ActionNames.CauHinhDayDu] = (_, _, ct) => Ok(_cau_hinh.GetFullAsync(ct)),
+            // Chỉ Chủ trọ — kiểm tra kép: action KHÔNG nằm trong DanhMuc (không gán được qua UI)
+            // và handler vẫn chặn vai trò khác, đề phòng quyền cũ còn sót trong quyen_vai_tro.
+            [ActionNames.CauHinhDayDu] = (_, s, ct) => s.VaiTro == VaiTroNguoiDung.ChuTro
+                ? Ok(_cau_hinh.GetFullAsync(ct))
+                : Task.FromResult(ResponsePacket.Fail("Chỉ Chủ trọ mới xem được API token.")),
             [ActionNames.DoiSoatChay] = (_, _, ct) => Ok(_doi_soat.ChayAsync(ct)),
         };
     }

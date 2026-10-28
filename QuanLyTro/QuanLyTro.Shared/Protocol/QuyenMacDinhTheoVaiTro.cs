@@ -84,7 +84,6 @@ public static class QuyenMacDinhTheoVaiTro
 
         new(ActionNames.CauHinhLay, "Xem thông tin tài khoản nhận tiền", "Cấu hình"),
         new(ActionNames.CauHinhCapNhat, "Cài đặt tài khoản ngân hàng / QR", "Cấu hình"),
-        new(ActionNames.CauHinhDayDu, "Xem / lưu API token SePay (chỉ Chủ trọ)", "Cấu hình"),
         new(ActionNames.DoiSoatChay, "Đối soát chuyển khoản SePay ngay", "Cấu hình"),
 
         new(ActionNames.BaoCaoTongQuan, "Xem thống kê doanh thu", "Báo cáo & cư trú"),

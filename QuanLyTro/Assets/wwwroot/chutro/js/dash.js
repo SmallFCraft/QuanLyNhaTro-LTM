@@ -165,7 +165,7 @@ function renderThieuHoaDon(summary) {
 
   const text = document.getElementById('dash-thieu-hd-text');
   if (text && so > 0) {
-    const phong = danhSach.length ? danhSach.join(', ') : `${so} phòng`;
+    const phong = danhSach.length ? esc(danhSach.join(', ')) : `${so} phòng`;
     text.innerHTML = `<b>${phong}</b> đã có hợp đồng hiệu lực nhưng chưa có hóa đơn kỳ này.
       Chốt chỉ số điện nước rồi lập hóa đơn để khách thanh toán được.`;
   }
